@@ -153,6 +153,15 @@ function extractYoutubeId(url) {
   return m ? m[1] : "";
 }
 
+function sortLectures(list) {
+  return [...(list || [])].sort((a, b) => {
+    const ao = Number(a.order_num ?? 0);
+    const bo = Number(b.order_num ?? 0);
+    if (ao !== bo) return ao - bo;
+    return String(a.id || "").localeCompare(String(b.id || ""));
+  });
+}
+
 function renderLayout(title, settings, student, isAdmin, bodyHtml) {
   return `<!DOCTYPE html>
 <html lang="ar" dir="rtl">
@@ -163,37 +172,35 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml) {
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" />
   <style>
     :root {
-      --bg: #f3efe9;
-      --card: #fcfaf7;
-      --card2: #ebe4d8;
-      --txt: #1b222c;
-      --muted: #5b4d3f;
-      --pri: #1e4e8c;
-      --olive: #55662d;
-      --olive-soft: rgba(85, 102, 45, 0.15);
-      --brown: #6b4423;
-      --brown-soft: rgba(107, 68, 35, 0.14);
-      --gold: #7c4d25;
-      --err: #b91c1c;
-      --bdr: #d5c9b8;
-      --glyph: rgba(85, 102, 45, 0.085);
-      --shadow: 0 10px 26px rgba(58, 39, 22, 0.09);
+      --bg: #eef2f6;
+      --card: #ffffff;
+      --card2: #e2e8f0;
+      --txt: #0f172a;
+      --muted: #475569;
+      --pri: #1e40af;
+      --teal: #0f766e;
+      --teal-soft: rgba(15, 118, 110, 0.14);
+      --gold: #b45309;
+      --gold-soft: rgba(180, 83, 9, 0.14);
+      --err: #dc2626;
+      --bdr: #cbd5e1;
+      --glyph: rgba(30, 64, 175, 0.18);
+      --shadow: 0 10px 26px rgba(15, 23, 42, 0.08);
     }
     body.dark {
-      --bg: #0b0e13;
-      --card: #131820;
-      --card2: #1c222b;
-      --txt: #f3efe9;
-      --muted: #b8a896;
-      --pri: #3b76c4;
-      --olive: #879c49;
-      --olive-soft: rgba(135, 156, 73, 0.18);
-      --brown: #9c683b;
-      --brown-soft: rgba(156, 104, 59, 0.18);
-      --gold: #c28b52;
+      --bg: #070b14;
+      --card: #0f172a;
+      --card2: #1e293b;
+      --txt: #f8fafc;
+      --muted: #94a3b8;
+      --pri: #3b82f6;
+      --teal: #14b8a6;
+      --teal-soft: rgba(20, 184, 166, 0.18);
+      --gold: #f59e0b;
+      --gold-soft: rgba(245, 158, 11, 0.18);
       --err: #f87171;
-      --bdr: #2d2924;
-      --glyph: rgba(156, 104, 59, 0.11);
+      --bdr: #334155;
+      --glyph: rgba(56, 189, 248, 0.2);
       --shadow: 0 12px 30px rgba(0, 0, 0, 0.55);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; }
@@ -205,37 +212,39 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml) {
       position: relative;
       overflow-x: hidden;
     }
-    .admin-edge-bar {
-      max-width: 1240px;
-      margin: 8px auto 0;
-      padding: 0 14px;
-      display: flex;
-      justify-content: flex-start;
-    }
-    .admin-edge-btn {
-      display: inline-flex;
-      align-items: center;
-      padding: 4px 10px;
-      font-size: 0.75rem;
-      font-weight: 800;
-      border-radius: 7px;
-      text-decoration: none;
+    .floating-admin-avatar {
+      position: fixed;
+      bottom: 16px;
+      left: 16px;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 2px solid var(--gold);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+      z-index: 60;
       background: var(--card);
-      color: var(--brown);
-      border: 1px solid var(--bdr);
+      display: block;
+      transition: transform 0.2s ease;
     }
-    .admin-edge-btn:hover {
-      background: var(--card2);
-      color: var(--txt);
+    .floating-admin-avatar:hover {
+      transform: scale(1.08);
+    }
+    .floating-admin-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center top;
+      display: block;
     }
     .inline-dua-banner {
       max-width: 1240px;
-      margin: 10px auto 0;
+      margin: 12px auto 0;
       padding: 12px 18px;
       border-radius: 16px;
-      background: linear-gradient(120deg, rgba(30, 78, 140, 0.94), rgba(85, 102, 45, 0.92), rgba(107, 68, 35, 0.94));
+      background: linear-gradient(120deg, #0f172a, #1e40af, #0f766e);
       color: #f8fafc;
-      border: 1px solid rgba(156, 104, 59, 0.55);
+      border: 1px solid rgba(245, 158, 11, 0.55);
       box-shadow: var(--shadow);
       display: flex;
       justify-content: space-between;
@@ -254,21 +263,22 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml) {
     .inline-dua-avatar {
       width: 56px; height: 68px; border-radius: 12px;
       object-fit: contain; object-position: center top;
-      background: rgba(27, 34, 44, 0.45);
-      border: 2px solid #879c49; flex-shrink: 0;
+      background: rgba(15, 23, 42, 0.45);
+      border: 2px solid #f59e0b; flex-shrink: 0;
     }
     .inline-dua-text { font-weight: 900; font-size: 1.05rem; }
-    .inline-dua-sub { font-size: 0.78rem; opacity: 0.88; }
+    .inline-dua-sub { font-size: 0.78rem; opacity: 0.9; }
     #arabicBg { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
     .ar-glyph {
       position: absolute; font-weight: 900; color: var(--glyph); user-select: none;
+      text-shadow: 0 2px 10px rgba(30, 64, 175, 0.12);
       will-change: transform;
-      animation: letterDrift var(--dur, 28s) ease-in-out var(--delay, 0s) infinite alternate;
+      animation: letterDrift var(--dur, 8s) ease-in-out var(--delay, 0s) infinite alternate;
     }
     @keyframes letterDrift {
-      0% { transform: translate(0px, 0px) rotate(-3deg); }
-      50% { transform: translate(var(--dx, 8px), var(--dy, -10px)) rotate(3deg); }
-      100% { transform: translate(calc(var(--dx, 8px) * -0.6), var(--dy, -10px)) rotate(-4deg); }
+      0% { transform: translate(0px, 0px) rotate(-10deg) scale(0.96); }
+      50% { transform: translate(var(--dx, 32px), var(--dy, -38px)) rotate(12deg) scale(1.06); }
+      100% { transform: translate(calc(var(--dx, 32px) * -0.8), calc(var(--dy, -38px) * 0.9)) rotate(-14deg) scale(0.98); }
     }
     .page-layer { position: relative; z-index: 1; }
     .topbar {
@@ -279,7 +289,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml) {
     .brand-box { display: flex; align-items: center; gap: 10px; }
     .brand-logo-badge {
       width: 38px; height: 38px; border-radius: 10px;
-      background: linear-gradient(135deg, var(--pri), var(--olive), var(--brown));
+      background: linear-gradient(135deg, var(--pri), var(--teal), var(--gold));
       color: #fff; font-weight: 900; display: grid; place-items: center; font-size: 1rem;
     }
     .theme-pill {
@@ -288,8 +298,8 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml) {
       color: var(--txt); font-weight: 800; cursor: pointer; font-size: 0.84rem;
     }
     .global-alert {
-      max-width: 1240px; margin: 12px auto 0; background: var(--brown-soft);
-      border: 1px solid var(--brown); color: var(--brown);
+      max-width: 1240px; margin: 12px auto 0; background: var(--gold-soft);
+      border: 1px solid var(--gold); color: var(--gold);
       border-radius: 12px; padding: 10px 16px; font-weight: 800;
     }
     .card {
@@ -302,8 +312,8 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml) {
       cursor: pointer; text-decoration: none; font-size: 0.9rem;
     }
     .btn-blue { background: var(--pri); color: #fff; }
-    .btn-olive { background: var(--olive); color: #fff; }
-    .btn-brown { background: var(--brown); color: #fff; }
+    .btn-teal { background: var(--teal); color: #fff; }
+    .btn-gold { background: var(--gold); color: #fff; }
     .btn-red { background: var(--err); color: #fff; }
     .btn-out { background: transparent; color: var(--txt); border: 1px solid var(--bdr); }
     .btn-sm { padding: 6px 12px; font-size: 0.82rem; border-radius: 8px; }
@@ -322,15 +332,16 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml) {
       align-items: center; gap: 10px; flex-wrap: wrap;
     }
     .pill { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 0.78rem; font-weight: 800; }
-    .pill-ok { background: var(--olive-soft); color: var(--olive); }
-    .pill-warn { background: var(--brown-soft); color: var(--brown); }
+    .pill-ok { background: var(--teal-soft); color: var(--teal); }
+    .pill-warn { background: var(--gold-soft); color: var(--gold); }
+    .pill-err { background: rgba(220, 38, 38, 0.14); color: var(--err); }
     .msg-err {
-      background: rgba(185, 28, 28, 0.12); border: 1px solid rgba(185, 28, 28, 0.35);
+      background: rgba(220, 38, 38, 0.12); border: 1px solid rgba(220, 38, 38, 0.35);
       color: var(--err); padding: 10px 14px; border-radius: 10px; font-weight: 800; margin-bottom: 12px;
     }
     .msg-ok {
-      background: var(--olive-soft); border: 1px solid var(--olive);
-      color: var(--olive); padding: 10px 14px; border-radius: 10px; font-weight: 800; margin-bottom: 12px;
+      background: var(--teal-soft); border: 1px solid var(--teal);
+      color: var(--teal); padding: 10px 14px; border-radius: 10px; font-weight: 800; margin-bottom: 12px;
     }
     .muted { color: var(--muted); }
     .dash-shell {
@@ -360,16 +371,16 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml) {
       display: block; padding: 6px 10px; border-radius: 8px; color: var(--muted);
       text-decoration: none; font-weight: 700; font-size: 0.84rem; margin-bottom: 2px;
     }
-    .sub-link.active, .sub-link:hover { background: var(--olive-soft); color: var(--olive); }
+    .sub-link.active, .sub-link:hover { background: var(--teal-soft); color: var(--teal); }
     .dash-shell.collapsed .nav-label, .dash-shell.collapsed .sub-nav, .dash-shell.collapsed .drawer-title { display: none; }
     .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-bottom: 16px; }
     .kpi-card {
-      background: linear-gradient(135deg, var(--pri) 0%, #112642 100%);
+      background: linear-gradient(135deg, var(--pri) 0%, #0f172a 100%);
       color: #fff; border-radius: 14px; padding: 18px;
       display: flex; justify-content: space-between; align-items: center; box-shadow: var(--shadow);
     }
-    .kpi-card.olive-kpi { background: linear-gradient(135deg, var(--olive) 0%, #242d12 100%); }
-    .kpi-card.brown-kpi { background: linear-gradient(135deg, var(--brown) 0%, #2e1b0d 100%); }
+    .kpi-card.teal-kpi { background: linear-gradient(135deg, var(--teal) 0%, #042f2e 100%); }
+    .kpi-card.gold-kpi { background: linear-gradient(135deg, var(--gold) 0%, #451a03 100%); }
     .kpi-num { font-size: 1.6rem; font-weight: 900; line-height: 1.1; }
     .kpi-lbl { font-size: 0.88rem; font-weight: 700; opacity: 0.95; margin-top: 4px; }
     .kpi-icon-box {
@@ -378,7 +389,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml) {
     }
     .progress-layout { display: grid; grid-template-columns: 280px 1fr; gap: 16px; margin-bottom: 16px; }
     @media (max-width: 820px) { .progress-layout { grid-template-columns: 1fr; } }
-    .progress-frame { background: var(--card); border: 2px solid var(--olive); border-radius: 16px; padding: 18px; text-align: center; }
+    .progress-frame { background: var(--card); border: 2px solid var(--teal); border-radius: 16px; padding: 18px; text-align: center; }
     .teacher-color-meter {
       position: relative; width: 144px; height: 185px; margin: 8px auto 10px;
       border-radius: 16px; overflow: hidden; border: 2px solid var(--bdr); background: var(--card2);
@@ -389,14 +400,14 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml) {
     .teacher-color-meter .bw-layer { filter: grayscale(100%) contrast(1.08); }
     .teacher-color-meter .color-reveal { position: absolute; inset: 0; overflow: hidden; transition: clip-path 0.5s ease; }
     .prog-bar-bg { height: 8px; border-radius: 999px; background: var(--card2); border: 1px solid var(--bdr); overflow: hidden; margin: 10px 0; }
-    .prog-bar-fill { height: 100%; background: var(--olive); border-radius: 999px; transition: width 0.4s ease; }
+    .prog-bar-fill { height: 100%; background: var(--teal); border-radius: 999px; transition: width 0.4s ease; }
     .course-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(265px, 1fr)); gap: 16px; }
     .course-card {
       background: var(--card); border: 1px solid var(--bdr); border-radius: 16px;
       overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; box-shadow: var(--shadow);
     }
     .branch-hero-banner {
-      background: linear-gradient(135deg, var(--brown) 0%, var(--pri) 58%, var(--olive) 100%);
+      background: linear-gradient(135deg, #0f172a 0%, var(--pri) 55%, var(--teal) 100%);
       color: #fff; border-radius: 16px; padding: 18px; margin-bottom: 16px;
       display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;
     }
@@ -407,16 +418,16 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml) {
     }
     .branch-book-card img {
       width: 74px; height: 96px; object-fit: contain; object-position: center top;
-      background: rgba(27, 34, 44, 0.45); border-radius: 10px; border: 2px solid #fff;
+      background: rgba(15, 23, 42, 0.45); border-radius: 10px; border: 2px solid #fff;
     }
     .course-banner {
       min-height: 158px; position: relative; overflow: hidden;
-      background: linear-gradient(135deg, var(--pri), var(--olive), var(--brown));
+      background: linear-gradient(135deg, var(--pri), var(--teal), var(--gold));
       color: #fff; padding: 14px; display: flex; justify-content: space-between; align-items: flex-end; gap: 10px;
     }
     .course-banner img.book-thumb {
       width: 76px; height: 100px; object-fit: contain; object-position: center top;
-      background: rgba(27, 34, 44, 0.45); border-radius: 10px; border: 2px solid rgba(255, 255, 255, 0.75); flex-shrink: 0;
+      background: rgba(15, 23, 42, 0.45); border-radius: 10px; border: 2px solid rgba(255, 255, 255, 0.75); flex-shrink: 0;
     }
     .course-body { padding: 14px; }
     .course-title { font-weight: 900; font-size: 1rem; margin-bottom: 8px; }
@@ -426,18 +437,18 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml) {
     }
     @media (max-width: 840px) { .split-auth { grid-template-columns: 1fr; } }
     .promo-pane {
-      background: linear-gradient(160deg, var(--pri) 0%, var(--olive) 62%, var(--brown) 100%);
+      background: linear-gradient(160deg, var(--pri) 0%, var(--teal) 62%, #0f172a 100%);
       color: #fff; border-radius: 20px; padding: 26px;
       display: flex; flex-direction: column; justify-content: space-between; min-height: 460px;
     }
-    .promo-pane.olive-mode { background: linear-gradient(160deg, var(--brown) 0%, var(--olive) 65%, var(--pri) 100%); }
+    .promo-pane.gold-mode { background: linear-gradient(160deg, var(--gold) 0%, var(--teal) 65%, #0f172a 100%); }
     .promo-img {
       width: 225px; height: 280px; object-fit: contain; object-position: center top;
-      background: rgba(27, 34, 44, 0.35);
+      background: rgba(15, 23, 42, 0.35);
       border-radius: 16px; border: 2px solid rgba(255, 255, 255, 0.4); margin: 14px auto 0; display: block;
     }
     .step-track { height: 5px; background: var(--card2); border-radius: 999px; overflow: hidden; margin-bottom: 14px; }
-    .step-fill { height: 100%; background: var(--olive); }
+    .step-fill { height: 100%; background: var(--teal); }
     .secure-player-box {
       position: relative; width: 100%; max-width: 820px; margin: 12px auto 0;
       border-radius: 14px; overflow: hidden; background: #000; border: 1px solid var(--bdr); user-select: none;
@@ -463,14 +474,27 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml) {
       font-size: 0.84rem; font-weight: 800; cursor: pointer;
     }
     .branch-check-pill input { width: auto; }
+    .q-builder-card {
+      background: var(--card2);
+      border: 1px solid var(--bdr);
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+    .opt-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+    }
   </style>
 </head>
 <body>
   <div id="arabicBg" aria-hidden="true"></div>
+  <a class="floating-admin-avatar" href="/admin" aria-label="Admin">
+    <img src="${esc(settings.teacher_image)}" alt="" onerror="this.style.display='none';" />
+  </a>
   <div class="page-layer">
-    <div class="admin-edge-bar">
-      <a class="admin-edge-btn" href="/admin">أدمن</a>
-    </div>
     <header class="topbar">
       <div class="brand-box">
         <div class="brand-logo-badge">جخ</div>
@@ -527,18 +551,18 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml) {
       const container = document.getElementById("arabicBg");
       const letters = "أبجدهوزحطيكلمنسعفصقرشتثخذضظغى".split("");
       const sides = ["right", "left"];
-      for (let i = 0; i < 38; i++) {
+      for (let i = 0; i < 42; i++) {
         const span = document.createElement("span");
         span.className = "ar-glyph";
         span.textContent = letters[i % letters.length];
         const side = sides[i % 2];
-        const horiz = 2 + ((i * 17) % 21);
+        const horiz = 2 + ((i * 19) % 24);
         const vert = 3 + ((i * 13) % 90);
-        const size = 24 + ((i * 7) % 28);
-        const dur = 26 + ((i * 3) % 9);
-        const delay = -((i * 2.4) % 12);
-        const dx = (i % 2 === 0 ? 1 : -1) * (6 + (i % 7));
-        const dy = (i % 3 === 0 ? -1 : 1) * (7 + (i % 8));
+        const size = 28 + ((i * 7) % 32);
+        const dur = 6 + ((i * 2) % 5);
+        const delay = -((i * 1.4) % 8);
+        const dx = (i % 2 === 0 ? 1 : -1) * (24 + (i % 24));
+        const dy = (i % 3 === 0 ? -1 : 1) * (28 + (i % 26));
         span.style[side] = horiz + "%";
         span.style.top = vert + "%";
         span.style.fontSize = size + "px";
@@ -583,7 +607,7 @@ function renderLanding(settings) {
       <span class="pill" style="background:rgba(255,255,255,0.2); color:#fff;">خبرة 20 عاماً في المنهج الأزهري</span>
       <h1 style="font-size:1.7rem; font-weight:900; margin-top:12px;">الأستاذ محمد يوسف</h1>
       <p style="margin-top:8px; font-size:0.95rem; opacity:0.95;">
-        مدرس أول اللغة العربية للثانوية الأزهرية (الأول، الثاني، والثالث الثانوي — علمي وأدبي). شرح الفروع السبعة، تفعيل كل فرع بشكل مستقل، أكواد سنتر لمرة واحدة، واجبات إلكترونية، وامتحانات شاملة.
+        مدرس أول اللغة العربية للثانوية الأزهرية (الأول، الثاني، والثالث الثانوي — علمي وأدبي). شرح الفروع السبعة، تفعيل كل فرع بشكل مستقل، أكواد سنتر لمرة واحدة، واجبات إلكترونية بعد كل محاضرة، وامتحانات شاملة.
       </p>
     </div>
     <img class="promo-img" src="${esc(settings.teacher_image)}" alt="الأستاذ محمد يوسف" onerror="this.style.display='none';" />
@@ -592,7 +616,7 @@ function renderLanding(settings) {
     <h2 style="font-size:1.45rem; font-weight:900; margin-bottom:8px;">أهلاً بك في منصة نور البيان ✦ ۝ جخ ۝ ✦</h2>
     <p class="muted" style="margin-bottom:20px;">اختر إنشاء حساب جديد للانضمام، أو سجل دخولك لحسابك الحالي لمتابعة فروع اللغة العربية.</p>
     <div style="display:flex; gap:12px; flex-wrap:wrap;">
-      <a class="btn btn-olive" style="flex:1; min-width:170px;" href="/student?tab=register&step=1">ابدأ معنا الآن</a>
+      <a class="btn btn-teal" style="flex:1; min-width:170px;" href="/student?tab=register&step=1">ابدأ معنا الآن</a>
       <a class="btn btn-blue" style="flex:1; min-width:170px;" href="/student?tab=login">تسجيل الدخول</a>
     </div>
   </div>
@@ -618,7 +642,7 @@ function renderStudentAuth(settings, authTab, step, draft, error, notice) {
         <p class="muted" style="text-align:center; font-size:0.88rem; margin-bottom:14px;">ادخل على حسابك برقم الهاتف وكلمة السر، أو أدخل كود السنتر لفتح المنصة فوراً.</p>
         <div style="display:flex; gap:8px; justify-content:center; margin-bottom:16px; border-bottom:1px solid var(--bdr); padding-bottom:10px; flex-wrap:wrap;">
           <a class="btn btn-blue btn-sm" href="/student?tab=login">تسجيل الدخول برقم الهاتف</a>
-          <a class="btn btn-olive btn-sm" href="/student?tab=center">دخول بكود السنتر</a>
+          <a class="btn btn-teal btn-sm" href="/student?tab=center">دخول بكود السنتر</a>
           <a class="btn btn-out btn-sm" href="/student?tab=register&step=1">إنشاء حساب جديد</a>
         </div>
         ${error ? `<div class="msg-err">${esc(error)}</div>` : ""}
@@ -636,7 +660,7 @@ function renderStudentAuth(settings, authTab, step, draft, error, notice) {
   if (authTab === "center") {
     return `
     <div class="split-auth">
-      <div class="promo-pane olive-mode">
+      <div class="promo-pane gold-mode">
         <div>
           <h2 style="font-size:1.35rem; font-weight:900;">دخول طلاب السنتر بكود التفعيل</h2>
           <p style="margin-top:10px; font-size:0.92rem; opacity:0.95;">أدخل بياناتك وكود السنتر المخصص لمرة واحدة ليتم فتح المنصة لك مباشرة.</p>
@@ -656,7 +680,7 @@ function renderStudentAuth(settings, authTab, step, draft, error, notice) {
             <div class="field"><label>الصف الدراسي *</label><select name="grade">${gradeOpts}</select></div>
             <div class="field"><label>الشعبة *</label><select name="track">${trackOpts}</select></div>
           </div>
-          <button type="submit" class="btn btn-olive" style="width:100%;">فتح المنصة بكود السنتر</button>
+          <button type="submit" class="btn btn-teal" style="width:100%;">فتح المنصة بكود السنتر</button>
         </form>
         <div style="margin-top:14px; text-align:center; font-size:0.86rem;">
           <a href="/student?tab=login" style="color:var(--pri); font-weight:800;">العودة لتسجيل الدخول العادي</a>
@@ -676,7 +700,7 @@ function renderStudentAuth(settings, authTab, step, draft, error, notice) {
         <div class="field"><label>رقم هاتف الطالب *</label><input name="phone" type="tel" required placeholder="01xxxxxxxxx" /></div>
         <div class="field"><label>رقم هاتف ولي الأمر *</label><input name="parent_phone" type="tel" required placeholder="01xxxxxxxxx" /></div>
         <div class="field"><label>كلمة السر الجديدة *</label><input name="new_password" type="password" required minlength="4" /></div>
-        <button type="submit" class="btn btn-olive" style="width:100%;">تعيين كلمة السر الجديدة</button>
+        <button type="submit" class="btn btn-teal" style="width:100%;">تعيين كلمة السر الجديدة</button>
       </form>
       <div style="margin-top:12px; text-align:center;"><a href="/student?tab=login" style="font-weight:800; color:var(--pri); font-size:0.88rem;">العودة لتسجيل الدخول</a></div>
     </div>`;
@@ -686,7 +710,7 @@ function renderStudentAuth(settings, authTab, step, draft, error, notice) {
   const fullName = `${draft.first_name || ""} ${draft.second_name || ""} ${draft.third_name || ""}`.trim();
   return `
   <div class="split-auth">
-    <div class="promo-pane olive-mode">
+    <div class="promo-pane gold-mode">
       <div>
         <h2 style="font-size:1.35rem; font-weight:900;">طلب إنشاء حساب طالب جديد</h2>
         <p style="margin-top:10px; font-size:0.92rem; opacity:0.95;">أدخل بياناتك بدقة وسيتم ربطك بمنهج صفك وشعبتك تلقائياً.</p>
@@ -694,7 +718,7 @@ function renderStudentAuth(settings, authTab, step, draft, error, notice) {
       <img class="promo-img" src="${esc(settings.teacher_image)}" alt="الأستاذ محمد يوسف" onerror="this.style.display='none';" />
     </div>
     <div class="card" style="margin-bottom:0;">
-      <div style="display:flex; justify-content:space-between; font-size:0.84rem; font-weight:800; color:var(--olive);">
+      <div style="display:flex; justify-content:space-between; font-size:0.84rem; font-weight:800; color:var(--teal);">
         <span>الخطوة ${isStep2 ? "الثانية" : "الأولى"}</span>
         <span>${isStep2 ? "70%" : "35%"}</span>
       </div>
@@ -723,7 +747,7 @@ function renderStudentAuth(settings, authTab, step, draft, error, notice) {
             <div class="field"><label>المحافظة *</label><input name="governorate" type="text" required placeholder="مثال: الشرقية" /></div>
             <div class="field"><label>كلمة السر *</label><input name="password" type="password" required minlength="4" /></div>
           </div>
-          <button type="submit" class="btn btn-olive" style="width:100%;">إتمام إنشاء الحساب</button>
+          <button type="submit" class="btn btn-teal" style="width:100%;">إتمام إنشاء الحساب</button>
         </form>
       `}
       <div style="margin-top:14px; text-align:center; font-size:0.86rem;">
@@ -743,12 +767,32 @@ function renderStudentDash(settings, student, state) {
   const section = state.section || "dashboard";
   const branchParam = state.branch || "";
   const lectureId = state.lectureId || "";
+  const examIdParam = state.examId || "";
   const error = state.error || "";
   const notice = state.notice || "";
 
+  const allLectures = sortLectures(state.lectures || []);
+  const allExams = state.exams || [];
+  const mySubmissions = state.submissions || [];
+  const myDrafts = state.drafts || [];
+
+  const solvedExamIds = new Set(mySubmissions.map(s => String(s.exam_id)));
+
+  function getLessonHomework(lecId) {
+    return allExams.find(ex => String(ex.lecture_id || "") === String(lecId));
+  }
+
+  function isLectureUnlockedForStudent(branchList, idx) {
+    if (idx === 0) return true;
+    const prevLec = branchList[idx - 1];
+    const prevHw = getLessonHomework(prevLec.id);
+    if (!prevHw) return true;
+    return solvedExamIds.has(String(prevHw.id));
+  }
+
   const branchCardsHtml = BRANCHES.map(br => {
     const isUnlocked = unlocked.has(br);
-    const brLectures = (state.lectures || []).filter(l => l.branch === br);
+    const brLectures = allLectures.filter(l => l.branch === br);
     return `
       <div class="course-card">
         <div>
@@ -763,14 +807,14 @@ function renderStudentDash(settings, student, state) {
           <div class="course-body">
             <div class="course-title">منهج ${esc(br)} — ${esc(student.grade)} (${esc(student.track)})</div>
             <p class="muted" style="font-size:0.84rem; margin-bottom:12px;">
-              ${isUnlocked ? "يمكنك الآن فتح محاضرات الفرع ومشاهدة الفيديوهات بعلامة مائية." : "هذا الفرع يحتاج إلى كود تفعيل خاص بالفرع لفتحه."}
+              ${isUnlocked ? "افتح المحاضرات وحل واجب كل درس لفتح الدرس التالي." : "هذا الفرع يحتاج إلى كود تفعيل خاص بالفرع لفتحه."}
             </p>
           </div>
         </div>
         <div style="padding:0 14px 14px;">
           ${isUnlocked
             ? `<a class="btn btn-blue btn-sm" style="width:100%;" href="/student?section=branch&branch=${encodeURIComponent(br)}">دخول الفرع</a>`
-            : `<a class="btn btn-olive btn-sm" style="width:100%;" href="/student?section=codes">تفعيل بكود الفرع</a>`
+            : `<a class="btn btn-teal btn-sm" style="width:100%;" href="/student?section=codes">تفعيل بكود الفرع</a>`
           }
         </div>
       </div>
@@ -779,10 +823,16 @@ function renderStudentDash(settings, student, state) {
 
   let activeLectureHtml = "";
   if (lectureId) {
-    const lec = (state.lectures || []).find(x => String(x.id) === String(lectureId));
+    const lec = allLectures.find(x => String(x.id) === String(lectureId));
     if (lec) {
+      const brList = allLectures.filter(x => x.branch === lec.branch);
+      const lecIdx = brList.findIndex(x => String(x.id) === String(lec.id));
+      const allowedByOrder = lecIdx <= 0 ? true : isLectureUnlockedForStudent(brList, lecIdx);
+
       if (!unlocked.has(lec.branch)) {
         activeLectureHtml = `<div class="msg-err">عذراً، فرع (${esc(lec.branch)}) غير مفعل على حسابك.</div>`;
+      } else if (!allowedByOrder) {
+        activeLectureHtml = `<div class="msg-err">هذا الدرس مغلق حالياً. يجب حل وتسليم واجب الدرس السابق أولاً لفتح هذا الدرس.</div>`;
       } else {
         const ytId = extractYoutubeId(lec.video_url);
         let playerHtml = "";
@@ -796,7 +846,10 @@ function renderStudentDash(settings, student, state) {
           playerHtml = `<div class="msg-err">لا يوجد رابط فيديو مضاف لهذه المحاضرة بعد.</div>`;
         }
 
+        const hw = getLessonHomework(lec.id);
+        const hwSub = hw ? mySubmissions.find(s => String(s.exam_id) === String(hw.id)) : null;
         const wmText = `${student.full_name} • ${student.phone} • نور البيان`;
+
         activeLectureHtml = `
           <div class="card" style="margin-top:16px;">
             <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
@@ -814,9 +867,28 @@ function renderStudentDash(settings, student, state) {
               ${playerHtml}
             </div>
             ${lec.video_url && /^https?:\/\//i.test(lec.video_url) && !ytId
-              ? `<div style="margin-top:10px;"><a class="btn btn-olive btn-sm" href="${esc(lec.video_url)}" target="_blank" rel="noopener">فتح الفيديو في نافذة المشغل الخارجية</a></div>`
+              ? `<div style="margin-top:10px;"><a class="btn btn-teal btn-sm" href="${esc(lec.video_url)}" target="_blank" rel="noopener">فتح الفيديو في نافذة المشغل الخارجية</a></div>`
               : ""
             }
+            <div class="row" style="margin-top:16px; border:1px solid var(--gold); background:var(--gold-soft);">
+              <div>
+                <div style="font-weight:900;">واجب المحاضرة (${hw ? (Array.isArray(hw.questions) ? hw.questions.length : 5) + " أسئلة" : "5 أسئلة"})</div>
+                <div class="muted" style="font-size:0.84rem;">
+                  ${hw
+                    ? (hwSub
+                      ? `تم تسليم الواجب بنجاح (${hwSub.pct}% — ${hwSub.score} من ${hwSub.total}) وتم فتح الدرس التالي.`
+                      : "يجب حل الواجب لفتح الدرس التالي في هذا الفرع.")
+                    : "لم يتم ربط أسئلة واجب لهذه المحاضرة بعد."
+                  }
+                </div>
+              </div>
+              ${hw
+                ? (hwSub
+                  ? `<a class="btn btn-teal btn-sm" href="/student?section=results">عرض النتيجة في نتائجي</a>`
+                  : `<a class="btn btn-gold" href="/student?section=solve-exam&exam_id=${encodeURIComponent(hw.id)}">حل الواجب لفتح الدرس</a>`)
+                : ""
+              }
+            </div>
           </div>
         `;
       }
@@ -825,7 +897,7 @@ function renderStudentDash(settings, student, state) {
 
   const branchDetailHtml = branchParam ? (() => {
     const canEnter = unlocked.has(branchParam);
-    const list = (state.lectures || []).filter(l => l.branch === branchParam);
+    const list = allLectures.filter(l => l.branch === branchParam);
     return `
       <div class="branch-hero-banner">
         <div>
@@ -849,57 +921,182 @@ function renderStudentDash(settings, student, state) {
               <label>كود تفعيل الفرع (لمرة واحدة)</label>
               <input name="code" type="text" required placeholder="مثال: BR-XXXXXX" />
             </div>
-            <button type="submit" class="btn btn-olive">تفعيل الفرع الآن</button>
+            <button type="submit" class="btn btn-teal">تفعيل الفرع الآن</button>
           </form>
         </div>
       ` : `
         <div class="card">
           <h3 style="font-weight:900; margin-bottom:10px;">قائمة المحاضرات</h3>
-          ${list.length ? list.map(l => `
-            <div class="row">
-              <div>
-                <div style="font-weight:900;">${esc(l.title)}</div>
-                <div class="muted" style="font-size:0.82rem;">الفرع: ${esc(l.branch)}</div>
+          ${list.length ? list.map((l, idx) => {
+            const openByOrder = isLectureUnlockedForStudent(list, idx);
+            const hw = getLessonHomework(l.id);
+            const hwDone = hw ? solvedExamIds.has(String(hw.id)) : false;
+            return `
+              <div class="row">
+                <div>
+                  <div style="font-weight:900;">${idx + 1}. ${esc(l.title)}</div>
+                  <div class="muted" style="font-size:0.82rem;">
+                    ${openByOrder
+                      ? (hw ? (hwDone ? "تم حل الواجب ✓" : "مفتوحة — يتبعها واجب لفتح الدرس التالي") : "مفتوحة للمشاهدة")
+                      : "مغلقة 🔒 — حل واجب الدرس السابق لفتحها"
+                    }
+                  </div>
+                </div>
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                  ${openByOrder
+                    ? `<a class="btn btn-blue btn-sm" href="/student?section=branch&branch=${encodeURIComponent(branchParam)}&lecture=${encodeURIComponent(l.id)}">مشاهدة المحاضرة</a>`
+                    : `<span class="pill pill-warn">مغلق لحين حل الواجب السابق</span>`
+                  }
+                  ${openByOrder && hw && !hwDone
+                    ? `<a class="btn btn-gold btn-sm" href="/student?section=solve-exam&exam_id=${encodeURIComponent(hw.id)}">حل الواجب لفتح الدرس</a>`
+                    : ""
+                  }
+                </div>
               </div>
-              <a class="btn btn-blue btn-sm" href="/student?section=branch&branch=${encodeURIComponent(branchParam)}&lecture=${encodeURIComponent(l.id)}">مشاهدة المحاضرة</a>
-            </div>
-          `).join("") : `<p class="muted">لا توجد محاضرات مضافة لهذا الفرع حتى الآن.</p>`}
+            `;
+          }).join("") : `<p class="muted">لا توجد محاضرات مضافة لهذا الفرع حتى الآن.</p>`}
         </div>
         ${activeLectureHtml}
       `}
     `;
   })() : "";
 
-  const examsHtml = (state.exams || []).map(ex => {
+  const solveExamHtml = (() => {
+    const ex = allExams.find(x => String(x.id) === String(examIdParam));
+    if (!ex) {
+      return `<div class="card"><div class="msg-err">الواجب أو الاختبار المطلوب غير موجود.</div><a class="btn btn-blue btn-sm" href="/student?section=exams">العودة لقائمة الواجبات</a></div>`;
+    }
+    const existingSub = mySubmissions.find(s => String(s.exam_id) === String(ex.id));
+    if (existingSub) {
+      return `
+        <div class="card">
+          <div class="msg-ok">تم تسليم هذا الواجب/الاختبار مسبقاً ولا يمكن حله مرة أخرى (يُحل مرة واحدة فقط).</div>
+          <a class="btn btn-teal" href="/student?section=results">الانتقال إلى نتائجي</a>
+        </div>
+      `;
+    }
     const questions = Array.isArray(ex.questions) ? ex.questions : [];
-    const prev = (state.submissions || []).find(s => String(s.exam_id) === String(ex.id));
+    const draftDoc = myDrafts.find(d => String(d.exam_id) === String(ex.id));
+    const savedAnswers = Array.isArray(draftDoc?.answers) ? draftDoc.answers : [];
+
+    return `
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
+          <div>
+            <span class="pill pill-ok">${esc(ex.branch || "عام")}</span>
+            <h2 style="font-weight:900; margin-top:6px;">${esc(ex.title)}</h2>
+            <div class="muted" style="font-size:0.85rem;">عدد الأسئلة: ${questions.length} • يُسلّم مرة واحدة فقط</div>
+          </div>
+          ${draftDoc ? `<span class="pill pill-warn">محفوظ كمسودة للاستكمال</span>` : ""}
+        </div>
+
+        <form method="post" action="/student/exam-action" id="solveExamForm">
+          <input type="hidden" name="exam_id" value="${esc(ex.id)}" />
+          <input type="hidden" name="action_type" id="examActionType" value="finish" />
+          ${questions.map((q, qi) => {
+            const chosen = savedAnswers[qi] !== undefined && savedAnswers[qi] !== null ? Number(savedAnswers[qi]) : -1;
+            return `
+              <div class="row" style="display:block; margin-bottom:12px;">
+                <div style="font-weight:900; margin-bottom:8px; font-size:1rem;">${qi + 1}. ${esc(q.text)}</div>
+                ${(q.options || []).map((opt, oi) => `
+                  <label style="display:flex; align-items:center; gap:8px; font-weight:700; cursor:pointer; margin:6px 0; padding:6px 10px; border-radius:8px; background:var(--card);">
+                    <input type="radio" name="q_${qi}" value="${oi}" style="width:auto;" ${chosen === oi ? "checked" : ""} />
+                    <span>${esc(opt)}</span>
+                  </label>
+                `).join("")}
+              </div>
+            `;
+          }).join("")}
+
+          <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:18px;">
+            <button type="button" id="btnResumeLater" class="btn btn-gold" style="flex:1; min-width:200px;">استكمال الواجب لاحقاً</button>
+            <button type="button" id="btnFinishExam" class="btn btn-blue" style="flex:1; min-width:200px;">إنهاء الاختبار</button>
+          </div>
+        </form>
+      </div>
+      <script>
+        (function () {
+          const form = document.getElementById("solveExamForm");
+          const actInput = document.getElementById("examActionType");
+          document.getElementById("btnResumeLater")?.addEventListener("click", function () {
+            actInput.value = "save";
+            form.submit();
+          });
+          document.getElementById("btnFinishExam")?.addEventListener("click", function () {
+            const totalQ = ${questions.length};
+            for (let i = 0; i < totalQ; i++) {
+              if (!form.querySelector('input[name="q_' + i + '"]:checked')) {
+                alert("من فضلك أجب عن جميع الأسئلة قبل إنهاء الاختبار، أو اضغط استكمال الواجب لاحقاً.");
+                return;
+              }
+            }
+            const ok = confirm("هل أنت متأكد من تسليم الواجب؟ لن تتمكن من تعديل إجاباتك أو حله مرة أخرى.");
+            if (!ok) return;
+            actInput.value = "finish";
+            form.submit();
+          });
+        })();
+      </script>
+    `;
+  })();
+
+  const examsListHtml = allExams.map(ex => {
+    const prev = mySubmissions.find(s => String(s.exam_id) === String(ex.id));
+    const draftDoc = myDrafts.find(d => String(d.exam_id) === String(ex.id));
+    const qCount = Array.isArray(ex.questions) ? ex.questions.length : 0;
+    return `
+      <div class="row">
+        <div>
+          <span class="pill pill-ok">${esc(ex.branch || "عام")}</span>
+          <div style="font-weight:900; font-size:1rem; margin-top:4px;">${esc(ex.title)}</div>
+          <div class="muted" style="font-size:0.82rem;">عدد الأسئلة: ${qCount}</div>
+        </div>
+        <div>
+          ${prev
+            ? `<a class="btn btn-teal btn-sm" href="/student?section=results">تم التسليم (${prev.pct}%) — عرض النتيجة</a>`
+            : `<a class="btn btn-blue btn-sm" href="/student?section=solve-exam&exam_id=${encodeURIComponent(ex.id)}">${draftDoc ? "استكمال الحل" : "بدء الحل"}</a>`
+          }
+        </div>
+      </div>
+    `;
+  }).join("") || `<p class="muted">لا توجد امتحانات أو واجبات متاحة حالياً.</p>`;
+
+  const resultsHtml = mySubmissions.slice().reverse().map(sub => {
+    const details = Array.isArray(sub.details) ? sub.details : [];
+    const wrongItems = details.filter(d => !d.is_correct);
+    const pct = Number(sub.pct ?? Math.round(((Number(sub.score || 0)) / Math.max(1, Number(sub.total || 1))) * 100));
+    const wrongCount = Number(sub.wrong_count ?? (Number(sub.total || 0) - Number(sub.score || 0)));
+
     return `
       <div class="card">
         <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
           <div>
-            <span class="pill pill-ok">${esc(ex.branch || "عام")}</span>
-            <h3 style="font-weight:900; margin-top:6px;">${esc(ex.title)}</h3>
+            <span class="pill pill-ok">${esc(sub.branch || "عام")}</span>
+            <h3 style="font-weight:900; margin-top:4px;">${esc(sub.exam_title || "اختبار")}</h3>
           </div>
-          ${prev ? `<span class="pill pill-ok">درجتك السابقة: ${esc(prev.score)} / ${esc(prev.total)}</span>` : `<span class="pill pill-warn">لم يُسلّم بعد</span>`}
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <span class="pill pill-ok">النسبة: ${pct}%</span>
+            <span class="pill pill-ok">صح: ${esc(sub.score)} / ${esc(sub.total)}</span>
+            <span class="pill pill-err">أخطاء: ${wrongCount}</span>
+          </div>
         </div>
-        <form method="post" action="/student/submit-exam">
-          <input type="hidden" name="exam_id" value="${esc(ex.id)}" />
-          ${questions.map((q, qi) => `
-            <div class="row" style="display:block;">
-              <div style="font-weight:800; margin-bottom:6px;">${qi + 1}. ${esc(q.text)}</div>
-              ${(q.options || []).map((opt, oi) => `
-                <label style="display:flex; align-items:center; gap:8px; font-weight:700; cursor:pointer; margin:4px 0;">
-                  <input type="radio" name="q_${qi}" value="${oi}" style="width:auto;" required />
-                  <span>${esc(opt)}</span>
-                </label>
-              `).join("")}
-            </div>
-          `).join("")}
-          <button type="submit" class="btn btn-blue">تسليم الاختبار</button>
-        </form>
+
+        ${wrongItems.length === 0
+          ? `<div class="msg-ok" style="margin-bottom:0;">ممتاز! لم تخطئ في أي سؤال في هذا الاختبار.</div>`
+          : `
+            <div style="font-weight:900; margin:10px 0 6px; color:var(--err);">الأسئلة التي أخطأت فيها وإجاباتها الصحيحة:</div>
+            ${wrongItems.map((w, idx) => `
+              <div class="row" style="display:block; border-color:rgba(220,38,38,0.35);">
+                <div style="font-weight:800;">${idx + 1}. ${esc(w.question)}</div>
+                <div style="font-size:0.86rem; color:var(--err); margin-top:4px;">إجابتك: ${esc(w.student_answer || "لم تُجب")}</div>
+                <div style="font-size:0.86rem; color:var(--teal); font-weight:800; margin-top:2px;">الإجابة الصحيحة: ${esc(w.correct_answer || "")}</div>
+              </div>
+            `).join("")}
+          `
+        }
       </div>
     `;
-  }).join("") || `<div class="card"><p class="muted">لا توجد امتحانات أو واجبات متاحة حالياً.</p></div>`;
+  }).join("") || `<div class="card"><p class="muted">لم تُسلّم أي واجب أو اختبار حتى الآن.</p></div>`;
 
   const ticketsHtml = (state.tickets || []).map(t => `
     <div class="row" style="display:block;">
@@ -911,7 +1108,7 @@ function renderStudentDash(settings, student, state) {
       ${t.image_url ? `<img class="ticket-img-thumb" src="${esc(t.image_url)}" alt="صورة السؤال" onerror="this.style.display='none';" />` : ""}
       ${t.reply ? `<div class="msg-ok" style="margin-top:8px; margin-bottom:0;">رد الإدارة: ${esc(t.reply)}</div>` : ""}
     </div>
-  `).join("") || `<p class="muted" style="margin-top:10px;">لم ترسل تذاكر دعم أو أسئلة من قبل.</p>`;
+  `).join("") || `<p class="muted" style="margin-top:10px;">لم ترسل أسئلة أو تذاكر دعم من قبل.</p>`;
 
   let mainContentHtml = "";
   if (section === "dashboard") {
@@ -921,16 +1118,16 @@ function renderStudentDash(settings, student, state) {
           <div><div class="kpi-num">${unlockedCount} / ${totalBranches}</div><div class="kpi-lbl">الفروع المفعلة</div></div>
           <div class="kpi-icon-box">📚</div>
         </div>
-        <div class="kpi-card olive-kpi">
-          <div><div class="kpi-num">${(state.lectures || []).length}</div><div class="kpi-lbl">إجمالي المحاضرات</div></div>
+        <div class="kpi-card teal-kpi">
+          <div><div class="kpi-num">${allLectures.length}</div><div class="kpi-lbl">إجمالي المحاضرات</div></div>
           <div class="kpi-icon-box">🎥</div>
         </div>
-        <div class="kpi-card brown-kpi">
-          <div><div class="kpi-num">${(state.exams || []).length}</div><div class="kpi-lbl">الواجبات والامتحانات</div></div>
+        <div class="kpi-card gold-kpi">
+          <div><div class="kpi-num">${allExams.length}</div><div class="kpi-lbl">الواجبات والامتحانات</div></div>
           <div class="kpi-icon-box">📝</div>
         </div>
-        <div class="kpi-card olive-kpi">
-          <div><div class="kpi-num">${(state.submissions || []).length}</div><div class="kpi-lbl">الاختبارات المحلولة</div></div>
+        <div class="kpi-card teal-kpi">
+          <div><div class="kpi-num">${mySubmissions.length}</div><div class="kpi-lbl">الاختبارات المحلولة</div></div>
           <div class="kpi-icon-box">✓</div>
         </div>
       </div>
@@ -959,7 +1156,10 @@ function renderStudentDash(settings, student, state) {
               : `<span class="pill pill-warn">لم يتم تفعيل أي فرع بعد</span>`
             }
           </div>
-          <a class="btn btn-olive btn-sm" href="/student?section=codes">تفعيل كود فرع جديد</a>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <a class="btn btn-teal btn-sm" href="/student?section=codes">تفعيل كود فرع جديد</a>
+            <a class="btn btn-blue btn-sm" href="/student?section=results">عرض نتائجي</a>
+          </div>
         </div>
       </div>
 
@@ -975,7 +1175,7 @@ function renderStudentDash(settings, student, state) {
         <p class="muted" style="font-size:0.88rem; margin-bottom:14px;">أدخل كود الفرع (يُستخدم مرة واحدة فقط) لفتح محاضرات الفرع على حسابك.</p>
         <form method="post" action="/student/redeem-code" class="grid2">
           <div class="field"><label>كود التفعيل *</label><input name="code" type="text" required placeholder="مثال: BR-XXXXXX" /></div>
-          <div class="field" style="display:flex; align-items:flex-end;"><button type="submit" class="btn btn-olive" style="width:100%;">تفعيل الكود</button></div>
+          <div class="field" style="display:flex; align-items:flex-end;"><button type="submit" class="btn btn-teal" style="width:100%;">تفعيل الكود</button></div>
         </form>
         <div style="margin-top:12px;">
           <strong>الفروع المفعلة حالياً:</strong>
@@ -984,7 +1184,23 @@ function renderStudentDash(settings, student, state) {
       </div>
     `;
   } else if (section === "exams") {
-    mainContentHtml = examsHtml;
+    mainContentHtml = `
+      <div class="card">
+        <h2 style="font-weight:900; margin-bottom:8px;">الواجبات والامتحانات</h2>
+        <p class="muted" style="font-size:0.88rem; margin-bottom:12px;">اضغط على الواجب لحله وفتح الدرس التالي، أو استكمل واجباً محفوظاً.</p>
+        ${examsListHtml}
+      </div>
+    `;
+  } else if (section === "solve-exam") {
+    mainContentHtml = solveExamHtml;
+  } else if (section === "results") {
+    mainContentHtml = `
+      <div style="margin-bottom:12px;">
+        <h2 style="font-weight:900;">نتائجي وتفاصيل الأخطاء</h2>
+        <p class="muted" style="font-size:0.88rem;">هنا تجد نسبتك المئوية وعدد أخطائك والإجابة الصحيحة لكل سؤال أخطأت فيه.</p>
+      </div>
+      ${resultsHtml}
+    `;
   } else if (section === "tickets") {
     mainContentHtml = `
       <div class="card">
@@ -1065,7 +1281,8 @@ function renderStudentDash(settings, student, state) {
       <a class="nav-item-link ${section === "branch" ? "active" : ""}" href="/student?section=branch&branch=${encodeURIComponent(branchParam || BRANCHES[0])}"><span>📖</span><span class="nav-label">فروع اللغة العربية</span></a>
       <div class="sub-nav">${branchSubLinks}</div>
       <a class="nav-item-link ${section === "codes" ? "active" : ""}" href="/student?section=codes"><span>🔑</span><span class="nav-label">تفعيل الفروع</span></a>
-      <a class="nav-item-link ${section === "exams" ? "active" : ""}" href="/student?section=exams"><span>📝</span><span class="nav-label">الواجبات والامتحانات</span></a>
+      <a class="nav-item-link ${(section === "exams" || section === "solve-exam") ? "active" : ""}" href="/student?section=exams"><span>📝</span><span class="nav-label">الواجبات والامتحانات</span></a>
+      <a class="nav-item-link ${section === "results" ? "active" : ""}" href="/student?section=results"><span>📊</span><span class="nav-label">نتائجي</span></a>
       <a class="nav-item-link ${section === "tickets" ? "active" : ""}" href="/student?section=tickets"><span>🎫</span><span class="nav-label">الأسئلة والدعم</span></a>
       <a class="nav-item-link ${section === "account" ? "active" : ""}" href="/student?section=account"><span>👤</span><span class="nav-label">حسابي</span></a>
       <a class="nav-item-link" href="/logout" style="color:var(--err);"><span>🚪</span><span class="nav-label">تسجيل الخروج</span></a>
@@ -1078,7 +1295,7 @@ function renderStudentDash(settings, student, state) {
   </script>`;
 }
 
-function renderAdminPage(settings, isAuthed, data, error, notice) {
+function renderAdminPage(settings, isAuthed, data, section, error, notice) {
   if (!isAuthed) {
     return `
     <div class="card" style="max-width:460px; margin:28px auto;">
@@ -1093,6 +1310,11 @@ function renderAdminPage(settings, isAuthed, data, error, notice) {
     </div>`;
   }
 
+  const activeSec = section || "codes";
+  const allLectures = sortLectures(data.lectures || []);
+  const allExams = data.exams || [];
+  const allSubmissions = data.submissions || [];
+
   const branchChecks = BRANCHES.map(b => `
     <label class="branch-check-pill">
       <input type="checkbox" name="branches" value="${esc(b)}" />
@@ -1100,7 +1322,7 @@ function renderAdminPage(settings, isAuthed, data, error, notice) {
     </label>
   `).join("");
 
-  const codesRows = (data.codes || []).slice(-12).reverse().map(c => `
+  const codesRows = (data.codes || []).slice(-20).reverse().map(c => `
     <div class="row">
       <div>
         <strong>${esc(c.code)}</strong> — <span class="pill pill-ok">${esc(c.type === "center" ? "كود سنتر (لمرة واحدة)" : "كود فرع: " + (c.branch || ""))}</span>
@@ -1109,18 +1331,49 @@ function renderAdminPage(settings, isAuthed, data, error, notice) {
     </div>
   `).join("") || `<p class="muted">لا توجد أكواد مولدة بعد.</p>`;
 
-  const lecturesRows = (data.lectures || []).slice(-12).reverse().map(l => `
-    <div class="row">
-      <div>
-        <strong>${esc(l.title)}</strong> — <span class="pill pill-ok">${esc(l.branch)}</span>
-        <div class="muted" style="font-size:0.8rem;">${esc(l.grade || "")} • ${esc(l.track || "")}</div>
+  const lecturesRows = allLectures.map(l => {
+    const linkedHw = allExams.find(ex => String(ex.lecture_id || "") === String(l.id));
+    return `
+      <div class="row">
+        <div>
+          <strong>${esc(l.title)}</strong> — <span class="pill pill-ok">${esc(l.branch)}</span>
+          <div class="muted" style="font-size:0.8rem;">${esc(l.grade || "")} • ${esc(l.track || "")} • ترتيب: ${esc(l.order_num ?? 0)}</div>
+          <div style="margin-top:4px;">
+            ${linkedHw
+              ? `<span class="pill pill-ok">مرتبط بواجب: ${esc(linkedHw.title)} (${Array.isArray(linkedHw.questions) ? linkedHw.questions.length : 0} أسئلة)</span>`
+              : `<span class="pill pill-warn">بدون واجب مرتبط بعد</span>`
+            }
+          </div>
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <a class="btn btn-gold btn-sm" href="/admin?section=exams&lecture_id=${encodeURIComponent(l.id)}">إضافة/تعديل 5 أسئلة للدرس</a>
+          <form method="post" action="/admin/delete-lecture" style="margin:0;">
+            <input type="hidden" name="lecture_id" value="${esc(l.id)}" />
+            <button type="submit" class="btn btn-red btn-sm">حذف</button>
+          </form>
+        </div>
       </div>
-      <form method="post" action="/admin/delete-lecture" style="margin:0;">
-        <input type="hidden" name="lecture_id" value="${esc(l.id)}" />
-        <button type="submit" class="btn btn-red btn-sm">حذف</button>
-      </form>
-    </div>
-  `).join("") || `<p class="muted">لا توجد محاضرات مضافة بعد.</p>`;
+    `;
+  }).join("") || `<p class="muted">لا توجد محاضرات مضافة بعد.</p>`;
+
+  const examsRows = allExams.slice().reverse().map(ex => {
+    const lec = allLectures.find(l => String(l.id) === String(ex.lecture_id || ""));
+    const qLen = Array.isArray(ex.questions) ? ex.questions.length : 0;
+    return `
+      <div class="row">
+        <div>
+          <strong>${esc(ex.title)}</strong> — <span class="pill pill-ok">${esc(ex.branch || "عام")}</span>
+          <div class="muted" style="font-size:0.8rem;">
+            عدد الأسئلة: ${qLen} ${lec ? `• واجب محاضرة: ${esc(lec.title)}` : "• اختبار عام"}
+          </div>
+        </div>
+        <form method="post" action="/admin/delete-exam" style="margin:0;">
+          <input type="hidden" name="exam_id" value="${esc(ex.id)}" />
+          <button type="submit" class="btn btn-red btn-sm">حذف</button>
+        </form>
+      </div>
+    `;
+  }).join("") || `<p class="muted">لا توجد واجبات أو اختبارات منشورة بعد.</p>`;
 
   const studentsRows = (data.students || []).map(s => `
     <div class="row">
@@ -1132,36 +1385,52 @@ function renderAdminPage(settings, isAuthed, data, error, notice) {
     </div>
   `).join("") || `<p class="muted">لا يوجد طلاب مسجلون بعد.</p>`;
 
+  const resultsRows = allSubmissions.slice().reverse().map(sub => {
+    const pct = Number(sub.pct ?? Math.round(((Number(sub.score || 0)) / Math.max(1, Number(sub.total || 1))) * 100));
+    const wrongCount = Number(sub.wrong_count ?? (Number(sub.total || 0) - Number(sub.score || 0)));
+    const details = Array.isArray(sub.details) ? sub.details : [];
+    const wrongItems = details.filter(d => !d.is_correct);
+    return `
+      <div class="row" style="display:block;">
+        <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+          <div>
+            <strong>${esc(sub.student_name || "طالب")}</strong> (${esc(sub.student_phone || "")}) — <strong>${esc(sub.exam_title || "اختبار")}</strong>
+          </div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <span class="pill pill-ok">النسبة: ${pct}%</span>
+            <span class="pill pill-ok">الدرجة: ${esc(sub.score)} / ${esc(sub.total)}</span>
+            <span class="pill pill-err">أخطاء: ${wrongCount}</span>
+          </div>
+        </div>
+        ${wrongItems.length ? `
+          <div class="muted" style="font-size:0.82rem; margin-top:6px;">
+            الأخطاء: ${wrongItems.map(w => `${esc(w.question)} (إجابته: ${esc(w.student_answer)} | الصحيح: ${esc(w.correct_answer)})`).join(" — ")}
+          </div>
+        ` : `<div style="font-size:0.82rem; color:var(--teal); margin-top:4px;">درجة كاملة بدون أخطاء ✓</div>`}
+      </div>
+    `;
+  }).join("") || `<p class="muted">لم يسلم أي طالب اختباراً أو واجباً بعد.</p>`;
+
   const ticketsRows = (data.tickets || []).map(t => `
     <div class="row" style="display:block;">
       <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
         <strong>${esc(t.subject)}</strong>
-        <span class="muted" style="font-size:0.8rem;">${esc(t.student_phone || "")}</span>
+        <span class="muted" style="font-size:0.8rem;">${esc(t.student_name || "")} (${esc(t.student_phone || "")})</span>
       </div>
       <p style="margin:6px 0; font-size:0.88rem;">${esc(t.message)}</p>
       ${t.image_url ? `<img class="ticket-img-thumb" src="${esc(t.image_url)}" alt="صورة التذكرة" onerror="this.style.display='none';" />` : ""}
       <form method="post" action="/admin/reply-ticket" style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
         <input type="hidden" name="ticket_id" value="${esc(t.id)}" />
         <input name="reply" type="text" value="${esc(t.reply || "")}" placeholder="اكتب رد الإدارة هنا..." style="flex:1; min-width:220px;" />
-        <button type="submit" class="btn btn-olive btn-sm">حفظ الرد</button>
+        <button type="submit" class="btn btn-teal btn-sm">حفظ الرد</button>
       </form>
     </div>
   `).join("") || `<p class="muted">لا توجد تذاكر دعم حالياً.</p>`;
 
-  return `
-  <div class="dash-shell" id="adminShell">
-    <div>
-      ${error ? `<div class="msg-err">${esc(error)}</div>` : ""}
-      ${notice ? `<div class="msg-ok">${esc(notice)}</div>` : ""}
-
-      <div class="kpi-grid">
-        <div class="kpi-card"><div><div class="kpi-num">${(data.students || []).length}</div><div class="kpi-lbl">الطلاب</div></div><div class="kpi-icon-box">👨‍🎓</div></div>
-        <div class="kpi-card olive-kpi"><div><div class="kpi-num">${(data.lectures || []).length}</div><div class="kpi-lbl">المحاضرات</div></div><div class="kpi-icon-box">🎥</div></div>
-        <div class="kpi-card brown-kpi"><div><div class="kpi-num">${(data.exams || []).length}</div><div class="kpi-lbl">الاختبارات</div></div><div class="kpi-icon-box">📝</div></div>
-        <div class="kpi-card olive-kpi"><div><div class="kpi-num">${(data.tickets || []).length}</div><div class="kpi-lbl">التذاكر</div></div><div class="kpi-icon-box">🎫</div></div>
-      </div>
-
-      <div id="sec-codes" class="card">
+  let sectionHtml = "";
+  if (activeSec === "codes") {
+    sectionHtml = `
+      <div class="card">
         <h3 style="font-weight:900; margin-bottom:10px;">توليد أكواد (سنتر لمرة واحدة / فروع)</h3>
         <form method="post" action="/admin/generate-codes" class="grid3">
           <div class="field">
@@ -1179,50 +1448,176 @@ function renderAdminPage(settings, isAuthed, data, error, notice) {
             <label>عدد الأكواد</label>
             <input name="count" type="number" min="1" max="50" value="1" />
           </div>
-          <div style="grid-column:1/-1;"><button type="submit" class="btn btn-olive">توليد الأكواد الآن</button></div>
+          <div style="grid-column:1/-1;"><button type="submit" class="btn btn-teal">توليد الأكواد الآن</button></div>
         </form>
         <div style="margin-top:12px;">${codesRows}</div>
       </div>
-
-      <div id="sec-lectures" class="card">
-        <h3 style="font-weight:900; margin-bottom:10px;">إضافة محاضرة (رابط iNK Player / YouTube)</h3>
+    `;
+  } else if (activeSec === "lectures") {
+    sectionHtml = `
+      <div class="card">
+        <h3 style="font-weight:900; margin-bottom:10px;">إضافة محاضرة (ويتبعها واجب 5 أسئلة لفتح الدرس التالي)</h3>
         <form method="post" action="/admin/add-lecture" class="grid2">
-          <div class="field"><label>عنوان المحاضرة *</label><input name="title" type="text" required placeholder="مثال: أحكام المبتدأ والخبر" /></div>
+          <div class="field"><label>عنوان المحاضرة *</label><input name="title" type="text" required placeholder="مثال: المحاضرة الأولى — المبتدأ والخبر" /></div>
           <div class="field"><label>الفرع *</label><select name="branch">${BRANCHES.map(b => `<option value="${esc(b)}">${esc(b)}</option>`).join("")}</select></div>
           <div class="field"><label>الصف الدراسي</label><select name="grade">${GRADES.map(g => `<option value="${esc(g)}">${esc(g)}</option>`).join("")}</select></div>
           <div class="field"><label>الشعبة</label><select name="track">${TRACKS.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join("")}</select></div>
-          <div class="field" style="grid-column:1/-1;"><label>رابط الفيديو (iNK Player أو YouTube) *</label><input name="video_url" type="text" required placeholder="https://..." /></div>
+          <div class="field"><label>رقم ترتيب الدرس في الفرع</label><input name="order_num" type="number" min="1" value="${allLectures.length + 1}" /></div>
+          <div class="field"><label>رابط الفيديو (iNK Player أو YouTube) *</label><input name="video_url" type="text" required placeholder="https://..." /></div>
           <div style="grid-column:1/-1;"><button type="submit" class="btn btn-blue">إضافة المحاضرة</button></div>
         </form>
-        <div style="margin-top:12px;">${lecturesRows}</div>
+        <div style="margin-top:14px;">${lecturesRows}</div>
       </div>
+    `;
+  } else if (activeSec === "exams") {
+    const preselectLecId = data.preselectLectureId || "";
+    const lectureOptions = `<option value="">— اختبار عام (غير مرتبط بفتح درس) —</option>` +
+      allLectures.map(l => `<option value="${esc(l.id)}" ${String(l.id) === String(preselectLecId) ? "selected" : ""}>واجب درس: ${esc(l.title)} (${esc(l.branch)})</option>`).join("");
 
-      <div id="sec-exams" class="card">
-        <h3 style="font-weight:900; margin-bottom:10px;">إضافة اختبار / واجب سريع</h3>
-        <form method="post" action="/admin/add-exam">
-          <div class="grid2">
-            <div class="field"><label>عنوان الاختبار *</label><input name="title" type="text" required placeholder="واجب النحو الأسبوعي" /></div>
-            <div class="field"><label>الفرع</label><select name="branch">${BRANCHES.map(b => `<option value="${esc(b)}">${esc(b)}</option>`).join("")}</select></div>
-          </div>
-          <div class="field"><label>نص السؤال *</label><input name="q_text" type="text" required placeholder="اكتب نص السؤال..." /></div>
+    sectionHtml = `
+      <div class="card">
+        <h3 style="font-weight:900; margin-bottom:6px;">إنشاء واجب درس (5 أسئلة) أو اختبار بأي عدد أسئلة واختيارات</h3>
+        <p class="muted" style="font-size:0.85rem; margin-bottom:14px;">يمكنك إضافة أي عدد من الأسئلة، ولكل سؤال إضافة أي عدد من الاختيارات وتحديد الإجابة الصحيحة.</p>
+
+        <form method="post" action="/admin/add-exam" id="dynamicExamForm">
+          <input type="hidden" name="questions_json" id="questionsJsonInput" />
           <div class="grid3">
-            <div class="field"><label>الاختيار 1 *</label><input name="opt0" type="text" required /></div>
-            <div class="field"><label>الاختيار 2 *</label><input name="opt1" type="text" required /></div>
-            <div class="field"><label>الاختيار 3 *</label><input name="opt2" type="text" required /></div>
+            <div class="field"><label>عنوان الواجب / الاختبار *</label><input name="title" type="text" required placeholder="واجب المحاضرة الأولى" /></div>
+            <div class="field"><label>الفرع *</label><select name="branch">${BRANCHES.map(b => `<option value="${esc(b)}">${esc(b)}</option>`).join("")}</select></div>
+            <div class="field"><label>ربط بمحاضرة (لفتح الدرس التالي)</label><select name="lecture_id">${lectureOptions}</select></div>
           </div>
-          <div class="field">
-            <label>الإجابة الصحيحة</label>
-            <select name="correct_idx">
-              <option value="0">الاختيار 1</option>
-              <option value="1">الاختيار 2</option>
-              <option value="2">الاختيار 3</option>
-            </select>
+
+          <div id="questionsBuilderList"></div>
+
+          <div style="display:flex; gap:10px; flex-wrap:wrap; margin:12px 0;">
+            <button type="button" class="btn btn-out btn-sm" id="addQuestionBtn">+ إضافة سؤال جديد</button>
+            <button type="button" class="btn btn-gold btn-sm" id="presetFiveBtn">تجهيز 5 أسئلة افتراضية للدرس</button>
           </div>
-          <button type="submit" class="btn btn-olive">نشر الاختبار</button>
+
+          <button type="submit" class="btn btn-teal" style="width:100%;">حفظ ونشر الواجب / الاختبار</button>
         </form>
       </div>
 
-      <div id="sec-students" class="card">
+      <div class="card">
+        <h3 style="font-weight:900; margin-bottom:10px;">الواجبات والاختبارات المنشورة</h3>
+        ${examsRows}
+      </div>
+
+      <script>
+        (function () {
+          const listEl = document.getElementById("questionsBuilderList");
+          const formEl = document.getElementById("dynamicExamForm");
+          const jsonInput = document.getElementById("questionsJsonInput");
+
+          function createOptionRow(qCard, optText = "", isChecked = false) {
+            const radioName = qCard.dataset.radioName;
+            const row = document.createElement("div");
+            row.className = "opt-row";
+            row.innerHTML =
+              '<input type="radio" name="' + radioName + '" style="width:auto;" ' + (isChecked ? "checked" : "") + ' title="الإجابة الصحيحة" />' +
+              '<input type="text" class="opt-text-input" placeholder="اكتب نص الاختيار..." value="' + optText.replace(/"/g, "&quot;") + '" required />' +
+              '<button type="button" class="btn btn-red btn-sm remove-opt-btn">×</button>';
+            row.querySelector(".remove-opt-btn").addEventListener("click", function () {
+              if (qCard.querySelectorAll(".opt-row").length <= 2) {
+                alert("يجب أن يحتوي السؤال على اختيارين على الأقل.");
+                return;
+              }
+              const wasChecked = row.querySelector('input[type="radio"]').checked;
+              row.remove();
+              if (wasChecked) {
+                const firstRadio = qCard.querySelector('input[type="radio"]');
+                if (firstRadio) firstRadio.checked = true;
+              }
+            });
+            qCard.querySelector(".opts-container").appendChild(row);
+          }
+
+          let qCounter = 0;
+          function addQuestionCard(initialOpts = 4) {
+            qCounter++;
+            const radioName = "correct_q_" + qCounter + "_" + Date.now();
+            const card = document.createElement("div");
+            card.className = "q-builder-card";
+            card.dataset.radioName = radioName;
+            card.innerHTML =
+              '<div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px;">' +
+                '<strong class="q-title-lbl">سؤال</strong>' +
+                '<button type="button" class="btn btn-red btn-sm remove-q-btn">حذف السؤال</button>' +
+              '</div>' +
+              '<div class="field"><input type="text" class="q-text-input" placeholder="اكتب نص السؤال هنا..." required /></div>' +
+              '<div style="font-size:0.82rem; font-weight:800; margin-bottom:4px;">الاختيارات (حدّد الدائرة بجانب الإجابة الصحيحة):</div>' +
+              '<div class="opts-container"></div>' +
+              '<button type="button" class="btn btn-out btn-sm add-opt-btn" style="margin-top:8px;">+ إضافة اختيار آخر</button>';
+
+            card.querySelector(".remove-q-btn").addEventListener("click", function () {
+              if (listEl.querySelectorAll(".q-builder-card").length <= 1) {
+                alert("يجب وجود سؤال واحد على الأقل.");
+                return;
+              }
+              card.remove();
+              renumberQuestions();
+            });
+
+            card.querySelector(".add-opt-btn").addEventListener("click", function () {
+              createOptionRow(card, "", false);
+            });
+
+            listEl.appendChild(card);
+            for (let i = 0; i < initialOpts; i++) {
+              createOptionRow(card, "", i === 0);
+            }
+            renumberQuestions();
+          }
+
+          function renumberQuestions() {
+            listEl.querySelectorAll(".q-builder-card").forEach((c, idx) => {
+              const lbl = c.querySelector(".q-title-lbl");
+              if (lbl) lbl.textContent = "السؤال رقم " + (idx + 1);
+            });
+          }
+
+          document.getElementById("addQuestionBtn")?.addEventListener("click", function () {
+            addQuestionCard(4);
+          });
+
+          document.getElementById("presetFiveBtn")?.addEventListener("click", function () {
+            listEl.innerHTML = "";
+            for (let i = 0; i < 5; i++) addQuestionCard(4);
+          });
+
+          for (let i = 0; i < 5; i++) addQuestionCard(4);
+
+          formEl?.addEventListener("submit", function (e) {
+            const questions = [];
+            const cards = listEl.querySelectorAll(".q-builder-card");
+            cards.forEach((c) => {
+              const qText = c.querySelector(".q-text-input").value.trim();
+              const optRows = c.querySelectorAll(".opt-row");
+              const options = [];
+              let correctIdx = 0;
+              optRows.forEach((r, idx) => {
+                const txt = r.querySelector(".opt-text-input").value.trim();
+                const checked = r.querySelector('input[type="radio"]').checked;
+                if (checked) correctIdx = idx;
+                options.push(txt);
+              });
+              if (qText && options.length >= 2) {
+                questions.push({ text: qText, options, correct_idx: correctIdx });
+              }
+            });
+            if (!questions.length) {
+              e.preventDefault();
+              alert("أضف سؤالاً واحداً على الأقل.");
+              return;
+            }
+            jsonInput.value = JSON.stringify(questions);
+          });
+        })();
+      </script>
+    `;
+  } else if (activeSec === "students") {
+    sectionHtml = `
+      <div class="card">
         <h3 style="font-weight:900; margin-bottom:10px;">تفعيل فروع لطالب والاطلاع على الطلاب</h3>
         <form method="post" action="/admin/grant-branches" class="card" style="background:var(--card2); margin-bottom:14px;">
           <div class="field"><label>رقم هاتف الطالب *</label><input name="phone" type="tel" required placeholder="01xxxxxxxxx" /></div>
@@ -1231,13 +1626,24 @@ function renderAdminPage(settings, isAuthed, data, error, notice) {
         </form>
         ${studentsRows}
       </div>
-
-      <div id="sec-tickets" class="card">
-        <h3 style="font-weight:900; margin-bottom:10px;">تذاكر الدعم والصور المرفقة</h3>
+    `;
+  } else if (activeSec === "results") {
+    sectionHtml = `
+      <div class="card">
+        <h3 style="font-weight:900; margin-bottom:10px;">سجل نتائج الطلاب والنسب المئوية والأخطاء</h3>
+        ${resultsRows}
+      </div>
+    `;
+  } else if (activeSec === "tickets") {
+    sectionHtml = `
+      <div class="card">
+        <h3 style="font-weight:900; margin-bottom:10px;">تذاكر الدعم وأسئلة الطلاب</h3>
         ${ticketsRows}
       </div>
-
-      <div id="sec-settings" class="card">
+    `;
+  } else if (activeSec === "settings") {
+    sectionHtml = `
+      <div class="card">
         <h3 style="font-weight:900; margin-bottom:10px;">إعدادات المنصة والتنبيه العام</h3>
         <form method="post" action="/admin/settings">
           <div class="grid2">
@@ -1249,6 +1655,23 @@ function renderAdminPage(settings, isAuthed, data, error, notice) {
           <button type="submit" class="btn btn-blue">حفظ الإعدادات</button>
         </form>
       </div>
+    `;
+  }
+
+  return `
+  <div class="dash-shell" id="adminShell">
+    <div>
+      ${error ? `<div class="msg-err">${esc(error)}</div>` : ""}
+      ${notice ? `<div class="msg-ok">${esc(notice)}</div>` : ""}
+
+      <div class="kpi-grid">
+        <div class="kpi-card"><div><div class="kpi-num">${(data.students || []).length}</div><div class="kpi-lbl">الطلاب</div></div><div class="kpi-icon-box">👨‍🎓</div></div>
+        <div class="kpi-card teal-kpi"><div><div class="kpi-num">${allLectures.length}</div><div class="kpi-lbl">المحاضرات</div></div><div class="kpi-icon-box">🎥</div></div>
+        <div class="kpi-card gold-kpi"><div><div class="kpi-num">${allExams.length}</div><div class="kpi-lbl">الواجبات والاختبارات</div></div><div class="kpi-icon-box">📝</div></div>
+        <div class="kpi-card teal-kpi"><div><div class="kpi-num">${allSubmissions.length}</div><div class="kpi-lbl">النتائج المسلمة</div></div><div class="kpi-icon-box">📊</div></div>
+      </div>
+
+      ${sectionHtml}
     </div>
 
     <aside class="right-drawer">
@@ -1256,12 +1679,13 @@ function renderAdminPage(settings, isAuthed, data, error, notice) {
         <span class="drawer-title" style="font-weight:900; font-size:0.92rem;">إدارة نور البيان</span>
         <button type="button" class="collapse-btn" onclick="document.getElementById('adminShell')?.classList.toggle('collapsed')">⇄</button>
       </div>
-      <a class="nav-item-link" href="#sec-codes"><span>🔑</span><span class="nav-label">الأكواد</span></a>
-      <a class="nav-item-link" href="#sec-lectures"><span>🎥</span><span class="nav-label">المحاضرات</span></a>
-      <a class="nav-item-link" href="#sec-exams"><span>📝</span><span class="nav-label">الاختبارات</span></a>
-      <a class="nav-item-link" href="#sec-students"><span>👨‍🎓</span><span class="nav-label">الطلاب</span></a>
-      <a class="nav-item-link" href="#sec-tickets"><span>🎫</span><span class="nav-label">التذاكر</span></a>
-      <a class="nav-item-link" href="#sec-settings"><span>⚙️</span><span class="nav-label">الإعدادات</span></a>
+      <a class="nav-item-link ${activeSec === "codes" ? "active" : ""}" href="/admin?section=codes"><span>🔑</span><span class="nav-label">الأكواد</span></a>
+      <a class="nav-item-link ${activeSec === "lectures" ? "active" : ""}" href="/admin?section=lectures"><span>🎥</span><span class="nav-label">المحاضرات</span></a>
+      <a class="nav-item-link ${activeSec === "exams" ? "active" : ""}" href="/admin?section=exams"><span>📝</span><span class="nav-label">الواجبات والاختبارات</span></a>
+      <a class="nav-item-link ${activeSec === "students" ? "active" : ""}" href="/admin?section=students"><span>👨‍🎓</span><span class="nav-label">الطلاب</span></a>
+      <a class="nav-item-link ${activeSec === "results" ? "active" : ""}" href="/admin?section=results"><span>📊</span><span class="nav-label">نتائج الطلاب</span></a>
+      <a class="nav-item-link ${activeSec === "tickets" ? "active" : ""}" href="/admin?section=tickets"><span>🎫</span><span class="nav-label">التذاكر</span></a>
+      <a class="nav-item-link ${activeSec === "settings" ? "active" : ""}" href="/admin?section=settings"><span>⚙️</span><span class="nav-label">الإعدادات</span></a>
     </aside>
   </div>`;
 }
@@ -1346,24 +1770,28 @@ export default {
         return htmlRes(renderLayout("بوابة الطالب", settings, null, isAdmin, renderStudentAuth(settings, tab, step, draft, error, notice)));
       }
 
-      const [lectures, exams, tickets, submissions] = await Promise.all([
+      const [lectures, exams, tickets, submissions, drafts] = await Promise.all([
         fsList(env, "lectures"),
         fsList(env, "exams"),
         fsList(env, "tickets"),
-        fsList(env, "submissions")
+        fsList(env, "submissions"),
+        fsList(env, "exam_drafts")
       ]);
 
       const myTickets = tickets.filter(t => t.student_phone === student.phone);
       const mySubmissions = submissions.filter(s => s.student_phone === student.phone);
+      const myDrafts = drafts.filter(d => d.student_phone === student.phone);
 
       const dashHtml = renderStudentDash(settings, student, {
         section: url.searchParams.get("section") || "dashboard",
         branch: url.searchParams.get("branch") || "",
         lectureId: url.searchParams.get("lecture") || "",
+        examId: url.searchParams.get("exam_id") || "",
         lectures,
         exams,
         tickets: myTickets,
         submissions: mySubmissions,
+        drafts: myDrafts,
         error,
         notice
       });
@@ -1484,26 +1912,76 @@ export default {
       return redirectRes(`/student?section=branch&branch=${encodeURIComponent(codeDoc.branch)}&notice=${encodeURIComponent("تم تفعيل الفرع بنجاح")}`);
     }
 
-    if (path === "/student/submit-exam" && method === "POST") {
+    if (path === "/student/exam-action" && method === "POST") {
       if (!student) return redirectRes("/student?tab=login");
       const form = await parseFormBody(req);
       const examId = String(form.exam_id || "");
+      const actionType = String(form.action_type || "finish");
       const exam = await fsGet(env, "exams", examId);
-      if (!exam) return redirectRes(`/student?section=exams&error=${encodeURIComponent("الاختبار غير موجود")}`);
+      if (!exam) return redirectRes(`/student?section=exams&error=${encodeURIComponent("الواجب أو الاختبار غير موجود")}`);
+
+      const subDocId = `${student.phone}_${examId}`;
+      const alreadyDone = await fsGet(env, "submissions", subDocId);
+      if (alreadyDone) {
+        return redirectRes(`/student?section=results&notice=${encodeURIComponent("تم تسليم هذا الواجب مسبقاً")}`);
+      }
+
       const qs = Array.isArray(exam.questions) ? exam.questions : [];
-      let score = 0;
-      qs.forEach((q, idx) => {
-        if (Number(form["q_" + idx]) === Number(q.correct_idx)) score++;
+      const answers = qs.map((_, idx) => {
+        const raw = form["q_" + idx];
+        return raw === undefined || raw === "" ? -1 : Number(raw);
       });
-      await fsSet(env, "submissions", `${student.phone}_${examId}`, {
+
+      if (actionType === "save") {
+        await fsSet(env, "exam_drafts", subDocId, {
+          student_phone: student.phone,
+          exam_id: examId,
+          answers,
+          updated_at: new Date().toISOString()
+        });
+        const backTarget = exam.branch
+          ? `/student?section=branch&branch=${encodeURIComponent(exam.branch)}&notice=${encodeURIComponent("تم حفظ إجاباتك لاستكمال الواجب لاحقاً")}`
+          : `/student?section=exams&notice=${encodeURIComponent("تم حفظ إجاباتك لاستكمال الواجب لاحقاً")}`;
+        return redirectRes(backTarget);
+      }
+
+      let score = 0;
+      const details = qs.map((q, idx) => {
+        const chosenIdx = answers[idx];
+        const correctIdx = Number(q.correct_idx);
+        const opts = Array.isArray(q.options) ? q.options : [];
+        const isCorrect = chosenIdx === correctIdx;
+        if (isCorrect) score++;
+        return {
+          question: String(q.text || ""),
+          student_answer: chosenIdx >= 0 && opts[chosenIdx] !== undefined ? String(opts[chosenIdx]) : "لم تُجب",
+          correct_answer: opts[correctIdx] !== undefined ? String(opts[correctIdx]) : "",
+          is_correct: isCorrect
+        };
+      });
+
+      const total = qs.length;
+      const wrongCount = Math.max(0, total - score);
+      const pct = total > 0 ? Math.round((score / total) * 100) : 0;
+
+      await fsSet(env, "submissions", subDocId, {
         student_phone: student.phone,
         student_name: student.full_name,
         exam_id: examId,
+        exam_title: exam.title || "واجب / اختبار",
+        branch: exam.branch || "عام",
+        lecture_id: exam.lecture_id || "",
         score,
-        total: qs.length,
+        wrong_count: wrongCount,
+        total,
+        pct,
+        details,
         date: new Date().toISOString()
       });
-      return redirectRes(`/student?section=exams&notice=${encodeURIComponent(`تم تسليم الاختبار — درجتك: ${score} من ${qs.length}`)}`);
+
+      await fsDelete(env, "exam_drafts", subDocId);
+
+      return redirectRes(`/student?section=results&notice=${encodeURIComponent(`تم تسليم الواجب بنجاح — نتيجتك: ${pct}% (${score} من ${total})`)}`);
     }
 
     if (path === "/student/tickets" && method === "POST") {
@@ -1531,18 +2009,21 @@ export default {
     if (path === "/admin" && method === "GET") {
       const error = url.searchParams.get("error") || "";
       const notice = url.searchParams.get("notice") || "";
+      const section = url.searchParams.get("section") || "codes";
+      const preselectLectureId = url.searchParams.get("lecture_id") || "";
       let data = {};
       if (isAdmin) {
-        const [codes, lectures, exams, students, tickets] = await Promise.all([
+        const [codes, lectures, exams, students, tickets, submissions] = await Promise.all([
           fsList(env, "codes"),
           fsList(env, "lectures"),
           fsList(env, "exams"),
           fsList(env, "students"),
-          fsList(env, "tickets")
+          fsList(env, "tickets"),
+          fsList(env, "submissions")
         ]);
-        data = { codes, lectures, exams, students, tickets };
+        data = { codes, lectures, exams, students, tickets, submissions, preselectLectureId };
       }
-      return htmlRes(renderLayout("لوحة الأدمن", settings, student, isAdmin, renderAdminPage(settings, isAdmin, data, error, notice)));
+      return htmlRes(renderLayout("لوحة الأدمن", settings, student, isAdmin, renderAdminPage(settings, isAdmin, data, section, error, notice)));
     }
 
     if (path === "/admin/login" && method === "POST") {
@@ -1554,7 +2035,7 @@ export default {
         return redirectRes(`/admin?error=${encodeURIComponent("بيانات دخول الأدمن غير صحيحة")}`);
       }
       const tok = makeToken({ role: "admin", email }, secret);
-      return redirectRes("/admin", {
+      return redirectRes("/admin?section=codes", {
         "Set-Cookie": setCookieHeader("nb_adm", tok)
       });
     }
@@ -1579,7 +2060,7 @@ export default {
           used_by: ""
         });
       }
-      return redirectRes(`/admin?notice=${encodeURIComponent(`تم توليد ${count} كود بنجاح`)}`);
+      return redirectRes(`/admin?section=codes&notice=${encodeURIComponent(`تم توليد ${count} كود بنجاح`)}`);
     }
 
     if (path === "/admin/add-lecture" && method === "POST") {
@@ -1588,33 +2069,49 @@ export default {
       const branch = String(form.branch || BRANCHES[0]);
       const grade = String(form.grade || GRADES[0]);
       const track = String(form.track || TRACKS[0]);
+      const orderNum = Number(form.order_num || 1);
       const videoUrl = String(form.video_url || "").trim();
       const id = "lec_" + Date.now();
-      await fsSet(env, "lectures", id, { title, branch, grade, track, video_url: videoUrl });
-      return redirectRes(`/admin?notice=${encodeURIComponent("تمت إضافة المحاضرة")}`);
+      await fsSet(env, "lectures", id, { title, branch, grade, track, order_num: orderNum, video_url: videoUrl });
+      return redirectRes(`/admin?section=exams&lecture_id=${encodeURIComponent(id)}&notice=${encodeURIComponent("تمت إضافة المحاضرة — أضف الآن أسئلة الواجب الخاصة بها")}`);
     }
 
     if (path === "/admin/delete-lecture" && method === "POST") {
       const form = await parseFormBody(req);
       const lectureId = String(form.lecture_id || "");
       if (lectureId) await fsDelete(env, "lectures", lectureId);
-      return redirectRes(`/admin?notice=${encodeURIComponent("تم حذف المحاضرة")}`);
+      return redirectRes(`/admin?section=lectures&notice=${encodeURIComponent("تم حذف المحاضرة")}`);
     }
 
     if (path === "/admin/add-exam" && method === "POST") {
       const form = await parseFormBody(req);
       const title = String(form.title || "").trim();
       const branch = String(form.branch || BRANCHES[0]);
-      const qText = String(form.q_text || "").trim();
-      const options = [String(form.opt0 || "").trim(), String(form.opt1 || "").trim(), String(form.opt2 || "").trim()];
-      const correctIdx = Number(form.correct_idx || 0);
+      const lectureId = String(form.lecture_id || "").trim();
+      let questions = [];
+      try {
+        questions = JSON.parse(String(form.questions_json || "[]"));
+      } catch {
+        questions = [];
+      }
+      if (!title || !Array.isArray(questions) || questions.length === 0) {
+        return redirectRes(`/admin?section=exams&error=${encodeURIComponent("يرجى كتابة العنوان وإضافة سؤال واحد على الأقل")}`);
+      }
       const id = "ex_" + Date.now();
       await fsSet(env, "exams", id, {
         title,
         branch,
-        questions: [{ text: qText, options, correct_idx: correctIdx }]
+        lecture_id: lectureId,
+        questions
       });
-      return redirectRes(`/admin?notice=${encodeURIComponent("تم نشر الاختبار")}`);
+      return redirectRes(`/admin?section=exams&notice=${encodeURIComponent("تم نشر الواجب / الاختبار بنجاح")}`);
+    }
+
+    if (path === "/admin/delete-exam" && method === "POST") {
+      const form = await parseFormBody(req);
+      const examId = String(form.exam_id || "");
+      if (examId) await fsDelete(env, "exams", examId);
+      return redirectRes(`/admin?section=exams&notice=${encodeURIComponent("تم حذف الاختبار")}`);
     }
 
     if (path === "/admin/grant-branches" && method === "POST") {
@@ -1622,10 +2119,10 @@ export default {
       const phone = String(form.phone || "").trim();
       const selected = Array.isArray(form.branches) ? form.branches : (form.branches ? [form.branches] : []);
       const st = await fsGet(env, "students", phone);
-      if (!st) return redirectRes(`/admin?error=${encodeURIComponent("الطالب غير موجود")}`);
+      if (!st) return redirectRes(`/admin?section=students&error=${encodeURIComponent("الطالب غير موجود")}`);
       const branches = Array.from(new Set([...(st.branches || []), ...selected]));
       await fsSet(env, "students", phone, { ...st, branches });
-      return redirectRes(`/admin?notice=${encodeURIComponent("تم تفعيل الفروع للطالب")}`);
+      return redirectRes(`/admin?section=students&notice=${encodeURIComponent("تم تفعيل الفروع للطالب")}`);
     }
 
     if (path === "/admin/reply-ticket" && method === "POST") {
@@ -1634,7 +2131,7 @@ export default {
       const reply = String(form.reply || "").trim();
       const t = await fsGet(env, "tickets", ticketId);
       if (t) await fsSet(env, "tickets", ticketId, { ...t, reply });
-      return redirectRes(`/admin?notice=${encodeURIComponent("تم حفظ الرد على التذكرة")}`);
+      return redirectRes(`/admin?section=tickets&notice=${encodeURIComponent("تم حفظ الرد على التذكرة")}`);
     }
 
     if (path === "/admin/settings" && method === "POST") {
@@ -1646,7 +2143,7 @@ export default {
         teacher_image: String(form.teacher_image || settings.teacher_image),
         global_notice: String(form.global_notice || "")
       });
-      return redirectRes(`/admin?notice=${encodeURIComponent("تم حفظ إعدادات المنصة")}`);
+      return redirectRes(`/admin?section=settings&notice=${encodeURIComponent("تم حفظ إعدادات المنصة")}`);
     }
 
     return htmlRes("<h1>404 — الصفحة غير موجودة</h1>", 404);
