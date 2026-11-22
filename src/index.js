@@ -1652,4 +1652,3 @@ export default {
     return htmlRes("<h1>404 — الصفحة غير موجودة</h1>", 404);
   }
 };
-```[cite: 7]0
