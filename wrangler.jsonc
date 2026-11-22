@@ -1,11 +1,12 @@
 {
-  "name": "mr-mohammed-youssef-arabic",
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "arabic",
   "main": "src/index.js",
-  "compatibility_date": "2026-11-01",
+  "compatibility_date": "2026-04-01",
   "vars": {
-    "FIREBASE_PROJECT_ID": "ضع_هنا_PROJECT_ID_من_FIREBASE",
-    "FIREBASE_API_KEY": "ضع_هنا_API_KEY_من_FIREBASE",
-    "ADMIN_EMAIL": "mr@mo.com",
+    "FIREBASE_PROJECT_ID": "mr-mohmed",
+    "FIREBASE_API_KEY": "AIzaSyDmCu9lIUv7LDCw4VTwrhpA1PrIN7pa6Po",
+    "ADMIN_EMAIL": "mr@mohmed.com",
     "ADMIN_PASSWORD": "2026"
   }
 }
