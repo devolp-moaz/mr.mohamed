@@ -34,6 +34,8 @@ const EGYPT_GOVERNORATES = [
   "شمال سيناء"
 ];
 const TEACHER_MAIN_PHOTO = "https://www.mohammedyoussef2027.com/public/heroPhotos/teacher-photo.png";
+const DEFAULT_ADMIN_EMAIL = "mohmed@mr.com";
+const DEFAULT_ADMIN_PASS = "admin123456";
 
 async function sha256(val) {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(val || "")));
@@ -85,7 +87,12 @@ function redirectRes(location, extraHeaders = {}) {
 }
 
 function fsBase(env) {
-  return `https://firestore.googleapis.com/v1/projects/${env.FIREBASE_PROJECT_ID}/databases/(default)/documents`;
+  const projectId = env.FIREBASE_PROJECT_ID || "nour-albayan-ar";
+  return `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents`;
+}
+
+function fsKeyQuery(env) {
+  return env.FIREBASE_API_KEY ? `?key=${encodeURIComponent(env.FIREBASE_API_KEY)}` : "";
 }
 
 function toFsVal(v) {
@@ -123,36 +130,52 @@ function docToObj(doc) {
 }
 
 async function fsList(env, col) {
-  const res = await fetch(`${fsBase(env)}/${col}?key=${env.FIREBASE_API_KEY}`);
-  if (!res.ok) return [];
-  const data = await res.json();
-  return (data.documents || []).map(docToObj);
+  try {
+    const res = await fetch(`${fsBase(env)}/${col}${fsKeyQuery(env)}`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.documents || []).map(docToObj);
+  } catch {
+    return [];
+  }
 }
 
 async function fsGet(env, col, id) {
-  const res = await fetch(`${fsBase(env)}/${col}/${encodeURIComponent(id)}?key=${env.FIREBASE_API_KEY}`);
-  if (!res.ok) return null;
-  return docToObj(await res.json());
+  try {
+    const res = await fetch(`${fsBase(env)}/${col}/${encodeURIComponent(id)}${fsKeyQuery(env)}`);
+    if (!res.ok) return null;
+    return docToObj(await res.json());
+  } catch {
+    return null;
+  }
 }
 
 async function fsSet(env, col, id, obj) {
-  const fields = {};
-  for (const [k, v] of Object.entries(obj)) {
-    if (k !== "id") fields[k] = toFsVal(v);
+  try {
+    const fields = {};
+    for (const [k, v] of Object.entries(obj)) {
+      if (k !== "id") fields[k] = toFsVal(v);
+    }
+    const res = await fetch(`${fsBase(env)}/${col}/${encodeURIComponent(id)}${fsKeyQuery(env)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fields })
+    });
+    return res.ok;
+  } catch {
+    return false;
   }
-  const res = await fetch(`${fsBase(env)}/${col}/${encodeURIComponent(id)}?key=${env.FIREBASE_API_KEY}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ fields })
-  });
-  return res.ok;
 }
 
 async function fsDelete(env, col, id) {
-  const res = await fetch(`${fsBase(env)}/${col}/${encodeURIComponent(id)}?key=${env.FIREBASE_API_KEY}`, {
-    method: "DELETE"
-  });
-  return res.ok;
+  try {
+    const res = await fetch(`${fsBase(env)}/${col}/${encodeURIComponent(id)}${fsKeyQuery(env)}`, {
+      method: "DELETE"
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
 }
 
 async function getSettings(env) {
@@ -160,11 +183,34 @@ async function getSettings(env) {
   return {
     vodafone_number: saved.vodafone_number || "01066329782",
     admin_whatsapp: saved.admin_whatsapp || "201066329782",
-    admin_email: env.ADMIN_EMAIL || saved.admin_email || "mohmed@mr.com",
-    admin_password_hash: saved.admin_password_hash || (await sha256(env.ADMIN_PASSWORD || "admin123456")),
+    admin_email: saved.admin_email || env.ADMIN_EMAIL || DEFAULT_ADMIN_EMAIL,
+    admin_password: saved.admin_password || "",
+    admin_password_hash: saved.admin_password_hash || (await sha256(env.ADMIN_PASSWORD || DEFAULT_ADMIN_PASS)),
     global_notice: saved.global_notice || "",
     teacher_image: saved.teacher_image || TEACHER_MAIN_PHOTO
   };
+}
+
+async function verifyAdminCredentials(env, settings, emailInput, passwordInput) {
+  const cleanEmail = String(emailInput || "").trim().toLowerCase();
+  const rawPass = String(passwordInput || "");
+  if (!cleanEmail || !rawPass) return false;
+
+  const allowedEmails = new Set([
+    DEFAULT_ADMIN_EMAIL.toLowerCase(),
+    String(settings.admin_email || "").trim().toLowerCase(),
+    String(env.ADMIN_EMAIL || "").trim().toLowerCase()
+  ].filter(Boolean));
+
+  if (!allowedEmails.has(cleanEmail)) return false;
+
+  const passHash = await sha256(rawPass);
+  const validDefault = rawPass === DEFAULT_ADMIN_PASS;
+  const validEnv = Boolean(env.ADMIN_PASSWORD && rawPass === String(env.ADMIN_PASSWORD));
+  const validFirestorePlain = Boolean(settings.admin_password && rawPass === String(settings.admin_password));
+  const validSavedHash = Boolean(settings.admin_password_hash && passHash === String(settings.admin_password_hash));
+
+  return validDefault || validEnv || validFirestorePlain || validSavedHash;
 }
 
 function esc(s) {
@@ -261,9 +307,9 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       --err: #dc2626;
       --bdr: #cbd5e1;
       --glyph: rgba(30, 64, 175, 0.28);
-      --shadow: 0 14px 28px rgba(15, 23, 42, 0.16), 0 4px 0 #8a99ad;
-      --edge-ring: #4b6b43;
-      --edge-glow: rgba(75, 107, 67, 0.55);
+      --shadow: 0 18px 36px rgba(15, 23, 42, 0.22), 0 6px 0 #7b8ba1;
+      --edge-ring: #556b2f;
+      --edge-glow: rgba(85, 107, 47, 0.62);
     }
     body.dark {
       --bg: #070b14;
@@ -279,9 +325,9 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       --err: #f87171;
       --bdr: #334155;
       --glyph: rgba(56, 189, 248, 0.32);
-      --shadow: 0 16px 34px rgba(0, 0, 0, 0.65), 0 4px 0 #020617;
-      --edge-ring: #38bdf8;
-      --edge-glow: rgba(56, 189, 248, 0.65);
+      --shadow: 0 20px 42px rgba(0, 0, 0, 0.72), 0 6px 0 #020617;
+      --edge-ring: #2563eb;
+      --edge-glow: rgba(37, 99, 235, 0.72);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; }
     body {
@@ -307,10 +353,11 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       z-index: 60;
       background: var(--card);
       display: block;
-      transition: transform 0.2s ease;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
-    .floating-admin-avatar:hover {
-      transform: scale(1.08);
+    .floating-admin-avatar:hover, .floating-admin-avatar:active {
+      transform: scale(1.1);
+      box-shadow: 0 0 22px var(--edge-glow);
     }
     .floating-admin-avatar img {
       width: 100%;
@@ -367,7 +414,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       background: var(--card); border-bottom: 2px solid var(--edge-ring);
       padding: 10px 20px; display: flex; justify-content: space-between; align-items: center;
       gap: 12px; flex-wrap: wrap; position: sticky; top: 0; z-index: 20;
-      box-shadow: 0 6px 20px var(--edge-glow);
+      box-shadow: 0 8px 24px var(--edge-glow);
     }
     .brand-box { display: flex; align-items: center; gap: 10px; }
     .brand-logo-badge {
@@ -376,10 +423,73 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       color: #fff; font-weight: 900; display: grid; place-items: center; font-size: 1rem;
       box-shadow: 0 4px 0 rgba(15, 23, 42, 0.35);
     }
-    .theme-pill {
-      display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px;
-      border-radius: 999px; border: 1.5px solid var(--edge-ring); background: var(--card2);
-      color: var(--txt); font-weight: 800; cursor: pointer; font-size: 0.84rem;
+    .theme-switch-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .theme-switch-input {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .theme-switch-track {
+      position: relative;
+      width: 58px;
+      height: 30px;
+      border-radius: 999px;
+      background: #0f172a;
+      border: 2px solid var(--edge-ring);
+      box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.65), 0 0 12px var(--edge-glow);
+      transition: background 0.25s ease, box-shadow 0.25s ease;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+    .theme-switch-track::before {
+      content: "";
+      position: absolute;
+      top: 3px;
+      left: 4px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 3px solid #f8fafc;
+      background: transparent;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+      transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.25s ease, box-shadow 0.25s ease;
+    }
+    .theme-switch-track::after {
+      content: "";
+      position: absolute;
+      top: 5px;
+      right: 7px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: rgba(148, 163, 184, 0.22);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      transition: transform 0.28s ease, background 0.25s ease;
+    }
+    .theme-switch-input:checked + .theme-switch-track {
+      background: #172554;
+      box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.65), 0 0 18px #3b82f6;
+    }
+    .theme-switch-input:checked + .theme-switch-track::before {
+      transform: translateX(28px);
+      border-color: #60a5fa;
+      box-shadow: 0 0 12px #3b82f6;
+    }
+    .theme-switch-input:checked + .theme-switch-track::after {
+      transform: translateX(-28px);
+      background: rgba(59, 130, 246, 0.28);
+    }
+    .theme-switch-label {
+      font-weight: 800;
+      font-size: 0.82rem;
+      color: var(--txt);
     }
     .glow-notice-wrap {
       position: relative;
@@ -419,58 +529,91 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       align-items: center;
       gap: 10px;
     }
-    @keyframes edgeSpinRing {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
     .card, .right-drawer, .landing-hero-card, .course-card, .blue-week-banner, .blue-lesson-strip, .student-detail-box, .q-builder-card {
       position: relative;
-      transform: perspective(1000px) rotateX(0.8deg) translateY(0);
+      transform: perspective(1000px) rotateX(1.2deg) translateY(0);
       transition: transform 0.25s ease, box-shadow 0.25s ease;
     }
     .card, .right-drawer, .landing-hero-card, .course-card, .student-detail-box, .q-builder-card {
-      border: 2px solid transparent;
-      background-image: linear-gradient(var(--card), var(--card)), conic-gradient(from 0deg, var(--edge-ring), transparent 28%, var(--edge-ring) 52%, transparent 78%, var(--edge-ring));
+      border: 3px solid transparent;
+      background-image: linear-gradient(var(--card), var(--card)), conic-gradient(from 0deg, var(--edge-ring), transparent 24%, var(--edge-ring) 50%, transparent 74%, var(--edge-ring));
       background-origin: border-box;
       background-clip: padding-box, border-box;
-      box-shadow: var(--shadow), 0 0 18px var(--edge-glow);
+      box-shadow: var(--shadow), 0 0 22px var(--edge-glow);
     }
     .card:hover, .course-card:hover, .landing-hero-card:hover {
-      transform: perspective(1000px) rotateX(0deg) translateY(-4px);
-      box-shadow: 0 20px 38px rgba(15, 23, 42, 0.22), 0 6px 0 #64748b, 0 0 24px var(--edge-glow);
+      transform: perspective(1000px) rotateX(0deg) translateY(-5px);
+      box-shadow: 0 24px 44px rgba(15, 23, 42, 0.28), 0 8px 0 #64748b, 0 0 28px var(--edge-glow);
     }
     .btn {
       display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-      padding: 9px 16px; border-radius: 10px; border: none; font-weight: 800;
+      padding: 9px 16px; border-radius: 12px; border: none; font-weight: 800;
       cursor: pointer; text-decoration: none; font-size: 0.9rem;
-      box-shadow: 0 4px 0 rgba(15, 23, 42, 0.28), 0 6px 14px rgba(15, 23, 42, 0.14);
-      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      box-shadow: 0 5px 0 rgba(15, 23, 42, 0.34), 0 8px 18px rgba(15, 23, 42, 0.18);
+      transition: transform 0.14s ease, box-shadow 0.14s ease, filter 0.14s ease;
+    }
+    .btn:hover {
+      filter: brightness(1.06);
+      box-shadow: 0 6px 0 rgba(15, 23, 42, 0.36), 0 0 20px var(--edge-glow);
     }
     .btn:active {
-      transform: translateY(2px);
-      box-shadow: 0 2px 0 rgba(15, 23, 42, 0.28);
+      transform: translateY(3px) scale(0.98);
+      box-shadow: 0 2px 0 rgba(15, 23, 42, 0.3), 0 0 28px var(--edge-ring), 0 0 42px var(--edge-glow);
+      filter: brightness(1.16);
     }
     .btn-blue { background: var(--pri); color: #fff; }
     .btn-teal { background: var(--teal); color: #fff; }
     .btn-gold { background: var(--gold); color: #fff; }
     .btn-red { background: var(--err); color: #fff; }
-    .btn-out { background: transparent; color: var(--txt); border: 1.5px solid var(--edge-ring); box-shadow: 0 3px 0 var(--edge-glow); }
-    .btn-sm { padding: 6px 12px; font-size: 0.82rem; border-radius: 8px; }
-    .field { margin-bottom: 12px; }
-    label { display: block; font-weight: 700; margin-bottom: 5px; font-size: 0.9rem; }
+    .btn-out { background: transparent; color: var(--txt); border: 1.5px solid var(--edge-ring); box-shadow: 0 4px 0 var(--edge-glow); }
+    .btn-sm { padding: 6px 12px; font-size: 0.82rem; border-radius: 10px; }
+    .field { margin-bottom: 14px; }
+    label { display: block; font-weight: 700; margin-bottom: 6px; font-size: 0.9rem; }
     input, select, textarea {
-      width: 100%; padding: 10px 12px; border-radius: 10px; border: 1.5px solid var(--bdr);
-      background: var(--card2); color: var(--txt); font-size: 0.93rem; outline: none;
-      box-shadow: inset 0 2px 5px rgba(15, 23, 42, 0.12);
+      width: 100%;
+      padding: 11px 18px;
+      border-radius: 22px;
+      border: 3px solid transparent;
+      background-image:
+        linear-gradient(#ffffff, #ffffff),
+        linear-gradient(90deg, #a78bfa, #fbcfe8, #93c5fd, #c4b5fd);
+      background-origin: border-box;
+      background-clip: padding-box, border-box;
+      color: #0f172a;
+      font-size: 0.94rem;
+      font-weight: 700;
+      outline: none;
+      box-shadow: 0 8px 22px rgba(167, 139, 250, 0.22), 0 4px 12px rgba(244, 114, 182, 0.14);
+      transition: box-shadow 0.2s ease, transform 0.2s ease;
     }
-    textarea { min-height: 84px; resize: vertical; }
+    body.dark input, body.dark select, body.dark textarea {
+      background-image:
+        linear-gradient(#0f172a, #0f172a),
+        linear-gradient(90deg, #60a5fa, #a78bfa, #f472b6, #38bdf8);
+      color: #f8fafc;
+      box-shadow: 0 8px 24px rgba(37, 99, 235, 0.28), 0 4px 14px rgba(167, 139, 250, 0.2);
+    }
+    input:focus, select:focus, textarea:focus {
+      transform: translateY(-1px);
+      box-shadow: 0 0 0 4px rgba(167, 139, 250, 0.28), 0 10px 26px rgba(139, 92, 246, 0.34);
+    }
+    input[type="radio"], input[type="checkbox"], input[type="file"] {
+      border-radius: 10px;
+      box-shadow: none;
+      background-image: none;
+      background: var(--card2);
+      border: 1.5px solid var(--bdr);
+      color: var(--txt);
+      padding: 6px;
+    }
+    textarea { min-height: 90px; resize: vertical; }
     .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; }
     .grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
     .row {
-      background: var(--card2); border: 1.5px solid var(--bdr); border-radius: 12px;
+      background: var(--card2); border: 2px solid var(--edge-ring); border-radius: 14px;
       padding: 12px 14px; margin-top: 10px; display: flex; justify-content: space-between;
       align-items: center; gap: 10px; flex-wrap: wrap;
-      box-shadow: 0 5px 14px rgba(15, 23, 42, 0.1), 0 2px 0 rgba(100, 116, 139, 0.35);
+      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.14), 0 3px 0 var(--edge-glow);
     }
     .pill { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 0.78rem; font-weight: 800; }
     .pill-ok { background: var(--teal-soft); color: var(--teal); }
@@ -498,14 +641,25 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .collapse-btn {
       width: 28px; height: 28px; border-radius: 8px; border: none;
       background: var(--pri); color: #fff; font-weight: 900; cursor: pointer;
+      box-shadow: 0 3px 0 rgba(15, 23, 42, 0.35);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .collapse-btn:active {
+      transform: translateY(2px);
+      box-shadow: 0 0 22px var(--edge-glow);
     }
     .nav-item-link {
       display: flex; align-items: center; gap: 10px; width: 100%; text-align: right;
       padding: 10px 12px; border-radius: 10px; border: none; background: transparent;
       color: var(--txt); font-weight: 800; text-decoration: none; cursor: pointer;
       font-size: 0.9rem; margin-bottom: 4px;
+      transition: transform 0.14s ease, box-shadow 0.14s ease;
     }
-    .nav-item-link.active { background: var(--pri); color: #fff; }
+    .nav-item-link:active {
+      transform: scale(0.98);
+      box-shadow: 0 0 20px var(--edge-glow);
+    }
+    .nav-item-link.active { background: var(--pri); color: #fff; box-shadow: 0 4px 14px var(--edge-glow); }
     .sub-nav { padding-right: 16px; margin-bottom: 6px; }
     .sub-link {
       display: block; padding: 6px 10px; border-radius: 8px; color: var(--muted);
@@ -516,9 +670,9 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-bottom: 16px; }
     .kpi-card {
       background: linear-gradient(135deg, var(--pri) 0%, #0f172a 100%);
-      color: #fff; border-radius: 14px; padding: 18px; border: 2px solid var(--edge-ring);
+      color: #fff; border-radius: 16px; padding: 18px; border: 3px solid var(--edge-ring);
       display: flex; justify-content: space-between; align-items: center;
-      box-shadow: var(--shadow), 0 0 16px var(--edge-glow);
+      box-shadow: var(--shadow), 0 0 20px var(--edge-glow);
     }
     .kpi-card.teal-kpi { background: linear-gradient(135deg, var(--teal) 0%, #042f2e 100%); }
     .kpi-card.gold-kpi { background: linear-gradient(135deg, var(--gold) 0%, #451a03 100%); }
@@ -530,7 +684,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     }
     .progress-layout { display: grid; grid-template-columns: 280px 1fr; gap: 16px; margin-bottom: 16px; }
     @media (max-width: 820px) { .progress-layout { grid-template-columns: 1fr; } }
-    .progress-frame { background: var(--card); border: 2px solid var(--edge-ring); border-radius: 16px; padding: 18px; text-align: center; box-shadow: var(--shadow), 0 0 16px var(--edge-glow); }
+    .progress-frame { background: var(--card); border: 3px solid var(--edge-ring); border-radius: 16px; padding: 18px; text-align: center; box-shadow: var(--shadow), 0 0 20px var(--edge-glow); }
     .teacher-color-meter {
       position: relative; width: 144px; height: 185px; margin: 8px auto 10px;
       border-radius: 16px; overflow: hidden; border: 2px solid var(--bdr); background: var(--card2);
@@ -549,8 +703,8 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .blue-week-banner {
       background: linear-gradient(90deg, #1d4ed8 0%, #2563eb 55%, #1e40af 100%);
       color: #fff;
-      border-radius: 14px;
-      border: 2px solid var(--edge-ring);
+      border-radius: 16px;
+      border: 3px solid var(--edge-ring);
       padding: 16px 20px;
       margin-bottom: 14px;
       display: flex;
@@ -558,7 +712,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       align-items: center;
       gap: 14px;
       flex-wrap: wrap;
-      box-shadow: var(--shadow), 0 0 18px var(--edge-glow);
+      box-shadow: var(--shadow), 0 0 22px var(--edge-glow);
     }
     .you-here-pill {
       display: inline-flex;
@@ -575,8 +729,8 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     }
     .blue-lesson-strip {
       background: #0b1324;
-      border: 2px solid var(--edge-ring);
-      border-radius: 12px;
+      border: 2.5px solid var(--edge-ring);
+      border-radius: 14px;
       padding: 12px 16px;
       margin-top: 10px;
       display: flex;
@@ -585,7 +739,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       gap: 12px;
       flex-wrap: wrap;
       color: #f8fafc;
-      box-shadow: 0 8px 20px rgba(2, 6, 23, 0.45), 0 0 12px var(--edge-glow);
+      box-shadow: 0 10px 24px rgba(2, 6, 23, 0.52), 0 0 16px var(--edge-glow);
     }
     .blue-strip-left {
       display: flex;
@@ -610,7 +764,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       align-items: center;
       justify-content: center;
       padding: 6px 14px;
-      border-radius: 8px;
+      border-radius: 10px;
       background: #2563eb;
       color: #fff;
       font-weight: 800;
@@ -618,10 +772,17 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       text-decoration: none;
       border: none;
       cursor: pointer;
-      box-shadow: 0 3px 0 #1e3a8a;
+      box-shadow: 0 4px 0 #1e3a8a, 0 6px 14px rgba(37, 99, 235, 0.35);
+      transition: transform 0.14s ease, box-shadow 0.14s ease, filter 0.14s ease;
     }
     .blue-action-btn:hover {
       background: #1d4ed8;
+      box-shadow: 0 5px 0 #1e3a8a, 0 0 20px var(--edge-glow);
+    }
+    .blue-action-btn:active {
+      transform: translateY(2px) scale(0.98);
+      box-shadow: 0 2px 0 #1e3a8a, 0 0 28px var(--edge-ring), 0 0 40px var(--edge-glow);
+      filter: brightness(1.16);
     }
     .branch-book-card {
       display: flex; align-items: center; gap: 12px;
@@ -694,10 +855,11 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       border: 2px solid var(--edge-ring);
       box-shadow: 0 6px 16px var(--edge-glow);
       display: block;
-      transition: transform 0.2s ease;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
-    .bottom-admin-img-btn:hover {
-      transform: scale(1.08);
+    .bottom-admin-img-btn:hover, .bottom-admin-img-btn:active {
+      transform: scale(1.1);
+      box-shadow: 0 0 24px var(--edge-glow);
     }
     .bottom-admin-img-btn img {
       width: 100%;
@@ -713,8 +875,8 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     @media (max-width: 840px) { .split-auth { grid-template-columns: 1fr; } }
     .promo-pane {
       background: linear-gradient(160deg, var(--pri) 0%, var(--teal) 62%, #0f172a 100%);
-      color: #fff; border-radius: 20px; padding: 26px; border: 2px solid var(--edge-ring);
-      box-shadow: var(--shadow), 0 0 18px var(--edge-glow);
+      color: #fff; border-radius: 20px; padding: 26px; border: 3px solid var(--edge-ring);
+      box-shadow: var(--shadow), 0 0 22px var(--edge-glow);
       display: flex; flex-direction: column; justify-content: space-between; min-height: 460px;
     }
     .promo-pane.gold-mode { background: linear-gradient(160deg, var(--gold) 0%, var(--teal) 65%, #0f172a 100%); }
@@ -727,9 +889,9 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .step-fill { height: 100%; background: var(--teal); }
     .secure-player-box {
       position: relative; width: 100%; max-width: 780px; margin: 12px auto 0;
-      border-radius: 14px; overflow: hidden; background: #000;
-      border: 2px solid var(--edge-ring); user-select: none;
-      box-shadow: var(--shadow), 0 0 18px var(--edge-glow);
+      border-radius: 16px; overflow: hidden; background: #000;
+      border: 3px solid var(--edge-ring); user-select: none;
+      box-shadow: var(--shadow), 0 0 22px var(--edge-glow);
       transition: max-width 0.3s ease;
     }
     .secure-player-box.ratio-16-9 {
@@ -798,8 +960,12 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
           <div class="muted" style="font-size:0.78rem; font-weight:700;">اللغة العربية للثانوية الأزهرية (خبرة 30 عاماً)</div>
         </div>
       </div>
-      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-        <button type="button" class="theme-pill" id="themeToggle">☀️ نهار / 🌙 ليل</button>
+      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        <label class="theme-switch-wrap" title="تبديل الليل والنهار">
+          <input type="checkbox" class="theme-switch-input" id="themeToggle" />
+          <span class="theme-switch-track"></span>
+          <span class="theme-switch-label" id="themeLabelText">نهار</span>
+        </label>
         <a class="btn btn-out btn-sm" href="/">الرئيسية</a>
         <a class="btn btn-out btn-sm" href="/student">بوابة الطالب</a>
         ${(student || isAdmin) ? `<a class="btn btn-red btn-sm" href="/logout">خروج</a>` : ""}
@@ -826,11 +992,21 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     ${bodyHtml}
   </div>
   <script>
-    if (localStorage.getItem("nb_py_theme") === "dark") document.body.classList.add("dark");
-    document.getElementById("themeToggle").addEventListener("click", function () {
-      const dark = document.body.classList.toggle("dark");
-      localStorage.setItem("nb_py_theme", dark ? "dark" : "light");
-    });
+    (function () {
+      const toggleEl = document.getElementById("themeToggle");
+      const labelEl = document.getElementById("themeLabelText");
+      const isSavedDark = localStorage.getItem("nb_py_theme") === "dark";
+      if (isSavedDark) {
+        document.body.classList.add("dark");
+        if (toggleEl) toggleEl.checked = true;
+        if (labelEl) labelEl.textContent = "ليلي";
+      }
+      toggleEl?.addEventListener("change", function () {
+        const dark = document.body.classList.toggle("dark", toggleEl.checked);
+        localStorage.setItem("nb_py_theme", dark ? "dark" : "light");
+        if (labelEl) labelEl.textContent = dark ? "ليلي" : "نهار";
+      });
+    })();
     (function setupDuaOnOpenOrRefresh() {
       const banner = document.getElementById("inlineDuaBanner");
       if (!banner) return;
@@ -984,7 +1160,7 @@ function renderStudentAuth(settings, authTab, step, draft, error, notice) {
       </div>
       <div class="card" style="margin-bottom:0;">
         <h2 style="text-align:center; font-weight:900; margin-bottom:6px;">أهلاً تاني! جاهز للمذاكرة؟</h2>
-        <p class="muted" style="text-align:center; font-size:0.88rem; margin-bottom:14px;">ادخل على حسابك برقم الهاتف وكلمة السر من أي جهاز، أو أدخل كود السنتر لفتح المنصة فوراً.</p>
+        <p class="muted" style="text-align:center; font-size:0.88rem; margin-bottom:14px;">ادخل على حسابك برقم الهاتف وكلمة السر من أي جهاز في نفس الوقت، أو أدخل كود السنتر لفتح المنصة فوراً.</p>
         <div style="display:flex; gap:8px; justify-content:center; margin-bottom:16px; border-bottom:1px solid var(--bdr); padding-bottom:10px; flex-wrap:wrap;">
           <a class="btn btn-blue btn-sm" href="/student?tab=login">تسجيل الدخول برقم الهاتف</a>
           <a class="btn btn-teal btn-sm" href="/student?tab=center">دخول بكود السنتر</a>
@@ -1671,7 +1847,7 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
     return `
     <div class="card" style="max-width:460px; margin:28px auto;">
       <h2 style="font-weight:900; margin-bottom:8px;">دخول لوحة تحكم الأدمن</h2>
-      <p class="muted" style="font-size:0.86rem; margin-bottom:14px;">أدخل بيانات الإدارة لإدارة الأكواد والمحاضرات والاختبارات والطلاب.</p>
+      <p class="muted" style="font-size:0.86rem; margin-bottom:14px;">أدخل بيانات الإدارة لفتح اللوحة من أي جهاز وفي نفس الوقت.</p>
       ${error ? `<div class="msg-err">${esc(error)}</div>` : ""}
       <form method="post" action="/admin/login" autocomplete="off">
         <div class="field"><label>البريد الإلكتروني</label><input name="email" type="email" required autocomplete="off" placeholder="mohmed@mr.com" /></div>
@@ -1747,7 +1923,7 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
 
   const ticketsRows = (data.tickets || []).map(t => `
     <div class="row" style="display:block;">
-      <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
         <strong>${esc(t.subject)}</strong>
         <span class="muted" style="font-size:0.8rem;">${esc(t.student_name || "")} (${esc(t.student_phone || "")})</span>
       </div>
@@ -2207,15 +2383,19 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
   } else if (activeSec === "settings") {
     sectionHtml = `
       <div class="card">
-        <h3 style="font-weight:900; margin-bottom:10px;">إعدادات المنصة وإشعار التنبيه الشفاف</h3>
+        <h3 style="font-weight:900; margin-bottom:10px;">إعدادات المنصة وبيانات الأدمن في Firebase</h3>
         <form method="post" action="/admin/settings">
+          <div class="grid2">
+            <div class="field"><label>بريد الأدمن (يوزر الدخول)</label><input name="admin_email" type="email" value="${esc(settings.admin_email)}" required /></div>
+            <div class="field"><label>كلمة مرور جديدة للأدمن (اتركها فارغة للإبقاء على الحالية)</label><input name="new_admin_password" type="password" placeholder="••••••••" /></div>
+          </div>
           <div class="grid2">
             <div class="field"><label>رقم فودافون كاش</label><input name="vodafone_number" type="text" value="${esc(settings.vodafone_number)}" /></div>
             <div class="field"><label>واتساب الإدارة</label><input name="admin_whatsapp" type="text" value="${esc(settings.admin_whatsapp)}" /></div>
           </div>
           <div class="field"><label>رابط صورة الأستاذ (اختياري)</label><input name="teacher_image" type="text" value="${esc(settings.teacher_image)}" /></div>
           <div class="field"><label>رسالة إشعار التنبيه الشفاف المتوهج (اتركه فارغاً لعدم ظهوره)</label><input name="global_notice" type="text" value="${esc(settings.global_notice)}" placeholder="اكتب رسالة التنبيه هنا..." /></div>
-          <button type="submit" class="btn btn-blue">حفظ الإعدادات</button>
+          <button type="submit" class="btn btn-blue">حفظ الإعدادات في Firebase</button>
         </form>
       </div>
     `;
@@ -2607,11 +2787,11 @@ export default {
       const form = await parseFormBody(req);
       const email = String(form.email || "").trim();
       const password = String(form.password || "");
-      const validPass = (await sha256(password)) === settings.admin_password_hash || (env.ADMIN_PASSWORD && password === env.ADMIN_PASSWORD);
-      if (email !== settings.admin_email || !validPass) {
+      const ok = await verifyAdminCredentials(env, settings, email, password);
+      if (!ok) {
         return redirectRes(`/admin?error=${encodeURIComponent("بيانات دخول الأدمن غير صحيحة")}`);
       }
-      const tok = makeToken({ role: "admin", email }, secret);
+      const tok = makeToken({ role: "admin", email, sid: Date.now() }, secret);
       return redirectRes("/admin?section=students", {
         "Set-Cookie": setCookieHeader("nb_adm", tok)
       });
@@ -2726,14 +2906,20 @@ export default {
 
     if (path === "/admin/settings" && method === "POST") {
       const form = await parseFormBody(req);
+      const nextAdminEmail = String(form.admin_email || settings.admin_email).trim();
+      const newAdminPass = String(form.new_admin_password || "").trim();
+      const nextPassHash = newAdminPass ? await sha256(newAdminPass) : settings.admin_password_hash;
       await fsSet(env, "settings", "main", {
         ...settings,
+        admin_email: nextAdminEmail,
+        admin_password: newAdminPass || settings.admin_password,
+        admin_password_hash: nextPassHash,
         vodafone_number: String(form.vodafone_number || settings.vodafone_number),
         admin_whatsapp: String(form.admin_whatsapp || settings.admin_whatsapp),
         teacher_image: String(form.teacher_image || settings.teacher_image),
         global_notice: String(form.global_notice || "")
       });
-      return redirectRes(`/admin?section=settings&notice=${encodeURIComponent("تم حفظ إعدادات المنصة")}`);
+      return redirectRes(`/admin?section=settings&notice=${encodeURIComponent("تم حفظ إعدادات المنصة في Firebase")}`);
     }
 
     return htmlRes("<h1>404 — الصفحة غير موجودة</h1>", 404);
