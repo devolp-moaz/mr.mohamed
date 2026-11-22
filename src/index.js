@@ -5,6 +5,34 @@ const GRADES = [
   "الثالث الثانوي الأزهري"
 ];
 const TRACKS = ["علمي", "أدبي"];
+const EGYPT_GOVERNORATES = [
+  "القاهرة",
+  "الجيزة",
+  "الإسكندرية",
+  "الدقهلية",
+  "البحر الأحمر",
+  "البحيرة",
+  "الفيوم",
+  "الغربية",
+  "الإسماعيلية",
+  "المنوفية",
+  "المنيا",
+  "القليوبية",
+  "الوادي الجديد",
+  "السويس",
+  "أسوان",
+  "أسيوط",
+  "بني سويف",
+  "بورسعيد",
+  "دمياط",
+  "الشرقية",
+  "جنوب سيناء",
+  "كفر الشيخ",
+  "مطروح",
+  "الأقصر",
+  "قنا",
+  "شمال سيناء"
+];
 const TEACHER_MAIN_PHOTO = "https://www.mohammedyoussef2027.com/public/heroPhotos/teacher-photo.png";
 
 async function sha256(val) {
@@ -162,7 +190,55 @@ function sortLectures(list) {
   });
 }
 
-function renderLayout(title, settings, student, isAdmin, bodyHtml) {
+function computeStudentMetrics(student, lectures, exams, submissions, watchedList) {
+  const stPhone = student.phone;
+  const stSubs = (submissions || []).filter(s => s.student_phone === stPhone);
+  const stWatched = (watchedList || []).filter(w => w.student_phone === stPhone);
+  const watchedSet = new Set(stWatched.map(w => String(w.lecture_id)));
+  const solvedExamSet = new Set(stSubs.map(s => String(s.exam_id)));
+
+  const totalLectures = (lectures || []).length;
+  const totalExams = (exams || []).length;
+  const watchedCount = watchedSet.size;
+  const solvedExamsCount = solvedExamSet.size;
+
+  const pendingLectures = Math.max(0, totalLectures - watchedCount);
+  const pendingExams = Math.max(0, totalExams - solvedExamsCount);
+
+  let avgPct = 0;
+  if (stSubs.length > 0) {
+    const sumPct = stSubs.reduce((acc, s) => {
+      const p = Number(s.pct ?? Math.round((Number(s.score || 0) / Math.max(1, Number(s.total || 1))) * 100));
+      return acc + p;
+    }, 0);
+    avgPct = Math.round(sumPct / stSubs.length);
+  }
+
+  const lecRatio = totalLectures > 0 ? watchedCount / totalLectures : 1;
+  const examRatio = totalExams > 0 ? solvedExamsCount / totalExams : 1;
+  const performanceScore = Math.round(avgPct * 0.6 + lecRatio * 20 + examRatio * 20);
+
+  let performanceLabel = "يحتاج متابعة";
+  if (performanceScore >= 85) performanceLabel = "ممتاز جداً";
+  else if (performanceScore >= 70) performanceLabel = "جيد جداً";
+  else if (performanceScore >= 50) performanceLabel = "متوسط";
+
+  return {
+    watchedCount,
+    solvedExamsCount,
+    pendingLectures,
+    pendingExams,
+    avgPct,
+    performanceScore,
+    performanceLabel,
+    submissions: stSubs
+  };
+}
+
+function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {}) {
+  const hideBottomAdminAvatar = Boolean(options.hideBottomAdminAvatar);
+  const hasNotice = Boolean(settings.global_notice && String(settings.global_notice).trim());
+
   return `<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -184,7 +260,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml) {
       --gold-soft: rgba(180, 83, 9, 0.14);
       --err: #dc2626;
       --bdr: #cbd5e1;
-      --glyph: rgba(30, 64, 175, 0.18);
+      --glyph: rgba(30, 64, 175, 0.28);
       --shadow: 0 10px 26px rgba(15, 23, 42, 0.08);
     }
     body.dark {
@@ -200,7 +276,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml) {
       --gold-soft: rgba(245, 158, 11, 0.18);
       --err: #f87171;
       --bdr: #334155;
-      --glyph: rgba(56, 189, 248, 0.2);
+      --glyph: rgba(56, 189, 248, 0.32);
       --shadow: 0 12px 30px rgba(0, 0, 0, 0.55);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; }
@@ -216,12 +292,12 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml) {
       position: fixed;
       bottom: 16px;
       left: 16px;
-      width: 44px;
-      height: 44px;
+      width: 46px;
+      height: 46px;
       border-radius: 50%;
       overflow: hidden;
       border: 2px solid var(--gold);
-      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.32);
       z-index: 60;
       background: var(--card);
       display: block;
@@ -271,14 +347,14 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml) {
     #arabicBg { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
     .ar-glyph {
       position: absolute; font-weight: 900; color: var(--glyph); user-select: none;
-      text-shadow: 0 2px 10px rgba(30, 64, 175, 0.12);
+      text-shadow: 0 2px 12px rgba(30, 64, 175, 0.16);
       will-change: transform;
-      animation: letterDrift var(--dur, 8s) ease-in-out var(--delay, 0s) infinite alternate;
+      animation: letterDrift var(--dur, 4.5s) ease-in-out var(--delay, 0s) infinite alternate;
     }
     @keyframes letterDrift {
-      0% { transform: translate(0px, 0px) rotate(-10deg) scale(0.96); }
-      50% { transform: translate(var(--dx, 32px), var(--dy, -38px)) rotate(12deg) scale(1.06); }
-      100% { transform: translate(calc(var(--dx, 32px) * -0.8), calc(var(--dy, -38px) * 0.9)) rotate(-14deg) scale(0.98); }
+      0% { transform: translate(0px, 0px) rotate(-14deg) scale(0.95); }
+      50% { transform: translate(var(--dx, 46px), var(--dy, -52px)) rotate(16deg) scale(1.08); }
+      100% { transform: translate(calc(var(--dx, 46px) * -0.9), calc(var(--dy, -52px) * 0.95)) rotate(-18deg) scale(1); }
     }
     .page-layer { position: relative; z-index: 1; }
     .topbar {
@@ -297,10 +373,43 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml) {
       border-radius: 999px; border: 1px solid var(--bdr); background: var(--card2);
       color: var(--txt); font-weight: 800; cursor: pointer; font-size: 0.84rem;
     }
-    .global-alert {
-      max-width: 1240px; margin: 12px auto 0; background: var(--gold-soft);
-      border: 1px solid var(--gold); color: var(--gold);
-      border-radius: 12px; padding: 10px 16px; font-weight: 800;
+    .glow-notice-wrap {
+      position: relative;
+      max-width: 1240px;
+      margin: 14px auto 0;
+      padding: 2px;
+      border-radius: 16px;
+      z-index: 15;
+    }
+    .glow-notice-wrap::before {
+      content: "";
+      position: absolute;
+      inset: -3px;
+      border-radius: 18px;
+      background: linear-gradient(90deg, #2563eb, #06b6d4, #f59e0b, #10b981, #8b5cf6, #2563eb);
+      background-size: 300% 300%;
+      filter: blur(8px);
+      opacity: 0.9;
+      z-index: -1;
+      animation: rgbGlowFlow 4.5s linear infinite;
+    }
+    @keyframes rgbGlowFlow {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    .glow-notice-box {
+      background: rgba(15, 23, 42, 0.72);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      color: #f8fafc;
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      border-radius: 14px;
+      padding: 12px 18px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
     .card {
       background: var(--card); border: 1px solid var(--bdr); border-radius: 16px;
@@ -406,23 +515,92 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml) {
       background: var(--card); border: 1px solid var(--bdr); border-radius: 16px;
       overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; box-shadow: var(--shadow);
     }
-    .branch-hero-banner {
-      background: linear-gradient(135deg, #0f172a 0%, var(--pri) 55%, var(--teal) 100%);
-      color: #fff; border-radius: 16px; padding: 18px; margin-bottom: 16px;
-      display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;
+    .blue-week-banner {
+      background: linear-gradient(90deg, #1d4ed8 0%, #2563eb 55%, #1e40af 100%);
+      color: #fff;
+      border-radius: 14px;
+      padding: 16px 20px;
+      margin-bottom: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+      box-shadow: 0 8px 22px rgba(29, 78, 216, 0.28);
+    }
+    .you-here-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 16px;
+      border-radius: 10px;
+      border: 1.5px solid rgba(255, 255, 255, 0.85);
+      background: rgba(255, 255, 255, 0.14);
+      color: #fff;
+      font-weight: 900;
+      font-size: 0.88rem;
+      white-space: nowrap;
+    }
+    .blue-lesson-strip {
+      background: #0b1324;
+      border: 1px solid #1e3a8a;
+      border-radius: 12px;
+      padding: 12px 16px;
+      margin-top: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      color: #f8fafc;
+    }
+    .blue-strip-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .blue-play-badge {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: rgba(37, 99, 235, 0.22);
+      border: 1px solid #3b82f6;
+      color: #60a5fa;
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+      font-size: 0.9rem;
+    }
+    .blue-action-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 14px;
+      border-radius: 8px;
+      background: #2563eb;
+      color: #fff;
+      font-weight: 800;
+      font-size: 0.84rem;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+    }
+    .blue-action-btn:hover {
+      background: #1d4ed8;
     }
     .branch-book-card {
       display: flex; align-items: center; gap: 12px;
       background: rgba(255, 255, 255, 0.12); border: 1px solid rgba(255, 255, 255, 0.25);
-      padding: 10px 14px; border-radius: 14px;
+      padding: 8px 12px; border-radius: 12px;
     }
     .branch-book-card img {
-      width: 74px; height: 96px; object-fit: contain; object-position: center top;
-      background: rgba(15, 23, 42, 0.45); border-radius: 10px; border: 2px solid #fff;
+      width: 58px; height: 74px; object-fit: contain; object-position: center top;
+      background: rgba(15, 23, 42, 0.45); border-radius: 8px; border: 2px solid #fff;
     }
     .course-banner {
       min-height: 158px; position: relative; overflow: hidden;
-      background: linear-gradient(135deg, var(--pri), var(--teal), var(--gold));
+      background: linear-gradient(135deg, #1d4ed8, #1e40af, #0f172a);
       color: #fff; padding: 14px; display: flex; justify-content: space-between; align-items: flex-end; gap: 10px;
     }
     .course-banner img.book-thumb {
@@ -431,6 +609,72 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml) {
     }
     .course-body { padding: 14px; }
     .course-title { font-weight: 900; font-size: 1rem; margin-bottom: 8px; }
+    .landing-hero-box {
+      max-width: 1140px;
+      margin: 18px auto 0;
+      padding: 0 14px;
+    }
+    .landing-hero-card {
+      background: var(--card);
+      border: 1px solid var(--bdr);
+      border-radius: 22px;
+      padding: 24px;
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 24px;
+      align-items: center;
+    }
+    @media (max-width: 860px) { .landing-hero-card { grid-template-columns: 1fr; } }
+    .hero-teacher-frame {
+      background: linear-gradient(160deg, var(--pri) 0%, var(--teal) 65%, #0f172a 100%);
+      border-radius: 18px;
+      padding: 14px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 360px;
+    }
+    .hero-teacher-frame img {
+      width: 100%;
+      max-height: 360px;
+      object-fit: contain;
+      object-position: center top;
+      border-radius: 14px;
+      display: block;
+    }
+    .landing-start-section {
+      max-width: 1140px;
+      margin: 26px auto 18px;
+      padding: 0 14px;
+    }
+    .landing-bottom-admin {
+      max-width: 1140px;
+      margin: 34px auto 46px;
+      padding: 0 14px;
+      display: flex;
+      justify-content: center;
+    }
+    .bottom-admin-img-btn {
+      width: 66px;
+      height: 66px;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 3px solid var(--gold);
+      box-shadow: 0 8px 22px rgba(0, 0, 0, 0.25);
+      display: block;
+      transition: transform 0.2s ease;
+    }
+    .bottom-admin-img-btn:hover {
+      transform: scale(1.08);
+    }
+    .bottom-admin-img-btn img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center top;
+      display: block;
+    }
     .split-auth {
       max-width: 1060px; margin: 18px auto; padding: 0 14px;
       display: grid; grid-template-columns: 1fr 1.1fr; gap: 20px; align-items: stretch;
@@ -487,20 +731,29 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml) {
       gap: 8px;
       margin-top: 8px;
     }
+    .student-detail-box {
+      background: var(--card2);
+      border: 1px solid var(--bdr);
+      border-radius: 14px;
+      padding: 16px;
+      margin-top: 14px;
+    }
   </style>
 </head>
 <body>
   <div id="arabicBg" aria-hidden="true"></div>
-  <a class="floating-admin-avatar" href="/admin" aria-label="Admin">
-    <img src="${esc(settings.teacher_image)}" alt="" onerror="this.style.display='none';" />
-  </a>
+  ${!hideBottomAdminAvatar ? `
+    <a class="floating-admin-avatar" href="/admin" aria-label="Admin">
+      <img src="${esc(settings.teacher_image)}" alt="" onerror="this.style.display='none';" />
+    </a>
+  ` : ""}
   <div class="page-layer">
     <header class="topbar">
       <div class="brand-box">
         <div class="brand-logo-badge">جخ</div>
         <div>
           <div style="font-weight:900; font-size:1.05rem; color:var(--pri);">نور البيان — أ. محمد يوسف</div>
-          <div class="muted" style="font-size:0.78rem; font-weight:700;">اللغة العربية للثانوية الأزهرية (خبرة 20 عاماً)</div>
+          <div class="muted" style="font-size:0.78rem; font-weight:700;">اللغة العربية للثانوية الأزهرية (خبرة 30 عاماً)</div>
         </div>
       </div>
       <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
@@ -515,12 +768,19 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml) {
         <img class="inline-dua-avatar" src="${esc(settings.teacher_image)}" alt="الأستاذ محمد يوسف" onerror="this.style.display='none';" />
         <div>
           <div class="inline-dua-text">اللهم فهمني كما فهمت داوود وسليمان</div>
-          <div class="inline-dua-sub">دعاء البداية • الأستاذ محمد يوسف — مدرس أول اللغة العربية الأزهرية</div>
+          <div class="inline-dua-sub">دعاء البداية • الأستاذ محمد يوسف — معلم أول اللغة العربية الأزهرية</div>
         </div>
       </div>
       <button type="button" class="btn btn-out btn-sm" style="color:#fff; border-color:rgba(255,255,255,0.35);" id="hideDuaBtn">إخفاء</button>
     </div>
-    ${settings.global_notice ? `<div class="global-alert">📢 تنبيه الإدارة: ${esc(settings.global_notice)}</div>` : ""}
+    ${hasNotice ? `
+      <div class="glow-notice-wrap">
+        <div class="glow-notice-box">
+          <span>📢</span>
+          <span>${esc(settings.global_notice)}</span>
+        </div>
+      </div>
+    ` : ""}
     ${bodyHtml}
   </div>
   <script>
@@ -551,18 +811,18 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml) {
       const container = document.getElementById("arabicBg");
       const letters = "أبجدهوزحطيكلمنسعفصقرشتثخذضظغى".split("");
       const sides = ["right", "left"];
-      for (let i = 0; i < 42; i++) {
+      for (let i = 0; i < 44; i++) {
         const span = document.createElement("span");
         span.className = "ar-glyph";
         span.textContent = letters[i % letters.length];
         const side = sides[i % 2];
         const horiz = 2 + ((i * 19) % 24);
         const vert = 3 + ((i * 13) % 90);
-        const size = 28 + ((i * 7) % 32);
-        const dur = 6 + ((i * 2) % 5);
-        const delay = -((i * 1.4) % 8);
-        const dx = (i % 2 === 0 ? 1 : -1) * (24 + (i % 24));
-        const dy = (i % 3 === 0 ? -1 : 1) * (28 + (i % 26));
+        const size = 30 + ((i * 7) % 34);
+        const dur = 3.8 + ((i * 2) % 4) * 0.7;
+        const delay = -((i * 1.1) % 6);
+        const dx = (i % 2 === 0 ? 1 : -1) * (38 + (i % 28));
+        const dy = (i % 3 === 0 ? -1 : 1) * (42 + (i % 30));
         span.style[side] = horiz + "%";
         span.style.top = vert + "%";
         span.style.fontSize = size + "px";
@@ -601,31 +861,46 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml) {
 
 function renderLanding(settings) {
   return `
-<div class="split-auth">
-  <div class="promo-pane">
+<div class="landing-hero-box">
+  <div class="landing-hero-card">
+    <div class="hero-teacher-frame">
+      <img src="${esc(settings.teacher_image)}" alt="الأستاذ محمد يوسف" onerror="this.style.display='none';" />
+    </div>
     <div>
-      <span class="pill" style="background:rgba(255,255,255,0.2); color:#fff;">خبرة 20 عاماً في المنهج الأزهري</span>
-      <h1 style="font-size:1.7rem; font-weight:900; margin-top:12px;">الأستاذ محمد يوسف</h1>
-      <p style="margin-top:8px; font-size:0.95rem; opacity:0.95;">
-        مدرس أول اللغة العربية للثانوية الأزهرية (الأول، الثاني، والثالث الثانوي — علمي وأدبي). شرح الفروع السبعة، تفعيل كل فرع بشكل مستقل، أكواد سنتر لمرة واحدة، واجبات إلكترونية بعد كل محاضرة، وامتحانات شاملة.
+      <span class="pill pill-ok">معلم أول لغة عربية</span>
+      <h1 style="font-size:1.85rem; font-weight:900; margin-top:10px; color:var(--pri);">الأستاذ محمد يوسف</h1>
+      <div style="font-size:1.1rem; font-weight:800; color:var(--gold); margin-top:6px;">
+        30 سنة خبرة تدريس في اللغة العربية للثانوية الأزهرية
+      </div>
+      <p class="muted" style="margin-top:12px; font-size:0.98rem; line-height:1.8;">
+        معلم أول لغة عربية بمسيرة تمتد إلى 30 عاماً من العطاء والتميز والتأسيس الدقيق في فروع اللغة العربية السبعة للمرحلة الثانوية الأزهرية (الأول، الثاني، والثالث الثانوي — علمي وأدبي)، مما يجعله جديراً تماماً بقيادة طلابه نحو التفوق والدرجة النهائية بمنهج واضح ومنظم.
       </p>
     </div>
-    <img class="promo-img" src="${esc(settings.teacher_image)}" alt="الأستاذ محمد يوسف" onerror="this.style.display='none';" />
   </div>
-  <div class="card" style="display:flex; flex-direction:column; justify-content:center; margin-bottom:0;">
+</div>
+
+<div class="landing-start-section">
+  <div class="card" style="margin-bottom:0; text-align:center; padding:28px 22px;">
     <h2 style="font-size:1.45rem; font-weight:900; margin-bottom:8px;">أهلاً بك في منصة نور البيان ✦ ۝ جخ ۝ ✦</h2>
-    <p class="muted" style="margin-bottom:20px;">اختر إنشاء حساب جديد للانضمام، أو سجل دخولك لحسابك الحالي لمتابعة فروع اللغة العربية.</p>
-    <div style="display:flex; gap:12px; flex-wrap:wrap;">
-      <a class="btn btn-teal" style="flex:1; min-width:170px;" href="/student?tab=register&step=1">ابدأ معنا الآن</a>
-      <a class="btn btn-blue" style="flex:1; min-width:170px;" href="/student?tab=login">تسجيل الدخول</a>
+    <p class="muted" style="margin-bottom:20px;">ابدأ رحلتك الآن مع الأستاذ محمد يوسف في فروع اللغة العربية والواجبات والامتحانات.</p>
+    <div style="display:flex; gap:14px; justify-content:center; flex-wrap:wrap; max-width:520px; margin:0 auto;">
+      <a class="btn btn-teal" style="flex:1; min-width:180px; padding:12px 18px;" href="/student?tab=login">ابدأ معنا</a>
+      <a class="btn btn-blue" style="flex:1; min-width:180px; padding:12px 18px;" href="/student?tab=register&step=1">إنشاء حساب جديد</a>
     </div>
   </div>
+</div>
+
+<div class="landing-bottom-admin">
+  <a class="bottom-admin-img-btn" href="/admin" aria-label="Admin">
+    <img src="${esc(settings.teacher_image)}" alt="" onerror="this.style.display='none';" />
+  </a>
 </div>`;
 }
 
 function renderStudentAuth(settings, authTab, step, draft, error, notice) {
   const gradeOpts = GRADES.map(g => `<option value="${esc(g)}">${esc(g)}</option>`).join("");
   const trackOpts = TRACKS.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join("");
+  const govOpts = EGYPT_GOVERNORATES.map(gv => `<option value="${esc(gv)}">${esc(gv)}</option>`).join("");
 
   if (authTab === "login") {
     return `
@@ -647,9 +922,9 @@ function renderStudentAuth(settings, authTab, step, draft, error, notice) {
         </div>
         ${error ? `<div class="msg-err">${esc(error)}</div>` : ""}
         ${notice ? `<div class="msg-ok">${esc(notice)}</div>` : ""}
-        <form method="post" action="/student/login">
-          <div class="field"><label>رقم الهاتف</label><input name="phone" type="tel" required placeholder="01xxxxxxxxx" /></div>
-          <div class="field"><label>كلمة السر</label><input name="password" type="password" required placeholder="••••••••" /></div>
+        <form method="post" action="/student/login" autocomplete="off">
+          <div class="field"><label>رقم الهاتف</label><input name="phone" type="tel" required autocomplete="off" placeholder="01xxxxxxxxx" /></div>
+          <div class="field"><label>كلمة السر</label><input name="password" type="password" required autocomplete="new-password" placeholder="••••••••" /></div>
           <div style="margin-bottom:14px;"><a href="/student?tab=forgot" style="font-size:0.86rem; font-weight:800; color:var(--pri);">هل نسيت كلمة السر؟ اضغط هنا</a></div>
           <button type="submit" class="btn btn-blue" style="width:100%;">تسجيل الدخول</button>
         </form>
@@ -672,10 +947,10 @@ function renderStudentAuth(settings, authTab, step, draft, error, notice) {
         <p class="muted" style="font-size:0.88rem; margin-bottom:14px;">يُستخدم كود السنتر مرة واحدة فقط لفتح المنصة على حسابك.</p>
         ${error ? `<div class="msg-err">${esc(error)}</div>` : ""}
         ${notice ? `<div class="msg-ok">${esc(notice)}</div>` : ""}
-        <form method="post" action="/student/center-login">
-          <div class="field"><label>كود السنتر (لمرة واحدة) *</label><input name="center_code" type="text" required placeholder="مثال: CTR-XXXXXX" /></div>
-          <div class="field"><label>اسم الطالب *</label><input name="name" type="text" required placeholder="الاسم الثلاثي" /></div>
-          <div class="field"><label>رقم هاتف الطالب *</label><input name="phone" type="tel" required placeholder="01xxxxxxxxx" /></div>
+        <form method="post" action="/student/center-login" autocomplete="off">
+          <div class="field"><label>كود السنتر (لمرة واحدة) *</label><input name="center_code" type="text" required autocomplete="off" placeholder="مثال: CTR-XXXXXX" /></div>
+          <div class="field"><label>اسم الطالب *</label><input name="name" type="text" required autocomplete="off" placeholder="الاسم الثلاثي" /></div>
+          <div class="field"><label>رقم هاتف الطالب *</label><input name="phone" type="tel" required autocomplete="off" placeholder="01xxxxxxxxx" /></div>
           <div class="grid2">
             <div class="field"><label>الصف الدراسي *</label><select name="grade">${gradeOpts}</select></div>
             <div class="field"><label>الشعبة *</label><select name="track">${trackOpts}</select></div>
@@ -696,10 +971,10 @@ function renderStudentAuth(settings, authTab, step, draft, error, notice) {
       <p class="muted" style="font-size:0.88rem; margin-bottom:14px;">أدخل رقم هاتف الطالب ورقم هاتف ولي الأمر لتعيين كلمة سر جديدة.</p>
       ${error ? `<div class="msg-err">${esc(error)}</div>` : ""}
       ${notice ? `<div class="msg-ok">${esc(notice)}</div>` : ""}
-      <form method="post" action="/student/reset-password">
-        <div class="field"><label>رقم هاتف الطالب *</label><input name="phone" type="tel" required placeholder="01xxxxxxxxx" /></div>
-        <div class="field"><label>رقم هاتف ولي الأمر *</label><input name="parent_phone" type="tel" required placeholder="01xxxxxxxxx" /></div>
-        <div class="field"><label>كلمة السر الجديدة *</label><input name="new_password" type="password" required minlength="4" /></div>
+      <form method="post" action="/student/reset-password" autocomplete="off">
+        <div class="field"><label>رقم هاتف الطالب *</label><input name="phone" type="tel" required autocomplete="off" placeholder="01xxxxxxxxx" /></div>
+        <div class="field"><label>رقم هاتف ولي الأمر *</label><input name="parent_phone" type="tel" required autocomplete="off" placeholder="01xxxxxxxxx" /></div>
+        <div class="field"><label>كلمة السر الجديدة *</label><input name="new_password" type="password" required autocomplete="new-password" minlength="4" /></div>
         <button type="submit" class="btn btn-teal" style="width:100%;">تعيين كلمة السر الجديدة</button>
       </form>
       <div style="margin-top:12px; text-align:center;"><a href="/student?tab=login" style="font-weight:800; color:var(--pri); font-size:0.88rem;">العودة لتسجيل الدخول</a></div>
@@ -725,27 +1000,27 @@ function renderStudentAuth(settings, authTab, step, draft, error, notice) {
       <div class="step-track"><div class="step-fill" style="width:${isStep2 ? "70%" : "35%"};"></div></div>
       ${error ? `<div class="msg-err">${esc(error)}</div>` : ""}
       ${!isStep2 ? `
-        <form method="get" action="/student">
+        <form method="get" action="/student" autocomplete="off">
           <input type="hidden" name="tab" value="register" />
           <input type="hidden" name="step" value="2" />
           <div class="grid2">
-            <div class="field"><label>الاسم الأول *</label><input name="first_name" type="text" value="${esc(draft.first_name)}" required /></div>
-            <div class="field"><label>الاسم الثاني *</label><input name="second_name" type="text" value="${esc(draft.second_name)}" required /></div>
-            <div class="field"><label>الاسم الثالث *</label><input name="third_name" type="text" value="${esc(draft.third_name)}" required /></div>
-            <div class="field"><label>رقم هاتف الطالب *</label><input name="phone" type="tel" value="${esc(draft.phone)}" required placeholder="01xxxxxxxxx" /></div>
+            <div class="field"><label>الاسم الأول *</label><input name="first_name" type="text" value="${esc(draft.first_name)}" autocomplete="off" required /></div>
+            <div class="field"><label>الاسم الثاني *</label><input name="second_name" type="text" value="${esc(draft.second_name)}" autocomplete="off" required /></div>
+            <div class="field"><label>الاسم الثالث *</label><input name="third_name" type="text" value="${esc(draft.third_name)}" autocomplete="off" required /></div>
+            <div class="field"><label>رقم هاتف الطالب *</label><input name="phone" type="tel" value="${esc(draft.phone)}" autocomplete="off" required placeholder="01xxxxxxxxx" /></div>
           </div>
           <button type="submit" class="btn btn-blue" style="width:100%;">التالي</button>
         </form>
       ` : `
-        <form method="post" action="/student/register">
+        <form method="post" action="/student/register" autocomplete="off">
           <input type="hidden" name="full_name" value="${esc(fullName)}" />
           <input type="hidden" name="phone" value="${esc(draft.phone)}" />
           <div class="field"><label>الصف الدراسي *</label><select name="grade">${gradeOpts}</select></div>
           <div class="field"><label>الشعبة *</label><select name="track">${trackOpts}</select></div>
-          <div class="field"><label>رقم هاتف ولي الأمر *</label><input name="parent_phone" type="tel" required placeholder="01xxxxxxxxx" /></div>
+          <div class="field"><label>رقم هاتف ولي الأمر *</label><input name="parent_phone" type="tel" required autocomplete="off" placeholder="01xxxxxxxxx" /></div>
           <div class="grid2">
-            <div class="field"><label>المحافظة *</label><input name="governorate" type="text" required placeholder="مثال: الشرقية" /></div>
-            <div class="field"><label>كلمة السر *</label><input name="password" type="password" required minlength="4" /></div>
+            <div class="field"><label>المحافظة *</label><select name="governorate" required>${govOpts}</select></div>
+            <div class="field"><label>كلمة السر *</label><input name="password" type="password" required autocomplete="new-password" minlength="4" /></div>
           </div>
           <button type="submit" class="btn btn-teal" style="width:100%;">إتمام إنشاء الحساب</button>
         </form>
@@ -775,6 +1050,7 @@ function renderStudentDash(settings, student, state) {
   const allExams = state.exams || [];
   const mySubmissions = state.submissions || [];
   const myDrafts = state.drafts || [];
+  const myWatchedSet = new Set((state.watched || []).map(w => String(w.lecture_id)));
 
   const solvedExamIds = new Set(mySubmissions.map(s => String(s.exam_id)));
 
@@ -798,7 +1074,7 @@ function renderStudentDash(settings, student, state) {
         <div>
           <div class="course-banner">
             <div>
-              <span class="pill ${isUnlocked ? "pill-ok" : "pill-warn"}">${isUnlocked ? "مفعل ✓" : "مغلق 🔒"}</span>
+              <span class="pill" style="background:rgba(255,255,255,0.18); color:#fff;">${isUnlocked ? "مفعل ✓" : "مغلق 🔒"}</span>
               <div style="font-size:1.25rem; font-weight:900; margin-top:6px;">${esc(br)}</div>
               <div style="font-size:0.8rem; opacity:0.9;">${brLectures.length} محاضرة متاحة</div>
             </div>
@@ -870,22 +1146,25 @@ function renderStudentDash(settings, student, state) {
               ? `<div style="margin-top:10px;"><a class="btn btn-teal btn-sm" href="${esc(lec.video_url)}" target="_blank" rel="noopener">فتح الفيديو في نافذة المشغل الخارجية</a></div>`
               : ""
             }
-            <div class="row" style="margin-top:16px; border:1px solid var(--gold); background:var(--gold-soft);">
-              <div>
-                <div style="font-weight:900;">واجب المحاضرة (${hw ? (Array.isArray(hw.questions) ? hw.questions.length : 5) + " أسئلة" : "5 أسئلة"})</div>
-                <div class="muted" style="font-size:0.84rem;">
-                  ${hw
-                    ? (hwSub
-                      ? `تم تسليم الواجب بنجاح (${hwSub.pct}% — ${hwSub.score} من ${hwSub.total}) وتم فتح الدرس التالي.`
-                      : "يجب حل الواجب لفتح الدرس التالي في هذا الفرع.")
-                    : "لم يتم ربط أسئلة واجب لهذه المحاضرة بعد."
-                  }
+            <div class="blue-lesson-strip" style="margin-top:16px;">
+              <div class="blue-strip-left">
+                <span class="blue-play-badge">📝</span>
+                <div>
+                  <div style="font-weight:900;">واجب المحاضرة (${hw ? (Array.isArray(hw.questions) ? hw.questions.length : 5) + " أسئلة" : "5 أسئلة"})</div>
+                  <div style="font-size:0.82rem; color:#93c5fd;">
+                    ${hw
+                      ? (hwSub
+                        ? `تم تسليم الواجب بنجاح (${hwSub.pct}% — ${hwSub.score} من ${hwSub.total}) وتم فتح الدرس التالي.`
+                        : "يجب حل الواجب لفتح الدرس التالي في هذا الفرع.")
+                      : "لم يتم ربط أسئلة واجب لهذه المحاضرة بعد."
+                    }
+                  </div>
                 </div>
               </div>
               ${hw
                 ? (hwSub
-                  ? `<a class="btn btn-teal btn-sm" href="/student?section=results">عرض النتيجة في نتائجي</a>`
-                  : `<a class="btn btn-gold" href="/student?section=solve-exam&exam_id=${encodeURIComponent(hw.id)}">حل الواجب لفتح الدرس</a>`)
+                  ? `<a class="blue-action-btn" href="/student?section=results">نتائجي</a>`
+                  : `<a class="blue-action-btn" href="/student?section=solve-exam&exam_id=${encodeURIComponent(hw.id)}">حل الواجب لفتح الدرس</a>`)
                 : ""
               }
             </div>
@@ -899,17 +1178,19 @@ function renderStudentDash(settings, student, state) {
     const canEnter = unlocked.has(branchParam);
     const list = allLectures.filter(l => l.branch === branchParam);
     return `
-      <div class="branch-hero-banner">
+      <div class="blue-week-banner">
         <div>
-          <span class="pill" style="background:rgba(255,255,255,0.2); color:#fff;">فرع ${esc(branchParam)}</span>
-          <h2 style="font-size:1.45rem; font-weight:900; margin-top:6px;">محاضرات ${esc(branchParam)}</h2>
-          <p style="font-size:0.88rem; opacity:0.92;">${esc(student.grade)} — الشعبة: ${esc(student.track)}</p>
+          <div style="font-size:1.35rem; font-weight:900;">فرع ${esc(branchParam)} — ${esc(student.grade)}</div>
+          <div style="font-size:0.9rem; opacity:0.95; margin-top:2px;">الشعبة: ${esc(student.track)} • متابعة المحاضرات والواجبات</div>
         </div>
-        <div class="branch-book-card">
-          <img src="${esc(settings.teacher_image)}" alt="أ. محمد يوسف" onerror="this.style.display='none';" />
-          <div>
-            <div style="font-weight:900;">أ. محمد يوسف</div>
-            <div style="font-size:0.8rem; opacity:0.9;">نور البيان الأزهرية</div>
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <span class="you-here-pill">انت هنا</span>
+          <div class="branch-book-card">
+            <img src="${esc(settings.teacher_image)}" alt="أ. محمد يوسف" onerror="this.style.display='none';" />
+            <div>
+              <div style="font-weight:900; font-size:0.9rem;">أ. محمد يوسف</div>
+              <div style="font-size:0.76rem; opacity:0.9;">نور البيان الأزهرية</div>
+            </div>
           </div>
         </div>
       </div>
@@ -921,7 +1202,7 @@ function renderStudentDash(settings, student, state) {
               <label>كود تفعيل الفرع (لمرة واحدة)</label>
               <input name="code" type="text" required placeholder="مثال: BR-XXXXXX" />
             </div>
-            <button type="submit" class="btn btn-teal">تفعيل الفرع الآن</button>
+            <button type="submit" class="blue-action-btn">تفعيل الفرع الآن</button>
           </form>
         </div>
       ` : `
@@ -931,24 +1212,28 @@ function renderStudentDash(settings, student, state) {
             const openByOrder = isLectureUnlockedForStudent(list, idx);
             const hw = getLessonHomework(l.id);
             const hwDone = hw ? solvedExamIds.has(String(hw.id)) : false;
+            const isSeen = myWatchedSet.has(String(l.id));
             return `
-              <div class="row">
-                <div>
-                  <div style="font-weight:900;">${idx + 1}. ${esc(l.title)}</div>
-                  <div class="muted" style="font-size:0.82rem;">
-                    ${openByOrder
-                      ? (hw ? (hwDone ? "تم حل الواجب ✓" : "مفتوحة — يتبعها واجب لفتح الدرس التالي") : "مفتوحة للمشاهدة")
-                      : "مغلقة 🔒 — حل واجب الدرس السابق لفتحها"
-                    }
+              <div class="blue-lesson-strip">
+                <div class="blue-strip-left">
+                  <span class="blue-play-badge">${openByOrder ? "▶" : "🔒"}</span>
+                  <div>
+                    <div style="font-weight:900;">${idx + 1}. ${esc(l.title)}</div>
+                    <div style="font-size:0.8rem; color:#93c5fd;">
+                      ${openByOrder
+                        ? (isSeen ? "تمت المشاهدة" : "متاحة للمشاهدة")
+                        : "مغلقة لحين حل واجب الدرس السابق"
+                      }
+                    </div>
                   </div>
                 </div>
-                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                   ${openByOrder
-                    ? `<a class="btn btn-blue btn-sm" href="/student?section=branch&branch=${encodeURIComponent(branchParam)}&lecture=${encodeURIComponent(l.id)}">مشاهدة المحاضرة</a>`
-                    : `<span class="pill pill-warn">مغلق لحين حل الواجب السابق</span>`
+                    ? `<a class="blue-action-btn" href="/student?section=branch&branch=${encodeURIComponent(branchParam)}&lecture=${encodeURIComponent(l.id)}">مشاهدة</a>`
+                    : `<span class="you-here-pill" style="padding:4px 12px; font-size:0.78rem;">مغلق</span>`
                   }
                   ${openByOrder && hw && !hwDone
-                    ? `<a class="btn btn-gold btn-sm" href="/student?section=solve-exam&exam_id=${encodeURIComponent(hw.id)}">حل الواجب لفتح الدرس</a>`
+                    ? `<a class="blue-action-btn" href="/student?section=solve-exam&exam_id=${encodeURIComponent(hw.id)}">حل الواجب لفتح الدرس</a>`
                     : ""
                   }
                 </div>
@@ -997,7 +1282,8 @@ function renderStudentDash(settings, student, state) {
             const chosen = savedAnswers[qi] !== undefined && savedAnswers[qi] !== null ? Number(savedAnswers[qi]) : -1;
             return `
               <div class="row" style="display:block; margin-bottom:12px;">
-                <div style="font-weight:900; margin-bottom:8px; font-size:1rem;">${qi + 1}. ${esc(q.text)}</div>
+                <div style="font-weight:900; margin-bottom:8px; font-size:1rem;">${qi + 1}. ${esc(q.text || "")}</div>
+                ${q.image_url ? `<img class="ticket-img-thumb" src="${esc(q.image_url)}" alt="صورة السؤال" onerror="this.style.display='none';" />` : ""}
                 ${(q.options || []).map((opt, oi) => `
                   <label style="display:flex; align-items:center; gap:8px; font-weight:700; cursor:pointer; margin:6px 0; padding:6px 10px; border-radius:8px; background:var(--card);">
                     <input type="radio" name="q_${qi}" value="${oi}" style="width:auto;" ${chosen === oi ? "checked" : ""} />
@@ -1108,7 +1394,7 @@ function renderStudentDash(settings, student, state) {
       ${t.image_url ? `<img class="ticket-img-thumb" src="${esc(t.image_url)}" alt="صورة السؤال" onerror="this.style.display='none';" />` : ""}
       ${t.reply ? `<div class="msg-ok" style="margin-top:8px; margin-bottom:0;">رد الإدارة: ${esc(t.reply)}</div>` : ""}
     </div>
-  `).join("") || `<p class="muted" style="margin-top:10px;">لم ترسل أسئلة أو تذاكر دعم من قبل.</p>`;
+  `).join("") || `<p class="muted" style="margin-top:10px;">لم ترسل أسئلة من قبل.</p>`;
 
   let mainContentHtml = "";
   if (section === "dashboard") {
@@ -1196,7 +1482,7 @@ function renderStudentDash(settings, student, state) {
   } else if (section === "results") {
     mainContentHtml = `
       <div style="margin-bottom:12px;">
-        <h2 style="font-weight:900;">نتائجي وتفاصيل الأخطاء</h2>
+        <h2 style="font-weight:900;">نتائجي</h2>
         <p class="muted" style="font-size:0.88rem;">هنا تجد نسبتك المئوية وعدد أخطائك والإجابة الصحيحة لكل سؤال أخطأت فيه.</p>
       </div>
       ${resultsHtml}
@@ -1204,21 +1490,21 @@ function renderStudentDash(settings, student, state) {
   } else if (section === "tickets") {
     mainContentHtml = `
       <div class="card">
-        <h2 style="font-weight:900; margin-bottom:8px;">اسأل سؤالاً أو أرسل تذكرة دعم</h2>
+        <h2 style="font-weight:900; margin-bottom:8px;">اسأل سؤالاً</h2>
         <p class="muted" style="font-size:0.88rem; margin-bottom:14px;">اختر صورة سؤالك مباشرة من جهازك ليراها الأستاذ محمد يوسف.</p>
         <form method="post" action="/student/tickets" id="studentTicketForm">
           <input type="hidden" name="image_url" id="ticketImageData" />
           <div class="grid2">
-            <div class="field"><label>عنوان السؤال أو التذكرة *</label><input name="subject" type="text" required placeholder="مثال: استفسار في إعراب أو سؤال" /></div>
+            <div class="field"><label>عنوان السؤال *</label><input name="subject" type="text" required placeholder="مثال: استفسار في إعراب أو سؤال" /></div>
             <div class="field"><label>صورة السؤال (من جهازك)</label><input id="ticketImageFile" type="file" accept="image/*" /></div>
           </div>
           <img id="ticketImagePreview" class="ticket-img-thumb" style="display:none;" alt="معاينة صورة السؤال" />
-          <div class="field"><label>تفاصيل السؤال أو الرسالة *</label><textarea name="message" required placeholder="اكتب سؤالك بوضوح..."></textarea></div>
+          <div class="field"><label>تفاصيل السؤال *</label><textarea name="message" required placeholder="اكتب سؤالك بوضوح..."></textarea></div>
           <button type="submit" class="btn btn-blue">إرسال السؤال</button>
         </form>
       </div>
       <div class="card">
-        <h3 style="font-weight:900;">أسئلتك وتذاكرك السابقة</h3>
+        <h3 style="font-weight:900;">أسئلتك السابقة</h3>
         ${ticketsHtml}
       </div>
       <script>
@@ -1283,7 +1569,7 @@ function renderStudentDash(settings, student, state) {
       <a class="nav-item-link ${section === "codes" ? "active" : ""}" href="/student?section=codes"><span>🔑</span><span class="nav-label">تفعيل الفروع</span></a>
       <a class="nav-item-link ${(section === "exams" || section === "solve-exam") ? "active" : ""}" href="/student?section=exams"><span>📝</span><span class="nav-label">الواجبات والامتحانات</span></a>
       <a class="nav-item-link ${section === "results" ? "active" : ""}" href="/student?section=results"><span>📊</span><span class="nav-label">نتائجي</span></a>
-      <a class="nav-item-link ${section === "tickets" ? "active" : ""}" href="/student?section=tickets"><span>🎫</span><span class="nav-label">الأسئلة والدعم</span></a>
+      <a class="nav-item-link ${section === "tickets" ? "active" : ""}" href="/student?section=tickets"><span>❓</span><span class="nav-label">أسئلة الطلاب</span></a>
       <a class="nav-item-link ${section === "account" ? "active" : ""}" href="/student?section=account"><span>👤</span><span class="nav-label">حسابي</span></a>
       <a class="nav-item-link" href="/logout" style="color:var(--err);"><span>🚪</span><span class="nav-label">تسجيل الخروج</span></a>
     </aside>
@@ -1302,9 +1588,9 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
       <h2 style="font-weight:900; margin-bottom:8px;">دخول لوحة تحكم الأدمن</h2>
       <p class="muted" style="font-size:0.86rem; margin-bottom:14px;">أدخل بيانات الإدارة لإدارة الأكواد والمحاضرات والاختبارات والطلاب.</p>
       ${error ? `<div class="msg-err">${esc(error)}</div>` : ""}
-      <form method="post" action="/admin/login">
-        <div class="field"><label>البريد الإلكتروني</label><input name="email" type="email" required placeholder="mohmed@mr.com" /></div>
-        <div class="field"><label>كلمة المرور</label><input name="password" type="password" required placeholder="••••••••" /></div>
+      <form method="post" action="/admin/login" autocomplete="off">
+        <div class="field"><label>البريد الإلكتروني</label><input name="email" type="email" required autocomplete="off" placeholder="mohmed@mr.com" /></div>
+        <div class="field"><label>كلمة المرور</label><input name="password" type="password" required autocomplete="new-password" placeholder="••••••••" /></div>
         <button type="submit" class="btn btn-blue" style="width:100%;">دخول الأدمن</button>
       </form>
     </div>`;
@@ -1314,6 +1600,8 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
   const allLectures = sortLectures(data.lectures || []);
   const allExams = data.exams || [];
   const allSubmissions = data.submissions || [];
+  const allWatched = data.watched || [];
+  const allStudents = data.students || [];
 
   const branchChecks = BRANCHES.map(b => `
     <label class="branch-check-pill">
@@ -1322,12 +1610,16 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
     </label>
   `).join("");
 
-  const codesRows = (data.codes || []).slice(-20).reverse().map(c => `
+  const codesRows = (data.codes || []).slice(-25).reverse().map(c => `
     <div class="row">
       <div>
         <strong>${esc(c.code)}</strong> — <span class="pill pill-ok">${esc(c.type === "center" ? "كود سنتر (لمرة واحدة)" : "كود فرع: " + (c.branch || ""))}</span>
+        <span class="pill ${c.used ? "pill-warn" : "pill-ok"}" style="margin-right:6px;">${c.used ? "مستخدم (" + esc(c.used_by || "") + ")" : "متاح"}</span>
       </div>
-      <span class="pill ${c.used ? "pill-warn" : "pill-ok"}">${c.used ? "مستخدم (" + esc(c.used_by || "") + ")" : "متاح"}</span>
+      <form method="post" action="/admin/delete-code" style="margin:0;">
+        <input type="hidden" name="code_id" value="${esc(c.id)}" />
+        <button type="submit" class="btn btn-red btn-sm">حذف الكود</button>
+      </form>
     </div>
   `).join("") || `<p class="muted">لا توجد أكواد مولدة بعد.</p>`;
 
@@ -1346,7 +1638,7 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
           </div>
         </div>
         <div style="display:flex; gap:8px; flex-wrap:wrap;">
-          <a class="btn btn-gold btn-sm" href="/admin?section=exams&lecture_id=${encodeURIComponent(l.id)}">إضافة/تعديل 5 أسئلة للدرس</a>
+          <a class="btn btn-gold btn-sm" href="/admin?section=exams&lecture_id=${encodeURIComponent(l.id)}">إضافة/تعديل أسئلة للدرس</a>
           <form method="post" action="/admin/delete-lecture" style="margin:0;">
             <input type="hidden" name="lecture_id" value="${esc(l.id)}" />
             <button type="submit" class="btn btn-red btn-sm">حذف</button>
@@ -1375,42 +1667,6 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
     `;
   }).join("") || `<p class="muted">لا توجد واجبات أو اختبارات منشورة بعد.</p>`;
 
-  const studentsRows = (data.students || []).map(s => `
-    <div class="row">
-      <div>
-        <strong>${esc(s.full_name)}</strong> — <span class="muted">${esc(s.phone)}</span>
-        <div class="muted" style="font-size:0.8rem;">${esc(s.grade || "")} (${esc(s.track || "")}) • ولي الأمر: ${esc(s.parent_phone || "-")}</div>
-        <div style="margin-top:4px;">${(s.branches || []).map(b => `<span class="pill pill-ok">${esc(b)}</span>`).join(" ")}</div>
-      </div>
-    </div>
-  `).join("") || `<p class="muted">لا يوجد طلاب مسجلون بعد.</p>`;
-
-  const resultsRows = allSubmissions.slice().reverse().map(sub => {
-    const pct = Number(sub.pct ?? Math.round(((Number(sub.score || 0)) / Math.max(1, Number(sub.total || 1))) * 100));
-    const wrongCount = Number(sub.wrong_count ?? (Number(sub.total || 0) - Number(sub.score || 0)));
-    const details = Array.isArray(sub.details) ? sub.details : [];
-    const wrongItems = details.filter(d => !d.is_correct);
-    return `
-      <div class="row" style="display:block;">
-        <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
-          <div>
-            <strong>${esc(sub.student_name || "طالب")}</strong> (${esc(sub.student_phone || "")}) — <strong>${esc(sub.exam_title || "اختبار")}</strong>
-          </div>
-          <div style="display:flex; gap:6px; flex-wrap:wrap;">
-            <span class="pill pill-ok">النسبة: ${pct}%</span>
-            <span class="pill pill-ok">الدرجة: ${esc(sub.score)} / ${esc(sub.total)}</span>
-            <span class="pill pill-err">أخطاء: ${wrongCount}</span>
-          </div>
-        </div>
-        ${wrongItems.length ? `
-          <div class="muted" style="font-size:0.82rem; margin-top:6px;">
-            الأخطاء: ${wrongItems.map(w => `${esc(w.question)} (إجابته: ${esc(w.student_answer)} | الصحيح: ${esc(w.correct_answer)})`).join(" — ")}
-          </div>
-        ` : `<div style="font-size:0.82rem; color:var(--teal); margin-top:4px;">درجة كاملة بدون أخطاء ✓</div>`}
-      </div>
-    `;
-  }).join("") || `<p class="muted">لم يسلم أي طالب اختباراً أو واجباً بعد.</p>`;
-
   const ticketsRows = (data.tickets || []).map(t => `
     <div class="row" style="display:block;">
       <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
@@ -1418,14 +1674,14 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
         <span class="muted" style="font-size:0.8rem;">${esc(t.student_name || "")} (${esc(t.student_phone || "")})</span>
       </div>
       <p style="margin:6px 0; font-size:0.88rem;">${esc(t.message)}</p>
-      ${t.image_url ? `<img class="ticket-img-thumb" src="${esc(t.image_url)}" alt="صورة التذكرة" onerror="this.style.display='none';" />` : ""}
+      ${t.image_url ? `<img class="ticket-img-thumb" src="${esc(t.image_url)}" alt="صورة السؤال" onerror="this.style.display='none';" />` : ""}
       <form method="post" action="/admin/reply-ticket" style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
         <input type="hidden" name="ticket_id" value="${esc(t.id)}" />
         <input name="reply" type="text" value="${esc(t.reply || "")}" placeholder="اكتب رد الإدارة هنا..." style="flex:1; min-width:220px;" />
         <button type="submit" class="btn btn-teal btn-sm">حفظ الرد</button>
       </form>
     </div>
-  `).join("") || `<p class="muted">لا توجد تذاكر دعم حالياً.</p>`;
+  `).join("") || `<p class="muted">لا توجد أسئلة من الطلاب حالياً.</p>`;
 
   let sectionHtml = "";
   if (activeSec === "codes") {
@@ -1477,7 +1733,7 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
     sectionHtml = `
       <div class="card">
         <h3 style="font-weight:900; margin-bottom:6px;">إنشاء واجب درس (5 أسئلة) أو اختبار بأي عدد أسئلة واختيارات</h3>
-        <p class="muted" style="font-size:0.85rem; margin-bottom:14px;">يمكنك إضافة أي عدد من الأسئلة، ولكل سؤال إضافة أي عدد من الاختيارات وتحديد الإجابة الصحيحة.</p>
+        <p class="muted" style="font-size:0.85rem; margin-bottom:14px;">يمكنك إضافة أي عدد من الأسئلة، وإضافة سؤال نصي أو صورة سؤال، ولكل سؤال إضافة أي عدد من الاختيارات وتحديد الإجابة الصحيحة.</p>
 
         <form method="post" action="/admin/add-exam" id="dynamicExamForm">
           <input type="hidden" name="questions_json" id="questionsJsonInput" />
@@ -1540,14 +1796,61 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
             card.className = "q-builder-card";
             card.dataset.radioName = radioName;
             card.innerHTML =
-              '<div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px;">' +
+              '<div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap;">' +
                 '<strong class="q-title-lbl">سؤال</strong>' +
-                '<button type="button" class="btn btn-red btn-sm remove-q-btn">حذف السؤال</button>' +
+                '<div style="display:flex; gap:6px; flex-wrap:wrap;">' +
+                  '<button type="button" class="btn btn-out btn-sm toggle-text-btn">سؤال كتابي</button>' +
+                  '<button type="button" class="btn btn-out btn-sm toggle-img-btn">سؤال بصورة</button>' +
+                  '<button type="button" class="btn btn-red btn-sm remove-q-btn">حذف السؤال</button>' +
+                '</div>' +
               '</div>' +
-              '<div class="field"><input type="text" class="q-text-input" placeholder="اكتب نص السؤال هنا..." required /></div>' +
+              '<div class="field q-text-box"><input type="text" class="q-text-input" placeholder="اكتب نص السؤال هنا..." required /></div>' +
+              '<div class="field q-img-box" style="display:none;">' +
+                '<label style="font-size:0.82rem;">اختر صورة السؤال من الجهاز</label>' +
+                '<input type="file" accept="image/*" class="q-img-file" />' +
+                '<input type="hidden" class="q-img-data" />' +
+                '<img class="ticket-img-thumb q-img-preview" style="display:none;" alt="صورة السؤال" />' +
+              '</div>' +
               '<div style="font-size:0.82rem; font-weight:800; margin-bottom:4px;">الاختيارات (حدّد الدائرة بجانب الإجابة الصحيحة):</div>' +
               '<div class="opts-container"></div>' +
               '<button type="button" class="btn btn-out btn-sm add-opt-btn" style="margin-top:8px;">+ إضافة اختيار آخر</button>';
+
+            const textInput = card.querySelector(".q-text-input");
+            const textBox = card.querySelector(".q-text-box");
+            const imgBox = card.querySelector(".q-img-box");
+            const imgFile = card.querySelector(".q-img-file");
+            const imgData = card.querySelector(".q-img-data");
+            const imgPreview = card.querySelector(".q-img-preview");
+
+            card.querySelector(".toggle-text-btn").addEventListener("click", function () {
+              textBox.style.display = "block";
+              imgBox.style.display = "none";
+              textInput.required = true;
+            });
+
+            card.querySelector(".toggle-img-btn").addEventListener("click", function () {
+              imgBox.style.display = "block";
+              textInput.required = false;
+              if (!textInput.value.trim()) textInput.value = "أجب عن السؤال الموضح في الصورة";
+            });
+
+            imgFile.addEventListener("change", function () {
+              const file = imgFile.files && imgFile.files[0];
+              if (!file) {
+                imgData.value = "";
+                imgPreview.src = "";
+                imgPreview.style.display = "none";
+                return;
+              }
+              const reader = new FileReader();
+              reader.onload = function () {
+                const urlVal = String(reader.result || "");
+                imgData.value = urlVal;
+                imgPreview.src = urlVal;
+                imgPreview.style.display = "block";
+              };
+              reader.readAsDataURL(file);
+            });
 
             card.querySelector(".remove-q-btn").addEventListener("click", function () {
               if (listEl.querySelectorAll(".q-builder-card").length <= 1) {
@@ -1592,6 +1895,7 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
             const cards = listEl.querySelectorAll(".q-builder-card");
             cards.forEach((c) => {
               const qText = c.querySelector(".q-text-input").value.trim();
+              const qImg = c.querySelector(".q-img-data").value.trim();
               const optRows = c.querySelectorAll(".opt-row");
               const options = [];
               let correctIdx = 0;
@@ -1601,8 +1905,13 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
                 if (checked) correctIdx = idx;
                 options.push(txt);
               });
-              if (qText && options.length >= 2) {
-                questions.push({ text: qText, options, correct_idx: correctIdx });
+              if ((qText || qImg) && options.length >= 2) {
+                questions.push({
+                  text: qText || "سؤال صورة",
+                  image_url: qImg,
+                  options,
+                  correct_idx: correctIdx
+                });
               }
             });
             if (!questions.length) {
@@ -1616,42 +1925,218 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
       </script>
     `;
   } else if (activeSec === "students") {
+    const enrichedStudents = allStudents.map(st => ({
+      student: st,
+      metrics: computeStudentMetrics(st, allLectures, allExams, allSubmissions, allWatched)
+    }));
+
+    const studentItemsJson = JSON.stringify(enrichedStudents.map(item => ({
+      full_name: item.student.full_name || "",
+      phone: item.student.phone || "",
+      parent_phone: item.student.parent_phone || "-",
+      governorate: item.student.governorate || "-",
+      grade: item.student.grade || "",
+      track: item.student.track || "",
+      password_hash: item.student.password_hash || "",
+      branches: item.student.branches || [],
+      watchedCount: item.metrics.watchedCount,
+      pendingLectures: item.metrics.pendingLectures,
+      solvedExamsCount: item.metrics.solvedExamsCount,
+      pendingExams: item.metrics.pendingExams,
+      avgPct: item.metrics.avgPct,
+      performanceScore: item.metrics.performanceScore,
+      performanceLabel: item.metrics.performanceLabel,
+      submissions: (item.metrics.submissions || []).map(s => ({
+        exam_title: s.exam_title || "اختبار",
+        branch: s.branch || "عام",
+        score: s.score,
+        total: s.total,
+        pct: s.pct ?? Math.round((Number(s.score || 0) / Math.max(1, Number(s.total || 1))) * 100)
+      }))
+    })));
+
     sectionHtml = `
       <div class="card">
-        <h3 style="font-weight:900; margin-bottom:10px;">تفعيل فروع لطالب والاطلاع على الطلاب</h3>
-        <form method="post" action="/admin/grant-branches" class="card" style="background:var(--card2); margin-bottom:14px;">
-          <div class="field"><label>رقم هاتف الطالب *</label><input name="phone" type="tel" required placeholder="01xxxxxxxxx" /></div>
-          <div class="branch-toggle-grid">${branchChecks}</div>
-          <button type="submit" class="btn btn-blue btn-sm">تفعيل الفروع المحددة للطالب</button>
-        </form>
-        ${studentsRows}
+        <h3 style="font-weight:900; margin-bottom:10px;">طلاب المنصة</h3>
+        <div class="grid2" style="margin-bottom:12px;">
+          <div class="field" style="margin:0;">
+            <label>بحث بالاسم أو رقم الهاتف</label>
+            <input type="text" id="studentSearchInput" placeholder="اكتب اسم الطالب..." />
+          </div>
+          <div class="field" style="margin:0;">
+            <label>اختر الصف</label>
+            <select id="studentGradeFilter">
+              <option value="">كل الصفوف</option>
+              ${GRADES.map(g => `<option value="${esc(g)}">${esc(g)}</option>`).join("")}
+            </select>
+          </div>
+        </div>
+
+        <div id="studentsListContainer"></div>
+
+        <div id="selectedStudentProfile" class="student-detail-box" style="display:none;"></div>
       </div>
+
+      <script>
+        (function () {
+          const allItems = ${studentItemsJson};
+          const searchEl = document.getElementById("studentSearchInput");
+          const gradeEl = document.getElementById("studentGradeFilter");
+          const listContainer = document.getElementById("studentsListContainer");
+          const profileBox = document.getElementById("selectedStudentProfile");
+
+          function escHtml(v) {
+            return String(v ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+          }
+
+          function openStudentProfile(phone) {
+            const st = allItems.find(x => x.phone === phone);
+            if (!st) return;
+            const subsHtml = st.submissions.length
+              ? st.submissions.map(sub =>
+                  '<div class="row" style="margin-top:6px;">' +
+                    '<div><strong>' + escHtml(sub.exam_title) + '</strong> <span class="muted">(' + escHtml(sub.branch) + ')</span></div>' +
+                    '<span class="pill pill-ok">' + escHtml(sub.pct) + '% (' + escHtml(sub.score) + ' / ' + escHtml(sub.total) + ')</span>' +
+                  '</div>'
+                ).join("")
+              : '<div class="muted" style="font-size:0.85rem; margin-top:6px;">لم يحل أي امتحان بعد.</div>';
+
+            const branchesHtml = st.branches.length
+              ? st.branches.map(b => '<span class="pill pill-ok" style="margin-left:4px;">' + escHtml(b) + '</span>').join("")
+              : '<span class="pill pill-warn">لا يوجد فروع مفعلة</span>';
+
+            profileBox.style.display = "block";
+            profileBox.innerHTML =
+              '<div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px;">' +
+                '<h4 style="font-weight:900; font-size:1.1rem;">بيانات الطالب: ' + escHtml(st.full_name) + '</h4>' +
+                '<div style="display:flex; gap:8px; flex-wrap:wrap;">' +
+                  '<form method="post" action="/admin/delete-student" style="margin:0;" onsubmit="return confirm(\'هل أنت متأكد من حذف هذا الطالب نهائياً؟\');">' +
+                    '<input type="hidden" name="phone" value="' + escHtml(st.phone) + '" />' +
+                    '<button type="submit" class="btn btn-red btn-sm">حذف الطالب</button>' +
+                  '</form>' +
+                  '<button type="button" class="btn btn-out btn-sm" id="closeStudentProfileBtn">إغلاق</button>' +
+                '</div>' +
+              '</div>' +
+              '<div class="row"><span>الاسم</span><strong>' + escHtml(st.full_name) + '</strong></div>' +
+              '<div class="row"><span>رقم الطالب</span><strong>' + escHtml(st.phone) + '</strong></div>' +
+              '<div class="row"><span>رقم ولي الأمر</span><strong>' + escHtml(st.parent_phone) + '</strong></div>' +
+              '<div class="row"><span>المحافظة</span><strong>' + escHtml(st.governorate) + '</strong></div>' +
+              '<div class="row"><span>الصف والشعبة</span><strong>' + escHtml(st.grade) + ' — ' + escHtml(st.track) + '</strong></div>' +
+              '<div class="row"><span>كلمة السر (مشفرة SHA-256)</span><strong style="font-size:0.78rem; word-break:break-all;">' + escHtml(st.password_hash) + '</strong></div>' +
+              '<div class="row"><span>أداء الطالب على المنصة</span><strong>' + escHtml(st.performanceLabel) + ' (' + escHtml(st.performanceScore) + '% — متوسط درجات ' + escHtml(st.avgPct) + '%)</strong></div>' +
+              '<div class="row"><span>المحاضرات</span><strong>شاهد: ' + escHtml(st.watchedCount) + ' • متراكم عليه: ' + escHtml(st.pendingLectures) + '</strong></div>' +
+              '<div class="row"><span>الامتحانات والواجبات</span><strong>حل: ' + escHtml(st.solvedExamsCount) + ' • متراكم عليه: ' + escHtml(st.pendingExams) + '</strong></div>' +
+              '<div class="row" style="display:block;">' +
+                '<div style="font-weight:800; margin-bottom:6px;">الفروع المفعلة: ' + branchesHtml + '</div>' +
+                '<form method="post" action="/admin/grant-branches" style="margin-top:8px;">' +
+                  '<input type="hidden" name="phone" value="' + escHtml(st.phone) + '" />' +
+                  '<div class="branch-toggle-grid">' +
+                    ${JSON.stringify(BRANCHES)}.map(function (br) {
+                      const checked = st.branches.indexOf(br) !== -1 ? "checked" : "";
+                      return '<label class="branch-check-pill"><input type="checkbox" name="branches" value="' + escHtml(br) + '" ' + checked + ' /><span>' + escHtml(br) + '</span></label>';
+                    }).join("") +
+                  '</div>' +
+                  '<button type="submit" class="btn btn-teal btn-sm">تفعيل اشتراك الفروع المحددة</button>' +
+                '</form>' +
+              '</div>' +
+              '<div style="margin-top:12px;"><div style="font-weight:900;">درجاته في كل الامتحانات:</div>' + subsHtml + '</div>';
+
+            document.getElementById("closeStudentProfileBtn")?.addEventListener("click", function () {
+              profileBox.style.display = "none";
+            });
+            profileBox.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          }
+
+          function renderFiltered() {
+            const q = (searchEl?.value || "").trim().toLowerCase();
+            const g = gradeEl?.value || "";
+            const filtered = allItems.filter(item => {
+              const matchName = !q || item.full_name.toLowerCase().includes(q) || item.phone.toLowerCase().includes(q);
+              const matchGrade = !g || item.grade === g;
+              return matchName && matchGrade;
+            });
+
+            if (!filtered.length) {
+              listContainer.innerHTML = '<p class="muted">لا يوجد طلاب مطابقون للبحث.</p>';
+              return;
+            }
+
+            listContainer.innerHTML = filtered.map(item =>
+              '<div class="row" style="cursor:pointer;" data-open-phone="' + escHtml(item.phone) + '">' +
+                '<div>' +
+                  '<strong>' + escHtml(item.full_name) + '</strong> — <span class="muted">' + escHtml(item.phone) + '</span>' +
+                  '<div class="muted" style="font-size:0.8rem;">' + escHtml(item.grade) + ' (' + escHtml(item.track) + ') • الأداء: ' + escHtml(item.performanceLabel) + '</div>' +
+                '</div>' +
+                '<button type="button" class="btn btn-blue btn-sm">فتح ملف الطالب</button>' +
+              '</div>'
+            ).join("");
+
+            listContainer.querySelectorAll("[data-open-phone]").forEach(el => {
+              el.addEventListener("click", function () {
+                openStudentProfile(el.getAttribute("data-open-phone"));
+              });
+            });
+          }
+
+          searchEl?.addEventListener("input", renderFiltered);
+          gradeEl?.addEventListener("change", renderFiltered);
+          renderFiltered();
+        })();
+      </script>
     `;
-  } else if (activeSec === "results") {
+  } else if (activeSec === "ranking") {
+    const selectedGrade = data.rankingGrade || GRADES[0];
+    const rankedStudents = allStudents
+      .filter(s => s.grade === selectedGrade)
+      .map(st => ({
+        student: st,
+        metrics: computeStudentMetrics(st, allLectures, allExams, allSubmissions, allWatched)
+      }))
+      .sort((a, b) => b.metrics.performanceScore - a.metrics.performanceScore);
+
+    const rankingRowsHtml = rankedStudents.map((entry, idx) => `
+      <div class="row">
+        <div>
+          <span class="pill pill-ok">الترتيب #${idx + 1}</span>
+          <strong style="margin-right:6px;">${esc(entry.student.full_name)}</strong>
+          <span class="muted" style="font-size:0.85rem;">— هاتف: <strong>${esc(entry.student.phone)}</strong></span>
+          <div class="muted" style="font-size:0.8rem; margin-top:3px;">
+            الأداء: <strong>${esc(entry.metrics.performanceLabel)}</strong> (${entry.metrics.performanceScore}%) • متوسط الامتحانات: ${entry.metrics.avgPct}% • المحاضرات المشاهدة: ${entry.metrics.watchedCount}
+          </div>
+        </div>
+        <span class="pill pill-warn">${entry.metrics.performanceScore}%</span>
+      </div>
+    `).join("") || `<p class="muted">لا يوجد طلاب مسجلون في هذا الصف بعد.</p>`;
+
     sectionHtml = `
       <div class="card">
-        <h3 style="font-weight:900; margin-bottom:10px;">سجل نتائج الطلاب والنسب المئوية والأخطاء</h3>
-        ${resultsRows}
+        <h3 style="font-weight:900; margin-bottom:10px;">ترتيب الطلاب (من الأفضل أداءً للأقوى)</h3>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;">
+          <a class="btn ${selectedGrade === GRADES[0] ? "btn-blue" : "btn-out"} btn-sm" href="/admin?section=ranking&rank_grade=${encodeURIComponent(GRADES[0])}">أولى ثانوي</a>
+          <a class="btn ${selectedGrade === GRADES[1] ? "btn-blue" : "btn-out"} btn-sm" href="/admin?section=ranking&rank_grade=${encodeURIComponent(GRADES[1])}">تانية ثانوي</a>
+          <a class="btn ${selectedGrade === GRADES[2] ? "btn-blue" : "btn-out"} btn-sm" href="/admin?section=ranking&rank_grade=${encodeURIComponent(GRADES[2])}">تالتة ثانوي</a>
+        </div>
+        ${rankingRowsHtml}
       </div>
     `;
   } else if (activeSec === "tickets") {
     sectionHtml = `
       <div class="card">
-        <h3 style="font-weight:900; margin-bottom:10px;">تذاكر الدعم وأسئلة الطلاب</h3>
+        <h3 style="font-weight:900; margin-bottom:10px;">أسئلة الطلاب</h3>
         ${ticketsRows}
       </div>
     `;
   } else if (activeSec === "settings") {
     sectionHtml = `
       <div class="card">
-        <h3 style="font-weight:900; margin-bottom:10px;">إعدادات المنصة والتنبيه العام</h3>
+        <h3 style="font-weight:900; margin-bottom:10px;">إعدادات المنصة وإشعار التنبيه الشفاف</h3>
         <form method="post" action="/admin/settings">
           <div class="grid2">
             <div class="field"><label>رقم فودافون كاش</label><input name="vodafone_number" type="text" value="${esc(settings.vodafone_number)}" /></div>
             <div class="field"><label>واتساب الإدارة</label><input name="admin_whatsapp" type="text" value="${esc(settings.admin_whatsapp)}" /></div>
           </div>
           <div class="field"><label>رابط صورة الأستاذ (اختياري)</label><input name="teacher_image" type="text" value="${esc(settings.teacher_image)}" /></div>
-          <div class="field"><label>تنبيه عام يظهر أعلى المنصة (اتركه فارغاً لإخفائه)</label><input name="global_notice" type="text" value="${esc(settings.global_notice)}" /></div>
+          <div class="field"><label>رسالة إشعار التنبيه الشفاف المتوهج (اتركه فارغاً لعدم ظهوره)</label><input name="global_notice" type="text" value="${esc(settings.global_notice)}" placeholder="اكتب رسالة التنبيه هنا..." /></div>
           <button type="submit" class="btn btn-blue">حفظ الإعدادات</button>
         </form>
       </div>
@@ -1665,7 +2150,7 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
       ${notice ? `<div class="msg-ok">${esc(notice)}</div>` : ""}
 
       <div class="kpi-grid">
-        <div class="kpi-card"><div><div class="kpi-num">${(data.students || []).length}</div><div class="kpi-lbl">الطلاب</div></div><div class="kpi-icon-box">👨‍🎓</div></div>
+        <div class="kpi-card"><div><div class="kpi-num">${allStudents.length}</div><div class="kpi-lbl">طلاب المنصة</div></div><div class="kpi-icon-box">👨‍🎓</div></div>
         <div class="kpi-card teal-kpi"><div><div class="kpi-num">${allLectures.length}</div><div class="kpi-lbl">المحاضرات</div></div><div class="kpi-icon-box">🎥</div></div>
         <div class="kpi-card gold-kpi"><div><div class="kpi-num">${allExams.length}</div><div class="kpi-lbl">الواجبات والاختبارات</div></div><div class="kpi-icon-box">📝</div></div>
         <div class="kpi-card teal-kpi"><div><div class="kpi-num">${allSubmissions.length}</div><div class="kpi-lbl">النتائج المسلمة</div></div><div class="kpi-icon-box">📊</div></div>
@@ -1679,13 +2164,13 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
         <span class="drawer-title" style="font-weight:900; font-size:0.92rem;">إدارة نور البيان</span>
         <button type="button" class="collapse-btn" onclick="document.getElementById('adminShell')?.classList.toggle('collapsed')">⇄</button>
       </div>
-      <a class="nav-item-link ${activeSec === "codes" ? "active" : ""}" href="/admin?section=codes"><span>🔑</span><span class="nav-label">الأكواد</span></a>
-      <a class="nav-item-link ${activeSec === "lectures" ? "active" : ""}" href="/admin?section=lectures"><span>🎥</span><span class="nav-label">المحاضرات</span></a>
+      <a class="nav-item-link ${activeSec === "students" ? "active" : ""}" href="/admin?section=students"><span>👨‍🎓</span><span class="nav-label">طلاب المنصة</span></a>
+      <a class="nav-item-link ${activeSec === "ranking" ? "active" : ""}" href="/admin?section=ranking"><span>🏆</span><span class="nav-label">ترتيب الطلاب</span></a>
+      <a class="nav-item-link ${activeSec === "lectures" ? "active" : ""}" href="/admin?section=lectures"><span>🎥</span><span class="nav-label">إضافة محاضرة</span></a>
+      <a class="nav-item-link ${activeSec === "codes" ? "active" : ""}" href="/admin?section=codes"><span>🔑</span><span class="nav-label">توليد أكواد</span></a>
       <a class="nav-item-link ${activeSec === "exams" ? "active" : ""}" href="/admin?section=exams"><span>📝</span><span class="nav-label">الواجبات والاختبارات</span></a>
-      <a class="nav-item-link ${activeSec === "students" ? "active" : ""}" href="/admin?section=students"><span>👨‍🎓</span><span class="nav-label">الطلاب</span></a>
-      <a class="nav-item-link ${activeSec === "results" ? "active" : ""}" href="/admin?section=results"><span>📊</span><span class="nav-label">نتائج الطلاب</span></a>
-      <a class="nav-item-link ${activeSec === "tickets" ? "active" : ""}" href="/admin?section=tickets"><span>🎫</span><span class="nav-label">التذاكر</span></a>
-      <a class="nav-item-link ${activeSec === "settings" ? "active" : ""}" href="/admin?section=settings"><span>⚙️</span><span class="nav-label">الإعدادات</span></a>
+      <a class="nav-item-link ${activeSec === "tickets" ? "active" : ""}" href="/admin?section=tickets"><span>❓</span><span class="nav-label">أسئلة الطلاب</span></a>
+      <a class="nav-item-link ${activeSec === "settings" ? "active" : ""}" href="/admin?section=settings"><span>⚙️</span><span class="nav-label">الإعدادات والإشعار</span></a>
     </aside>
   </div>`;
 }
@@ -1751,7 +2236,7 @@ export default {
     }
 
     if (path === "/" && method === "GET") {
-      return htmlRes(renderLayout("الرئيسية", settings, student, isAdmin, renderLanding(settings)));
+      return htmlRes(renderLayout("الرئيسية", settings, student, isAdmin, renderLanding(settings), { hideBottomAdminAvatar: true }));
     }
 
     if (path === "/student" && method === "GET") {
@@ -1770,28 +2255,40 @@ export default {
         return htmlRes(renderLayout("بوابة الطالب", settings, null, isAdmin, renderStudentAuth(settings, tab, step, draft, error, notice)));
       }
 
-      const [lectures, exams, tickets, submissions, drafts] = await Promise.all([
+      const lectureIdParam = url.searchParams.get("lecture") || "";
+      if (lectureIdParam) {
+        await fsSet(env, "watched_lectures", `${student.phone}_${lectureIdParam}`, {
+          student_phone: student.phone,
+          lecture_id: lectureIdParam,
+          watched_at: new Date().toISOString()
+        });
+      }
+
+      const [lectures, exams, tickets, submissions, drafts, watched] = await Promise.all([
         fsList(env, "lectures"),
         fsList(env, "exams"),
         fsList(env, "tickets"),
         fsList(env, "submissions"),
-        fsList(env, "exam_drafts")
+        fsList(env, "exam_drafts"),
+        fsList(env, "watched_lectures")
       ]);
 
       const myTickets = tickets.filter(t => t.student_phone === student.phone);
       const mySubmissions = submissions.filter(s => s.student_phone === student.phone);
       const myDrafts = drafts.filter(d => d.student_phone === student.phone);
+      const myWatched = watched.filter(w => w.student_phone === student.phone);
 
       const dashHtml = renderStudentDash(settings, student, {
         section: url.searchParams.get("section") || "dashboard",
         branch: url.searchParams.get("branch") || "",
-        lectureId: url.searchParams.get("lecture") || "",
+        lectureId: lectureIdParam,
         examId: url.searchParams.get("exam_id") || "",
         lectures,
         exams,
         tickets: myTickets,
         submissions: mySubmissions,
         drafts: myDrafts,
+        watched: myWatched,
         error,
         notice
       });
@@ -1991,7 +2488,7 @@ export default {
       const message = String(form.message || "").trim();
       const imageUrl = String(form.image_url || "").trim();
       if (!subject || !message) {
-        return redirectRes(`/student?section=tickets&error=${encodeURIComponent("اكتب عنوان التذكرة والرسالة")}`);
+        return redirectRes(`/student?section=tickets&error=${encodeURIComponent("اكتب عنوان السؤال والتفاصيل")}`);
       }
       const id = "t_" + Date.now();
       await fsSet(env, "tickets", id, {
@@ -2003,27 +2500,29 @@ export default {
         reply: "",
         created_at: new Date().toISOString()
       });
-      return redirectRes(`/student?section=tickets&notice=${encodeURIComponent("تم إرسال التذكرة بنجاح")}`);
+      return redirectRes(`/student?section=tickets&notice=${encodeURIComponent("تم إرسال سؤالك بنجاح")}`);
     }
 
     if (path === "/admin" && method === "GET") {
       const error = url.searchParams.get("error") || "";
       const notice = url.searchParams.get("notice") || "";
-      const section = url.searchParams.get("section") || "codes";
+      const section = url.searchParams.get("section") || "students";
       const preselectLectureId = url.searchParams.get("lecture_id") || "";
+      const rankingGrade = url.searchParams.get("rank_grade") || GRADES[0];
       let data = {};
       if (isAdmin) {
-        const [codes, lectures, exams, students, tickets, submissions] = await Promise.all([
+        const [codes, lectures, exams, students, tickets, submissions, watched] = await Promise.all([
           fsList(env, "codes"),
           fsList(env, "lectures"),
           fsList(env, "exams"),
           fsList(env, "students"),
           fsList(env, "tickets"),
-          fsList(env, "submissions")
+          fsList(env, "submissions"),
+          fsList(env, "watched_lectures")
         ]);
-        data = { codes, lectures, exams, students, tickets, submissions, preselectLectureId };
+        data = { codes, lectures, exams, students, tickets, submissions, watched, preselectLectureId, rankingGrade };
       }
-      return htmlRes(renderLayout("لوحة الأدمن", settings, student, isAdmin, renderAdminPage(settings, isAdmin, data, section, error, notice)));
+      return htmlRes(renderLayout("لوحة الأدمن", settings, student, isAdmin, renderAdminPage(settings, isAdmin, data, section, error, notice), { hideBottomAdminAvatar: true }));
     }
 
     if (path === "/admin/login" && method === "POST") {
@@ -2035,7 +2534,7 @@ export default {
         return redirectRes(`/admin?error=${encodeURIComponent("بيانات دخول الأدمن غير صحيحة")}`);
       }
       const tok = makeToken({ role: "admin", email }, secret);
-      return redirectRes("/admin?section=codes", {
+      return redirectRes("/admin?section=students", {
         "Set-Cookie": setCookieHeader("nb_adm", tok)
       });
     }
@@ -2061,6 +2560,13 @@ export default {
         });
       }
       return redirectRes(`/admin?section=codes&notice=${encodeURIComponent(`تم توليد ${count} كود بنجاح`)}`);
+    }
+
+    if (path === "/admin/delete-code" && method === "POST") {
+      const form = await parseFormBody(req);
+      const codeId = String(form.code_id || "");
+      if (codeId) await fsDelete(env, "codes", codeId);
+      return redirectRes(`/admin?section=codes&notice=${encodeURIComponent("تم حذف الكود")}`);
     }
 
     if (path === "/admin/add-lecture" && method === "POST") {
@@ -2120,9 +2626,15 @@ export default {
       const selected = Array.isArray(form.branches) ? form.branches : (form.branches ? [form.branches] : []);
       const st = await fsGet(env, "students", phone);
       if (!st) return redirectRes(`/admin?section=students&error=${encodeURIComponent("الطالب غير موجود")}`);
-      const branches = Array.from(new Set([...(st.branches || []), ...selected]));
-      await fsSet(env, "students", phone, { ...st, branches });
-      return redirectRes(`/admin?section=students&notice=${encodeURIComponent("تم تفعيل الفروع للطالب")}`);
+      await fsSet(env, "students", phone, { ...st, branches: Array.from(new Set(selected)) });
+      return redirectRes(`/admin?section=students&notice=${encodeURIComponent("تم تحديث اشتراك الفروع للطالب")}`);
+    }
+
+    if (path === "/admin/delete-student" && method === "POST") {
+      const form = await parseFormBody(req);
+      const phone = String(form.phone || "").trim();
+      if (phone) await fsDelete(env, "students", phone);
+      return redirectRes(`/admin?section=students&notice=${encodeURIComponent("تم حذف الطالب بنجاح")}`);
     }
 
     if (path === "/admin/reply-ticket" && method === "POST") {
@@ -2131,7 +2643,7 @@ export default {
       const reply = String(form.reply || "").trim();
       const t = await fsGet(env, "tickets", ticketId);
       if (t) await fsSet(env, "tickets", ticketId, { ...t, reply });
-      return redirectRes(`/admin?section=tickets&notice=${encodeURIComponent("تم حفظ الرد على التذكرة")}`);
+      return redirectRes(`/admin?section=tickets&notice=${encodeURIComponent("تم حفظ الرد على السؤال")}`);
     }
 
     if (path === "/admin/settings" && method === "POST") {
