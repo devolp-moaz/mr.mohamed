@@ -162,21 +162,9 @@ async function getSettings(env) {
     admin_whatsapp: saved.admin_whatsapp || "201066329782",
     admin_email: env.ADMIN_EMAIL || saved.admin_email || "mohmed@mr.com",
     admin_password_hash: saved.admin_password_hash || (await sha256(env.ADMIN_PASSWORD || "admin123456")),
-    admin_device_id: saved.admin_device_id || "",
     global_notice: saved.global_notice || "",
     teacher_image: saved.teacher_image || TEACHER_MAIN_PHOTO
   };
-}
-
-async function buildDeviceFingerprint(req, explicitDeviceId = "") {
-  if (explicitDeviceId && String(explicitDeviceId).trim().length >= 8) {
-    return await sha256(String(explicitDeviceId).trim());
-  }
-  const ua = req.headers.get("User-Agent") || "";
-  const lang = req.headers.get("Accept-Language") || "";
-  const secChUa = req.headers.get("Sec-CH-UA") || "";
-  const secChPlatform = req.headers.get("Sec-CH-UA-Platform") || "";
-  return await sha256(`${ua}|${lang}|${secChUa}|${secChPlatform}`);
 }
 
 function esc(s) {
@@ -273,8 +261,9 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       --err: #dc2626;
       --bdr: #cbd5e1;
       --glyph: rgba(30, 64, 175, 0.28);
-      --shadow: 0 14px 28px rgba(15, 23, 42, 0.16), 0 4px 0 rgba(15, 23, 42, 0.08), inset 0 1.5px 0 rgba(255, 255, 255, 0.85);
-      --edge-3d: 0 12px 24px rgba(2, 6, 23, 0.22), 0 4px 0 rgba(15, 23, 42, 0.18), inset 0 1.5px 0 rgba(255, 255, 255, 0.65), inset 0 -2px 0 rgba(15, 23, 42, 0.14);
+      --shadow: 0 14px 28px rgba(15, 23, 42, 0.16), 0 4px 0 #8a99ad;
+      --edge-ring: #4b6b43;
+      --edge-glow: rgba(75, 107, 67, 0.55);
     }
     body.dark {
       --bg: #070b14;
@@ -290,8 +279,9 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       --err: #f87171;
       --bdr: #334155;
       --glyph: rgba(56, 189, 248, 0.32);
-      --shadow: 0 16px 32px rgba(0, 0, 0, 0.65), 0 4px 0 rgba(2, 6, 23, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.12);
-      --edge-3d: 0 16px 32px rgba(0, 0, 0, 0.7), 0 4px 0 #020617, inset 0 1.5px 0 rgba(255, 255, 255, 0.14), inset 0 -2px 0 rgba(0, 0, 0, 0.55);
+      --shadow: 0 16px 34px rgba(0, 0, 0, 0.65), 0 4px 0 #020617;
+      --edge-ring: #38bdf8;
+      --edge-glow: rgba(56, 189, 248, 0.65);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; }
     body {
@@ -301,30 +291,19 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       line-height: 1.65;
       position: relative;
       overflow-x: hidden;
-    }
-    .card, .right-drawer, .kpi-card, .progress-frame, .course-card, .blue-week-banner, .blue-lesson-strip, .landing-hero-card, .hero-teacher-frame, .promo-pane, .q-builder-card, .student-detail-box, .row {
-      box-shadow: var(--edge-3d);
-      border-top: 1.5px solid rgba(255, 255, 255, 0.42);
-      border-bottom: 2px solid rgba(15, 23, 42, 0.22);
-    }
-    .btn, .theme-pill, .collapse-btn, .blue-action-btn {
-      box-shadow: 0 5px 12px rgba(15, 23, 42, 0.2), 0 3px 0 rgba(15, 23, 42, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.35);
-      transition: transform 0.14s ease, box-shadow 0.14s ease;
-    }
-    .btn:active, .theme-pill:active, .collapse-btn:active, .blue-action-btn:active {
-      transform: translateY(2px);
-      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.2), 0 1px 0 rgba(15, 23, 42, 0.28);
+      -webkit-user-select: none;
+      user-select: none;
     }
     .floating-admin-avatar {
       position: fixed;
-      bottom: 16px;
-      left: 16px;
-      width: 46px;
-      height: 46px;
+      bottom: 14px;
+      left: 14px;
+      width: 34px;
+      height: 34px;
       border-radius: 50%;
       overflow: hidden;
-      border: 2px solid var(--gold);
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.38), 0 3px 0 rgba(0, 0, 0, 0.5);
+      border: 2px solid var(--edge-ring);
+      box-shadow: 0 6px 14px var(--edge-glow);
       z-index: 60;
       background: var(--card);
       display: block;
@@ -348,7 +327,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       background: linear-gradient(120deg, #0f172a, #1e40af, #0f766e);
       color: #f8fafc;
       border: 1px solid rgba(245, 158, 11, 0.55);
-      box-shadow: var(--edge-3d);
+      box-shadow: var(--shadow);
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -368,14 +347,13 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       object-fit: contain; object-position: center top;
       background: rgba(15, 23, 42, 0.45);
       border: 2px solid #f59e0b; flex-shrink: 0;
-      box-shadow: 0 5px 12px rgba(0, 0, 0, 0.35);
     }
     .inline-dua-text { font-weight: 900; font-size: 1.05rem; }
     .inline-dua-sub { font-size: 0.78rem; opacity: 0.9; }
     #arabicBg { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
     .ar-glyph {
       position: absolute; font-weight: 900; color: var(--glyph); user-select: none;
-      text-shadow: 0 3px 12px rgba(30, 64, 175, 0.18);
+      text-shadow: 0 2px 12px rgba(30, 64, 175, 0.16);
       will-change: transform;
       animation: letterDrift var(--dur, 4.5s) ease-in-out var(--delay, 0s) infinite alternate;
     }
@@ -386,21 +364,21 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     }
     .page-layer { position: relative; z-index: 1; }
     .topbar {
-      background: var(--card); border-bottom: 2px solid var(--bdr);
+      background: var(--card); border-bottom: 2px solid var(--edge-ring);
       padding: 10px 20px; display: flex; justify-content: space-between; align-items: center;
       gap: 12px; flex-wrap: wrap; position: sticky; top: 0; z-index: 20;
-      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.14);
+      box-shadow: 0 6px 20px var(--edge-glow);
     }
     .brand-box { display: flex; align-items: center; gap: 10px; }
     .brand-logo-badge {
       width: 38px; height: 38px; border-radius: 10px;
       background: linear-gradient(135deg, var(--pri), var(--teal), var(--gold));
       color: #fff; font-weight: 900; display: grid; place-items: center; font-size: 1rem;
-      box-shadow: 0 4px 10px rgba(15, 23, 42, 0.25), 0 2px 0 rgba(15, 23, 42, 0.35);
+      box-shadow: 0 4px 0 rgba(15, 23, 42, 0.35);
     }
     .theme-pill {
       display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px;
-      border-radius: 999px; border: 1px solid var(--bdr); background: var(--card2);
+      border-radius: 999px; border: 1.5px solid var(--edge-ring); background: var(--card2);
       color: var(--txt); font-weight: 800; cursor: pointer; font-size: 0.84rem;
     }
     .glow-notice-wrap {
@@ -440,37 +418,59 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       display: flex;
       align-items: center;
       gap: 10px;
-      box-shadow: var(--edge-3d);
     }
-    .card {
-      background: var(--card); border: 1px solid var(--bdr); border-radius: 16px;
-      padding: 20px; margin-bottom: 16px;
+    @keyframes edgeSpinRing {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .card, .right-drawer, .landing-hero-card, .course-card, .blue-week-banner, .blue-lesson-strip, .student-detail-box, .q-builder-card {
+      position: relative;
+      transform: perspective(1000px) rotateX(0.8deg) translateY(0);
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+    .card, .right-drawer, .landing-hero-card, .course-card, .student-detail-box, .q-builder-card {
+      border: 2px solid transparent;
+      background-image: linear-gradient(var(--card), var(--card)), conic-gradient(from 0deg, var(--edge-ring), transparent 28%, var(--edge-ring) 52%, transparent 78%, var(--edge-ring));
+      background-origin: border-box;
+      background-clip: padding-box, border-box;
+      box-shadow: var(--shadow), 0 0 18px var(--edge-glow);
+    }
+    .card:hover, .course-card:hover, .landing-hero-card:hover {
+      transform: perspective(1000px) rotateX(0deg) translateY(-4px);
+      box-shadow: 0 20px 38px rgba(15, 23, 42, 0.22), 0 6px 0 #64748b, 0 0 24px var(--edge-glow);
     }
     .btn {
       display: inline-flex; align-items: center; justify-content: center; gap: 6px;
       padding: 9px 16px; border-radius: 10px; border: none; font-weight: 800;
       cursor: pointer; text-decoration: none; font-size: 0.9rem;
+      box-shadow: 0 4px 0 rgba(15, 23, 42, 0.28), 0 6px 14px rgba(15, 23, 42, 0.14);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .btn:active {
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 rgba(15, 23, 42, 0.28);
     }
     .btn-blue { background: var(--pri); color: #fff; }
     .btn-teal { background: var(--teal); color: #fff; }
     .btn-gold { background: var(--gold); color: #fff; }
     .btn-red { background: var(--err); color: #fff; }
-    .btn-out { background: transparent; color: var(--txt); border: 1px solid var(--bdr); }
+    .btn-out { background: transparent; color: var(--txt); border: 1.5px solid var(--edge-ring); box-shadow: 0 3px 0 var(--edge-glow); }
     .btn-sm { padding: 6px 12px; font-size: 0.82rem; border-radius: 8px; }
     .field { margin-bottom: 12px; }
     label { display: block; font-weight: 700; margin-bottom: 5px; font-size: 0.9rem; }
     input, select, textarea {
-      width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--bdr);
+      width: 100%; padding: 10px 12px; border-radius: 10px; border: 1.5px solid var(--bdr);
       background: var(--card2); color: var(--txt); font-size: 0.93rem; outline: none;
-      box-shadow: inset 0 2px 4px rgba(15, 23, 42, 0.14);
+      box-shadow: inset 0 2px 5px rgba(15, 23, 42, 0.12);
     }
     textarea { min-height: 84px; resize: vertical; }
     .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; }
     .grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
     .row {
-      background: var(--card2); border: 1px solid var(--bdr); border-radius: 12px;
+      background: var(--card2); border: 1.5px solid var(--bdr); border-radius: 12px;
       padding: 12px 14px; margin-top: 10px; display: flex; justify-content: space-between;
       align-items: center; gap: 10px; flex-wrap: wrap;
+      box-shadow: 0 5px 14px rgba(15, 23, 42, 0.1), 0 2px 0 rgba(100, 116, 139, 0.35);
     }
     .pill { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 0.78rem; font-weight: 800; }
     .pill-ok { background: var(--teal-soft); color: var(--teal); }
@@ -492,7 +492,6 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .dash-shell.collapsed { grid-template-columns: 1fr 74px; }
     @media (max-width: 880px) { .dash-shell, .dash-shell.collapsed { grid-template-columns: 1fr; } }
     .right-drawer {
-      background: var(--card); border: 1px solid var(--bdr); border-radius: 16px;
       padding: 14px 10px; position: sticky; top: 68px;
     }
     .drawer-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding: 0 4px; }
@@ -506,7 +505,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       color: var(--txt); font-weight: 800; text-decoration: none; cursor: pointer;
       font-size: 0.9rem; margin-bottom: 4px;
     }
-    .nav-item-link.active { background: var(--pri); color: #fff; box-shadow: 0 4px 10px rgba(30, 64, 175, 0.35), 0 2px 0 rgba(15, 23, 42, 0.35); }
+    .nav-item-link.active { background: var(--pri); color: #fff; }
     .sub-nav { padding-right: 16px; margin-bottom: 6px; }
     .sub-link {
       display: block; padding: 6px 10px; border-radius: 8px; color: var(--muted);
@@ -517,8 +516,9 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-bottom: 16px; }
     .kpi-card {
       background: linear-gradient(135deg, var(--pri) 0%, #0f172a 100%);
-      color: #fff; border-radius: 14px; padding: 18px;
+      color: #fff; border-radius: 14px; padding: 18px; border: 2px solid var(--edge-ring);
       display: flex; justify-content: space-between; align-items: center;
+      box-shadow: var(--shadow), 0 0 16px var(--edge-glow);
     }
     .kpi-card.teal-kpi { background: linear-gradient(135deg, var(--teal) 0%, #042f2e 100%); }
     .kpi-card.gold-kpi { background: linear-gradient(135deg, var(--gold) 0%, #451a03 100%); }
@@ -527,15 +527,13 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .kpi-icon-box {
       width: 44px; height: 44px; border-radius: 12px; background: rgba(255, 255, 255, 0.18);
       display: grid; place-items: center; font-size: 1.2rem; font-weight: 900;
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 3px 6px rgba(0, 0, 0, 0.25);
     }
     .progress-layout { display: grid; grid-template-columns: 280px 1fr; gap: 16px; margin-bottom: 16px; }
     @media (max-width: 820px) { .progress-layout { grid-template-columns: 1fr; } }
-    .progress-frame { background: var(--card); border: 2px solid var(--teal); border-radius: 16px; padding: 18px; text-align: center; }
+    .progress-frame { background: var(--card); border: 2px solid var(--edge-ring); border-radius: 16px; padding: 18px; text-align: center; box-shadow: var(--shadow), 0 0 16px var(--edge-glow); }
     .teacher-color-meter {
       position: relative; width: 144px; height: 185px; margin: 8px auto 10px;
       border-radius: 16px; overflow: hidden; border: 2px solid var(--bdr); background: var(--card2);
-      box-shadow: var(--edge-3d);
     }
     .teacher-color-meter img {
       width: 100%; height: 100%; object-fit: contain; object-position: center top; display: block;
@@ -546,13 +544,13 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .prog-bar-fill { height: 100%; background: var(--teal); border-radius: 999px; transition: width 0.4s ease; }
     .course-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(265px, 1fr)); gap: 16px; }
     .course-card {
-      background: var(--card); border: 1px solid var(--bdr); border-radius: 16px;
       overflow: hidden; display: flex; flex-direction: column; justify-content: space-between;
     }
     .blue-week-banner {
       background: linear-gradient(90deg, #1d4ed8 0%, #2563eb 55%, #1e40af 100%);
       color: #fff;
       border-radius: 14px;
+      border: 2px solid var(--edge-ring);
       padding: 16px 20px;
       margin-bottom: 14px;
       display: flex;
@@ -560,6 +558,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       align-items: center;
       gap: 14px;
       flex-wrap: wrap;
+      box-shadow: var(--shadow), 0 0 18px var(--edge-glow);
     }
     .you-here-pill {
       display: inline-flex;
@@ -573,11 +572,10 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       font-weight: 900;
       font-size: 0.88rem;
       white-space: nowrap;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25), 0 2px 0 rgba(0, 0, 0, 0.35);
     }
     .blue-lesson-strip {
       background: #0b1324;
-      border: 1px solid #1e3a8a;
+      border: 2px solid var(--edge-ring);
       border-radius: 12px;
       padding: 12px 16px;
       margin-top: 10px;
@@ -587,6 +585,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       gap: 12px;
       flex-wrap: wrap;
       color: #f8fafc;
+      box-shadow: 0 8px 20px rgba(2, 6, 23, 0.45), 0 0 12px var(--edge-glow);
     }
     .blue-strip-left {
       display: flex;
@@ -605,7 +604,6 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       place-items: center;
       font-weight: 900;
       font-size: 0.9rem;
-      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.25);
     }
     .blue-action-btn {
       display: inline-flex;
@@ -620,6 +618,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       text-decoration: none;
       border: none;
       cursor: pointer;
+      box-shadow: 0 3px 0 #1e3a8a;
     }
     .blue-action-btn:hover {
       background: #1d4ed8;
@@ -628,7 +627,6 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       display: flex; align-items: center; gap: 12px;
       background: rgba(255, 255, 255, 0.12); border: 1px solid rgba(255, 255, 255, 0.25);
       padding: 8px 12px; border-radius: 12px;
-      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.3);
     }
     .branch-book-card img {
       width: 58px; height: 74px; object-fit: contain; object-position: center top;
@@ -642,7 +640,6 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .course-banner img.book-thumb {
       width: 76px; height: 100px; object-fit: contain; object-position: center top;
       background: rgba(15, 23, 42, 0.45); border-radius: 10px; border: 2px solid rgba(255, 255, 255, 0.75); flex-shrink: 0;
-      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
     }
     .course-body { padding: 14px; }
     .course-title { font-weight: 900; font-size: 1rem; margin-bottom: 8px; }
@@ -652,9 +649,6 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       padding: 0 14px;
     }
     .landing-hero-card {
-      background: var(--card);
-      border: 1px solid var(--bdr);
-      border-radius: 22px;
       padding: 24px;
       display: grid;
       grid-template-columns: 320px 1fr;
@@ -670,6 +664,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       justify-content: center;
       align-items: center;
       min-height: 360px;
+      box-shadow: inset 0 2px 12px rgba(255,255,255,0.2), 0 8px 20px rgba(15,23,42,0.28);
     }
     .hero-teacher-frame img {
       width: 100%;
@@ -678,7 +673,6 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       object-position: center top;
       border-radius: 14px;
       display: block;
-      filter: drop-shadow(0 12px 18px rgba(0, 0, 0, 0.42));
     }
     .landing-start-section {
       max-width: 1140px;
@@ -693,12 +687,12 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       justify-content: center;
     }
     .bottom-admin-img-btn {
-      width: 66px;
-      height: 66px;
+      width: 44px;
+      height: 44px;
       border-radius: 50%;
       overflow: hidden;
-      border: 3px solid var(--gold);
-      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35), 0 4px 0 rgba(0, 0, 0, 0.5);
+      border: 2px solid var(--edge-ring);
+      box-shadow: 0 6px 16px var(--edge-glow);
       display: block;
       transition: transform 0.2s ease;
     }
@@ -719,7 +713,8 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     @media (max-width: 840px) { .split-auth { grid-template-columns: 1fr; } }
     .promo-pane {
       background: linear-gradient(160deg, var(--pri) 0%, var(--teal) 62%, #0f172a 100%);
-      color: #fff; border-radius: 20px; padding: 26px;
+      color: #fff; border-radius: 20px; padding: 26px; border: 2px solid var(--edge-ring);
+      box-shadow: var(--shadow), 0 0 18px var(--edge-glow);
       display: flex; flex-direction: column; justify-content: space-between; min-height: 460px;
     }
     .promo-pane.gold-mode { background: linear-gradient(160deg, var(--gold) 0%, var(--teal) 65%, #0f172a 100%); }
@@ -727,19 +722,30 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       width: 225px; height: 280px; object-fit: contain; object-position: center top;
       background: rgba(15, 23, 42, 0.35);
       border-radius: 16px; border: 2px solid rgba(255, 255, 255, 0.4); margin: 14px auto 0; display: block;
-      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.45);
     }
-    .step-track { height: 6px; background: var(--card2); border-radius: 999px; overflow: hidden; margin-bottom: 14px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); }
+    .step-track { height: 5px; background: var(--card2); border-radius: 999px; overflow: hidden; margin-bottom: 14px; }
     .step-fill { height: 100%; background: var(--teal); }
     .secure-player-box {
-      position: relative; width: 100%; max-width: 820px; margin: 12px auto 0;
-      border-radius: 14px; overflow: hidden; background: #000; border: 1px solid var(--bdr); user-select: none;
-      box-shadow: var(--edge-3d);
+      position: relative; width: 100%; max-width: 780px; margin: 12px auto 0;
+      border-radius: 14px; overflow: hidden; background: #000;
+      border: 2px solid var(--edge-ring); user-select: none;
+      box-shadow: var(--shadow), 0 0 18px var(--edge-glow);
+      transition: max-width 0.3s ease;
     }
-    .secure-player-box video, .secure-player-box iframe { width: 100%; display: block; height: 440px; max-height: 70vw; border: none; }
+    .secure-player-box.ratio-16-9 {
+      max-width: 100%;
+      aspect-ratio: 16 / 9;
+    }
+    .secure-player-box video, .secure-player-box iframe {
+      width: 100%; height: 100%; min-height: 360px; display: block; border: none;
+    }
+    .secure-player-box.ratio-16-9 video, .secure-player-box.ratio-16-9 iframe {
+      min-height: 0;
+      height: 100%;
+    }
     .watermark-layer { position: absolute; inset: 0; pointer-events: none; z-index: 5; overflow: hidden; }
     .watermark-tag {
-      position: absolute; color: rgba(255, 255, 255, 0.28); font-size: 0.84rem;
+      position: absolute; color: rgba(255, 255, 255, 0.32); font-size: 0.84rem;
       font-weight: 800; transform: rotate(-15deg); white-space: nowrap;
       animation: wmDrift 12s infinite alternate ease-in-out;
     }
@@ -748,20 +754,19 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       50% { top: 46%; right: 32%; }
       100% { top: 72%; right: 12%; }
     }
-    body.privacy-blur .secure-player-box video, body.privacy-blur .secure-player-box iframe { filter: blur(18px); }
-    .ticket-img-thumb { max-width: 260px; max-height: 220px; object-fit: contain; border-radius: 10px; border: 1px solid var(--bdr); margin-top: 8px; display: block; box-shadow: 0 8px 18px rgba(0,0,0,0.25); }
+    body.privacy-blur .page-layer {
+      filter: blur(22px) brightness(0.35);
+      transition: filter 0.1s ease;
+    }
+    .ticket-img-thumb { max-width: 260px; max-height: 220px; object-fit: contain; border-radius: 10px; border: 1px solid var(--bdr); margin-top: 8px; display: block; }
     .branch-toggle-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin: 10px 0; }
     .branch-check-pill {
       display: flex; align-items: center; gap: 6px; padding: 7px 10px;
       border-radius: 10px; background: var(--card); border: 1px solid var(--bdr);
       font-size: 0.84rem; font-weight: 800; cursor: pointer;
-      box-shadow: 0 4px 8px rgba(15, 23, 42, 0.14), 0 2px 0 rgba(15, 23, 42, 0.2);
     }
     .branch-check-pill input { width: auto; }
     .q-builder-card {
-      background: var(--card2);
-      border: 1px solid var(--bdr);
-      border-radius: 14px;
       padding: 14px;
       margin-bottom: 12px;
     }
@@ -772,9 +777,6 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       margin-top: 8px;
     }
     .student-detail-box {
-      background: var(--card2);
-      border: 1px solid var(--bdr);
-      border-radius: 14px;
       padding: 16px;
       margin-top: 14px;
     }
@@ -873,27 +875,55 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
         container.appendChild(span);
       }
     })();
-    document.addEventListener("contextmenu", function (e) {
-      if (e.target.closest(".secure-player-box")) e.preventDefault();
-    });
-    document.addEventListener("keydown", function (e) {
-      if (
-        (e.ctrlKey && ["s", "u", "p"].includes(e.key.toLowerCase())) ||
-        e.key === "PrintScreen" ||
-        (e.ctrlKey && e.shiftKey && ["i", "j", "c"].includes(e.key.toLowerCase()))
-      ) {
-        if (e.key === "PrintScreen") {
-          document.body.classList.add("privacy-blur");
-          setTimeout(() => document.body.classList.remove("privacy-blur"), 2500);
+    (function enforceAntiCaptureProtection() {
+      function triggerShield() {
+        document.body.classList.add("privacy-blur");
+        document.querySelectorAll("video").forEach((v) => v.pause());
+        setTimeout(() => {
+          if (!document.hidden) document.body.classList.remove("privacy-blur");
+        }, 3200);
+      }
+      document.addEventListener("contextmenu", function (e) {
+        e.preventDefault();
+        triggerShield();
+      });
+      document.addEventListener("copy", function (e) {
+        e.preventDefault();
+        triggerShield();
+      });
+      document.addEventListener("keydown", function (e) {
+        const k = (e.key || "").toLowerCase();
+        if (
+          e.key === "PrintScreen" ||
+          (e.ctrlKey && ["s", "u", "p", "c"].includes(k)) ||
+          (e.metaKey && ["s", "p", "c", "g"].includes(k)) ||
+          (e.ctrlKey && e.shiftKey && ["i", "j", "c", "s"].includes(k)) ||
+          (e.metaKey && e.shiftKey && ["3", "4", "5", "s"].includes(k))
+        ) {
+          e.preventDefault();
+          triggerShield();
         }
-        if (document.querySelector(".secure-player-box")) e.preventDefault();
-      }
-    });
-    document.addEventListener("visibilitychange", function () {
-      if (document.hidden) {
-        document.querySelectorAll(".secure-player-box video").forEach((v) => v.pause());
-      }
-    });
+      });
+      window.addEventListener("keyup", function (e) {
+        if (e.key === "PrintScreen") {
+          triggerShield();
+        }
+      });
+      document.addEventListener("visibilitychange", function () {
+        if (document.hidden) {
+          document.body.classList.add("privacy-blur");
+          document.querySelectorAll("video").forEach((v) => v.pause());
+        } else {
+          setTimeout(() => document.body.classList.remove("privacy-blur"), 400);
+        }
+      });
+      window.addEventListener("blur", function () {
+        document.body.classList.add("privacy-blur");
+      });
+      window.addEventListener("focus", function () {
+        setTimeout(() => document.body.classList.remove("privacy-blur"), 350);
+      });
+    })();
   </script>
 </body>
 </html>`;
@@ -954,7 +984,7 @@ function renderStudentAuth(settings, authTab, step, draft, error, notice) {
       </div>
       <div class="card" style="margin-bottom:0;">
         <h2 style="text-align:center; font-weight:900; margin-bottom:6px;">أهلاً تاني! جاهز للمذاكرة؟</h2>
-        <p class="muted" style="text-align:center; font-size:0.88rem; margin-bottom:14px;">ادخل على حسابك برقم الهاتف وكلمة السر، أو أدخل كود السنتر لفتح المنصة فوراً.</p>
+        <p class="muted" style="text-align:center; font-size:0.88rem; margin-bottom:14px;">ادخل على حسابك برقم الهاتف وكلمة السر من أي جهاز، أو أدخل كود السنتر لفتح المنصة فوراً.</p>
         <div style="display:flex; gap:8px; justify-content:center; margin-bottom:16px; border-bottom:1px solid var(--bdr); padding-bottom:10px; flex-wrap:wrap;">
           <a class="btn btn-blue btn-sm" href="/student?tab=login">تسجيل الدخول برقم الهاتف</a>
           <a class="btn btn-teal btn-sm" href="/student?tab=center">دخول بكود السنتر</a>
@@ -1173,15 +1203,30 @@ function renderStudentDash(settings, student, state) {
                 <span class="pill pill-ok">${esc(lec.branch)}</span>
                 <h3 style="font-weight:900; margin-top:6px;">${esc(lec.title)}</h3>
               </div>
-              <a class="btn btn-out btn-sm" href="/student?section=branch&branch=${encodeURIComponent(lec.branch)}">رجوع للفرع</a>
+              <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button type="button" class="blue-action-btn" id="expandVideo169Btn">تكبير الفيديو 16:9</button>
+                <button type="button" class="btn btn-out btn-sm" id="shrinkVideoBtn">تصغير لطبيعته</button>
+                <a class="btn btn-out btn-sm" href="/student?section=branch&branch=${encodeURIComponent(lec.branch)}">رجوع للفرع</a>
+              </div>
             </div>
-            <div class="secure-player-box">
+            <div class="secure-player-box" id="lecturePlayerBox">
               <div class="watermark-layer">
                 <span class="watermark-tag" style="top:18%; right:10%;">${esc(wmText)}</span>
                 <span class="watermark-tag" style="top:54%; right:35%; animation-delay:-4s;">${esc(wmText)}</span>
               </div>
               ${playerHtml}
             </div>
+            <script>
+              (function () {
+                const box = document.getElementById("lecturePlayerBox");
+                document.getElementById("expandVideo169Btn")?.addEventListener("click", function () {
+                  box?.classList.add("ratio-16-9");
+                });
+                document.getElementById("shrinkVideoBtn")?.addEventListener("click", function () {
+                  box?.classList.remove("ratio-16-9");
+                });
+              })();
+            </script>
             ${lec.video_url && /^https?:\/\//i.test(lec.video_url) && !ytId
               ? `<div style="margin-top:10px;"><a class="btn btn-teal btn-sm" href="${esc(lec.video_url)}" target="_blank" rel="noopener">فتح الفيديو في نافذة المشغل الخارجية</a></div>`
               : ""
@@ -1626,29 +1671,17 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
     return `
     <div class="card" style="max-width:460px; margin:28px auto;">
       <h2 style="font-weight:900; margin-bottom:8px;">دخول لوحة تحكم الأدمن</h2>
-      <p class="muted" style="font-size:0.86rem; margin-bottom:14px;">مقيد بجهاز الأدمن المسجل فقط — لن يُفتح من جهاز آخر حتى مع البيانات.</p>
+      <p class="muted" style="font-size:0.86rem; margin-bottom:14px;">أدخل بيانات الإدارة لإدارة الأكواد والمحاضرات والاختبارات والطلاب.</p>
       ${error ? `<div class="msg-err">${esc(error)}</div>` : ""}
-      <form method="post" action="/admin/login" id="adminLoginForm" autocomplete="off">
-        <input type="hidden" name="device_id" id="adminDeviceIdInput" value="" />
+      <form method="post" action="/admin/login" autocomplete="off">
         <div class="field"><label>البريد الإلكتروني</label><input name="email" type="email" required autocomplete="off" placeholder="mohmed@mr.com" /></div>
         <div class="field"><label>كلمة المرور</label><input name="password" type="password" required autocomplete="new-password" placeholder="••••••••" /></div>
         <button type="submit" class="btn btn-blue" style="width:100%;">دخول الأدمن</button>
       </form>
-    </div>
-    <script>
-      (function () {
-        let devId = localStorage.getItem("nb_admin_single_device_id");
-        if (!devId) {
-          devId = "ADMDEV_" + (crypto.randomUUID ? crypto.randomUUID() : (Date.now() + "_" + Math.random().toString(36).slice(2, 12)));
-          localStorage.setItem("nb_admin_single_device_id", devId);
-        }
-        const inp = document.getElementById("adminDeviceIdInput");
-        if (inp) inp.value = devId;
-      })();
-    </script>`;
+    </div>`;
   }
 
-  const activeSec = section || "students";
+  const activeSec = section || "codes";
   const allLectures = sortLectures(data.lectures || []);
   const allExams = data.exams || [];
   const allSubmissions = data.submissions || [];
@@ -1714,7 +1747,7 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
 
   const ticketsRows = (data.tickets || []).map(t => `
     <div class="row" style="display:block;">
-      <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+      <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
         <strong>${esc(t.subject)}</strong>
         <span class="muted" style="font-size:0.8rem;">${esc(t.student_name || "")} (${esc(t.student_phone || "")})</span>
       </div>
@@ -2182,12 +2215,6 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
           </div>
           <div class="field"><label>رابط صورة الأستاذ (اختياري)</label><input name="teacher_image" type="text" value="${esc(settings.teacher_image)}" /></div>
           <div class="field"><label>رسالة إشعار التنبيه الشفاف المتوهج (اتركه فارغاً لعدم ظهوره)</label><input name="global_notice" type="text" value="${esc(settings.global_notice)}" placeholder="اكتب رسالة التنبيه هنا..." /></div>
-          <div class="field">
-            <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
-              <input type="checkbox" name="reset_admin_device" value="1" style="width:auto;" />
-              <span>إعادة ربط جهاز الأدمن على هذا الجهاز فقط عند الحفظ</span>
-            </label>
-          </div>
           <button type="submit" class="btn btn-blue">حفظ الإعدادات</button>
         </form>
       </div>
@@ -2271,16 +2298,9 @@ export default {
     const secret = env.FIREBASE_API_KEY || "jakh-worker-secret";
 
     const settings = await getSettings(env);
-    const currentFp = await buildDeviceFingerprint(req);
     const stCookie = parseToken(getCookie(req, "nb_st"), secret);
     const admCookie = parseToken(getCookie(req, "nb_adm"), secret);
-    const isAdmin = Boolean(
-      admCookie &&
-      admCookie.role === "admin" &&
-      settings.admin_device_id &&
-      admCookie.dev === settings.admin_device_id &&
-      admCookie.fp === currentFp
-    );
+    const isAdmin = Boolean(admCookie && admCookie.role === "admin");
 
     let student = null;
     if (stCookie && stCookie.phone) {
@@ -2587,33 +2607,18 @@ export default {
       const form = await parseFormBody(req);
       const email = String(form.email || "").trim();
       const password = String(form.password || "");
-      const loginDevHash = await buildDeviceFingerprint(req, String(form.device_id || ""));
-
       const validPass = (await sha256(password)) === settings.admin_password_hash || (env.ADMIN_PASSWORD && password === env.ADMIN_PASSWORD);
       if (email !== settings.admin_email || !validPass) {
         return redirectRes(`/admin?error=${encodeURIComponent("بيانات دخول الأدمن غير صحيحة")}`);
       }
-
-      if (settings.admin_device_id && settings.admin_device_id !== loginDevHash) {
-        return redirectRes(`/admin?error=${encodeURIComponent("دخول الأدمن مقيد بجهاز واحد فقط ولا يُفتح من جهاز آخر حتى لو كانت البيانات صحيحة")}`);
-      }
-
-      const boundDeviceHash = settings.admin_device_id || loginDevHash;
-      if (!settings.admin_device_id) {
-        await fsSet(env, "settings", "main", {
-          ...settings,
-          admin_device_id: boundDeviceHash
-        });
-      }
-
-      const tok = makeToken({ role: "admin", email, dev: boundDeviceHash, fp: currentFp }, secret);
+      const tok = makeToken({ role: "admin", email }, secret);
       return redirectRes("/admin?section=students", {
         "Set-Cookie": setCookieHeader("nb_adm", tok)
       });
     }
 
     if (!isAdmin) {
-      return redirectRes("/admin?error=" + encodeURIComponent("غير مسموح بالدخول من هذا الجهاز"));
+      return redirectRes("/admin");
     }
 
     if (path === "/admin/generate-codes" && method === "POST") {
@@ -2721,23 +2726,14 @@ export default {
 
     if (path === "/admin/settings" && method === "POST") {
       const form = await parseFormBody(req);
-      const shouldResetDev = form.reset_admin_device === "1" || (Array.isArray(form.reset_admin_device) && form.reset_admin_device.includes("1"));
-      const nextAdminDeviceId = shouldResetDev ? currentFp : settings.admin_device_id;
-
       await fsSet(env, "settings", "main", {
         ...settings,
         vodafone_number: String(form.vodafone_number || settings.vodafone_number),
         admin_whatsapp: String(form.admin_whatsapp || settings.admin_whatsapp),
         teacher_image: String(form.teacher_image || settings.teacher_image),
-        global_notice: String(form.global_notice || ""),
-        admin_device_id: nextAdminDeviceId
+        global_notice: String(form.global_notice || "")
       });
-
-      const extraHdrs = shouldResetDev
-        ? { "Set-Cookie": setCookieHeader("nb_adm", makeToken({ role: "admin", email: settings.admin_email, dev: nextAdminDeviceId, fp: currentFp }, secret)) }
-        : {};
-
-      return redirectRes(`/admin?section=settings&notice=${encodeURIComponent("تم حفظ إعدادات المنصة")}`, extraHdrs);
+      return redirectRes(`/admin?section=settings&notice=${encodeURIComponent("تم حفظ إعدادات المنصة")}`);
     }
 
     return htmlRes("<h1>404 — الصفحة غير موجودة</h1>", 404);
