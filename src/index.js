@@ -295,6 +295,9 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
   const hasNotice = Boolean(settings.global_notice && String(settings.global_notice).trim());
   const defaultChatName = student ? String(student.full_name || "") : "";
   const defaultChatPhone = student ? String(student.phone || "") : "";
+  const academicUnreadCount = Number(options.academicUnreadCount || 0);
+  const academicUnreadItems = Array.isArray(options.academicUnreadItems) ? options.academicUnreadItems : [];
+  const adminBellCount = Number(options.adminBellCount || 0);
 
   return `<!DOCTYPE html>
 <html lang="ar" dir="rtl">
@@ -407,6 +410,99 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       color: #fff; font-weight: 900; display: grid; place-items: center; font-size: 1.05rem;
       box-shadow: 0 8px 20px rgba(37, 99, 235, 0.28);
       border: 1px solid rgba(255, 255, 255, 0.25);
+    }
+
+    /* جرس الإشعارات الأصفر للطالب / المستخدم */
+    .notif-bell-wrap {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+    }
+    .yellow-bell-btn {
+      position: relative;
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      border: 1px solid rgba(234, 179, 8, 0.55);
+      background: linear-gradient(135deg, #fef08a, #facc15);
+      color: #422006;
+      font-size: 1.15rem;
+      font-weight: 900;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      box-shadow: 0 6px 16px rgba(234, 179, 8, 0.3);
+      transition: transform 0.16s ease;
+    }
+    .yellow-bell-btn:hover { transform: translateY(-1px) scale(1.04); }
+    .yellow-bell-btn.has-alert {
+      animation: bellPulse 1.4s infinite ease-in-out;
+    }
+    @keyframes bellPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.65); }
+      50% { box-shadow: 0 0 0 8px rgba(250, 204, 21, 0); }
+    }
+    .bell-badge-num {
+      position: absolute;
+      top: -6px;
+      left: -6px;
+      min-width: 20px;
+      height: 20px;
+      padding: 0 5px;
+      border-radius: 999px;
+      background: #dc2626;
+      color: #ffffff;
+      font-size: 0.72rem;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid var(--surface);
+    }
+    .bell-badge-num.hidden-badge { display: none; }
+
+    /* جرس الأدمن المميز */
+    .admin-bell-btn {
+      position: relative;
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      border: 1px solid rgba(56, 189, 248, 0.5);
+      background: linear-gradient(135deg, #1e3a8a, #0284c7);
+      color: #fef08a;
+      font-size: 1.15rem;
+      font-weight: 900;
+      display: inline-grid;
+      place-items: center;
+      text-decoration: none;
+      box-shadow: 0 6px 16px rgba(2, 132, 199, 0.3);
+      transition: transform 0.16s ease;
+    }
+    .admin-bell-btn:hover { transform: translateY(-1px) scale(1.04); }
+
+    .notif-popover {
+      display: none;
+      position: fixed;
+      top: 68px;
+      left: 24px;
+      width: min(350px, calc(100vw - 28px));
+      max-height: 380px;
+      overflow-y: auto;
+      background: var(--surface);
+      border: 1px solid var(--bdr);
+      border-radius: 16px;
+      box-shadow: var(--shadow-lg);
+      padding: 14px;
+      z-index: 90;
+    }
+    .notif-popover.open { display: block; }
+    .notif-item-card {
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: var(--surface-soft);
+      border: 1px solid var(--bdr);
+      margin-top: 8px;
+      font-size: 0.84rem;
     }
 
     .mode-switch {
@@ -717,39 +813,66 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .floating-admin-avatar:hover { transform: scale(1.08); }
     .floating-admin-avatar img { width: 100%; height: 100%; object-fit: cover; object-position: center top; display: block; }
 
-    /* الدعم الفني العائم */
+    /* أيقونة الدعم المحسنة وشات أكبر */
     .support-fab-btn {
       position: fixed;
       bottom: 20px;
       right: 20px;
-      width: 58px;
       height: 58px;
-      border-radius: 50%;
-      border: none;
-      background: linear-gradient(135deg, #2563eb, #0284c7);
+      padding: 0 20px;
+      border-radius: 999px;
+      border: 1.5px solid rgba(255, 255, 255, 0.35);
+      background: linear-gradient(135deg, #2563eb 0%, #0284c7 100%);
       color: #ffffff;
-      font-size: 1.55rem;
-      display: grid;
-      place-items: center;
+      font-weight: 900;
+      font-size: 0.95rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
       cursor: pointer;
-      box-shadow: 0 12px 28px rgba(37, 99, 235, 0.42);
+      box-shadow: 0 14px 32px rgba(37, 99, 235, 0.45);
       z-index: 80;
       transition: transform 0.18s ease, box-shadow 0.2s ease;
     }
     .support-fab-btn:hover {
-      transform: scale(1.07);
-      box-shadow: 0 16px 34px rgba(37, 99, 235, 0.52);
+      transform: translateY(-2px) scale(1.03);
+      box-shadow: 0 18px 38px rgba(37, 99, 235, 0.56);
     }
+    .support-fab-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      display: grid;
+      place-items: center;
+      font-size: 1.15rem;
+    }
+    .support-fab-dot {
+      position: relative;
+      min-width: 22px;
+      height: 22px;
+      padding: 0 6px;
+      border-radius: 999px;
+      background: #facc15;
+      color: #422006;
+      font-size: 0.76rem;
+      font-weight: 900;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .support-fab-dot.hidden-badge { display: none; }
+
     .support-chat-window {
       display: none;
       position: fixed;
-      bottom: 90px;
+      bottom: 92px;
       right: 20px;
-      width: min(390px, calc(100vw - 28px));
-      max-height: 540px;
+      width: min(445px, calc(100vw - 24px));
+      height: min(620px, calc(100vh - 116px));
       background: var(--surface);
       border: 1px solid var(--bdr);
-      border-radius: 20px;
+      border-radius: 22px;
       box-shadow: var(--shadow-lg);
       z-index: 85;
       flex-direction: column;
@@ -759,40 +882,40 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       display: flex;
     }
     .support-chat-header {
-      background: linear-gradient(120deg, #2563eb, #1e3a8a);
+      background: linear-gradient(120deg, #1d4ed8, #0284c7);
       color: #ffffff;
-      padding: 14px 16px;
+      padding: 15px 18px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       gap: 10px;
     }
     .support-chat-close {
-      background: rgba(255, 255, 255, 0.18);
+      background: rgba(255, 255, 255, 0.2);
       border: none;
       color: #ffffff;
-      width: 30px;
-      height: 30px;
-      border-radius: 9px;
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
       font-weight: 900;
       cursor: pointer;
     }
     .support-chat-body {
-      padding: 14px;
+      padding: 16px;
       overflow-y: auto;
       flex: 1;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 11px;
       background: var(--bg);
     }
     .chat-bubble-bot {
       background: var(--surface);
       border: 1px solid var(--bdr);
       color: var(--txt);
-      padding: 10px 13px;
-      border-radius: 14px 14px 14px 4px;
-      font-size: 0.88rem;
+      padding: 11px 14px;
+      border-radius: 15px 15px 15px 4px;
+      font-size: 0.9rem;
       font-weight: 700;
       max-width: 88%;
       align-self: flex-start;
@@ -801,35 +924,35 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .chat-bubble-user {
       background: linear-gradient(135deg, #2563eb, #1d4ed8);
       color: #ffffff;
-      padding: 10px 13px;
-      border-radius: 14px 14px 4px 14px;
-      font-size: 0.88rem;
+      padding: 11px 14px;
+      border-radius: 15px 15px 4px 15px;
+      font-size: 0.9rem;
       font-weight: 700;
       max-width: 88%;
       align-self: flex-end;
       box-shadow: var(--shadow-sm);
     }
     .chat-bubble-admin {
-      background: rgba(2, 132, 199, 0.14);
+      background: rgba(2, 132, 199, 0.15);
       border: 1px solid rgba(2, 132, 199, 0.35);
       color: var(--txt);
-      padding: 10px 13px;
-      border-radius: 14px 14px 14px 4px;
-      font-size: 0.88rem;
+      padding: 11px 14px;
+      border-radius: 15px 15px 15px 4px;
+      font-size: 0.9rem;
       font-weight: 700;
       max-width: 88%;
       align-self: flex-start;
     }
     .chat-msg-img {
       max-width: 100%;
-      max-height: 170px;
+      max-height: 190px;
       border-radius: 10px;
       margin-top: 6px;
       display: block;
       object-fit: contain;
     }
     .support-name-box {
-      padding: 12px 14px;
+      padding: 13px 15px;
       border-top: 1px solid var(--bdr);
       background: var(--surface);
       display: flex;
@@ -839,7 +962,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .support-composer-wrap {
       border-top: 1px solid var(--bdr);
       background: var(--surface);
-      padding: 10px 12px;
+      padding: 11px 13px;
     }
     .support-img-chip {
       display: none;
@@ -851,7 +974,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       border-radius: 10px;
       padding: 6px 10px;
       margin-bottom: 8px;
-      font-size: 0.78rem;
+      font-size: 0.8rem;
       font-weight: 800;
     }
     .support-img-chip.has-img {
@@ -863,13 +986,13 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       gap: 8px;
     }
     .plus-attach-btn {
-      width: 40px;
-      height: 40px;
+      width: 42px;
+      height: 42px;
       border-radius: 12px;
-      border: 1px solid var(--accent);
+      border: 1.5px solid var(--accent);
       background: var(--surface-soft);
       color: var(--accent);
-      font-size: 1.35rem;
+      font-size: 1.4rem;
       font-weight: 900;
       display: grid;
       place-items: center;
@@ -1118,12 +1241,17 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
   ` : ""}
 
   ${showSupportWidget ? `
-    <button type="button" class="support-fab-btn" id="supportFabBtn" title="الدعم الفني" aria-label="الدعم الفني">💬</button>
+    <button type="button" class="support-fab-btn" id="supportFabBtn" title="الدعم الفني" aria-label="الدعم الفني">
+      <span class="support-fab-icon">🎧</span>
+      <span>الدعم الفني</span>
+      <span class="support-fab-dot hidden-badge" id="supportChatBadge">0</span>
+    </button>
+
     <div class="support-chat-window" id="supportChatWindow" role="dialog" aria-label="الدعم الفني">
       <div class="support-chat-header">
         <div>
-          <div style="font-weight:900; font-size:0.95rem;">الدعم الفني لمستر محمد يوسف</div>
-          <div style="font-size:0.74rem; opacity:0.92;">مساعد فني مباشر • ${PLATFORM_NAME}</div>
+          <div style="font-weight:900; font-size:1rem;">الدعم الفني لمستر محمد يوسف</div>
+          <div style="font-size:0.76rem; opacity:0.94;">مساعد فني مباشر • ${PLATFORM_NAME}</div>
         </div>
         <button type="button" class="support-chat-close" id="supportCloseBtn">✕</button>
       </div>
@@ -1131,7 +1259,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       <div class="support-chat-body" id="supportChatBody"></div>
 
       <div class="support-name-box" id="supportNameBox">
-        <input type="text" id="supportVisitorNameInput" placeholder="ضع اسمك هنا..." value="${esc(defaultChatName)}" style="flex:1; padding:8px 12px; font-size:0.86rem;" />
+        <input type="text" id="supportVisitorNameInput" placeholder="ضع اسمك هنا..." value="${esc(defaultChatName)}" style="flex:1; padding:9px 12px; font-size:0.88rem;" />
         <button type="button" class="btn btn-blue btn-sm" id="supportSaveNameBtn">تأكيد الاسم</button>
       </div>
 
@@ -1143,8 +1271,8 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
         <div class="support-composer-row">
           <button type="button" class="plus-attach-btn" id="supportPlusBtn" title="إرفاق صورة واحدة">+</button>
           <input type="file" id="supportSingleImageFile" accept="image/*" style="display:none;" />
-          <input type="text" id="supportMsgInput" placeholder="اكتب رسالتك أو سؤالك..." style="flex:1; padding:9px 12px; font-size:0.86rem;" />
-          <button type="submit" class="btn btn-blue btn-sm" style="padding:9px 14px;">إرسال</button>
+          <input type="text" id="supportMsgInput" placeholder="اكتب رسالتك أو سؤالك..." style="flex:1; padding:10px 12px; font-size:0.88rem;" />
+          <button type="submit" class="btn btn-blue btn-sm" style="padding:10px 15px;">إرسال</button>
         </div>
       </form>
     </div>
@@ -1159,7 +1287,38 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
           <div class="muted" style="font-size:0.78rem; font-weight:700;">اللغة العربية للثانوية الأزهرية (خبرة 30 عاماً)</div>
         </div>
       </div>
+
       <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        ${isAdmin ? `
+          <a class="admin-bell-btn" href="/admin?section=support" title="إشعارات الدعم الفني والأسئلة">
+            <span>🔔</span>
+            <span class="bell-badge-num ${adminBellCount > 0 ? "" : "hidden-badge"}">${adminBellCount}</span>
+          </a>
+        ` : `
+          <div class="notif-bell-wrap">
+            <button type="button" class="yellow-bell-btn ${academicUnreadCount > 0 ? "has-alert" : ""}" id="yellowNotifBellBtn" title="إشعارات الردود (الدعم الفني والدعم العلمي)">
+              <span>🔔</span>
+              <span class="bell-badge-num ${academicUnreadCount > 0 ? "" : "hidden-badge"}" id="yellowBellBadge">${academicUnreadCount}</span>
+            </button>
+            <div class="notif-popover" id="yellowNotifPopover">
+              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--bdr); padding-bottom:8px;">
+                <strong style="font-size:0.92rem;">إشعارات الردود</strong>
+                <span class="pill pill-warn">دعم فني وعلمي</span>
+              </div>
+              <div id="yellowNotifList">
+                ${academicUnreadItems.length ? academicUnreadItems.map(it => `
+                  <div class="notif-item-card">
+                    <span class="pill pill-ok">${esc(it.kind)}</span>
+                    <div style="font-weight:800; margin-top:4px;">${esc(it.title)}</div>
+                    <div class="muted" style="margin-top:2px;">${esc(it.preview)}</div>
+                    <a href="${esc(it.href)}" style="display:inline-block; margin-top:6px; font-weight:800; font-size:0.8rem; color:var(--accent);">فتح الرد</a>
+                  </div>
+                `).join("") : `<div class="muted" style="font-size:0.84rem; margin-top:10px;">لا توجد ردود جديدة غير مقروءة حالياً.</div>`}
+              </div>
+            </div>
+          </div>
+        `}
+
         <label class="mode-switch" title="تبديل الوضع النهاري والليلي">
           <input type="checkbox" id="themeToggle" />
           <span class="mode-track"></span>
@@ -1170,6 +1329,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
         ${(student || isAdmin) ? `<a class="btn btn-red btn-sm" href="/logout">خروج</a>` : ""}
       </div>
     </header>
+
     <div class="inline-dua-banner dua-done" id="inlineDuaBanner">
       <div class="inline-dua-left">
         <img class="inline-dua-avatar" src="${esc(settings.teacher_image)}" alt="الأستاذ محمد يوسف" onerror="this.style.display='none';" />
@@ -1180,6 +1340,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       </div>
       <button type="button" class="btn btn-out btn-sm" style="color:var(--txt);" id="hideDuaBtn">إخفاء</button>
     </div>
+
     ${hasNotice ? `
       <div class="glow-notice-wrap">
         <div class="glow-notice-box">
@@ -1188,6 +1349,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
         </div>
       </div>
     ` : ""}
+
     ${bodyHtml}
   </div>
 
@@ -1256,7 +1418,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
 
     (function enforceAntiCaptureAndBlackout() {
       let blackoutTimer = null;
-      function triggerBlackout(ms = 2200) {
+      function triggerBlackout(ms = 2500) {
         document.body.classList.add("screen-blackout");
         document.querySelectorAll("video").forEach((v) => { try { v.pause(); } catch {} });
         clearTimeout(blackoutTimer);
@@ -1267,12 +1429,8 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
         }, ms);
       }
 
-      document.addEventListener("contextmenu", function (e) {
-        e.preventDefault();
-      });
-      document.addEventListener("copy", function (e) {
-        e.preventDefault();
-      });
+      document.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+      document.addEventListener("copy", function (e) { e.preventDefault(); });
 
       window.addEventListener("keydown", function (e) {
         const k = (e.key || "").toLowerCase();
@@ -1283,7 +1441,6 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
           (e.metaKey && ["s", "p", "c", "g"].includes(k)) ||
           (e.ctrlKey && e.shiftKey && ["i", "j", "c", "s"].includes(k)) ||
           (e.metaKey && e.shiftKey && ["3", "4", "5", "s"].includes(k));
-
         if (isShotKey) {
           e.preventDefault();
           triggerBlackout(3500);
@@ -1301,24 +1458,17 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
           document.body.classList.add("screen-blackout");
           document.querySelectorAll("video").forEach((v) => { try { v.pause(); } catch {} });
         } else {
-          setTimeout(function () {
-            document.body.classList.remove("screen-blackout");
-          }, 300);
+          setTimeout(function () { document.body.classList.remove("screen-blackout"); }, 300);
         }
       });
 
-      window.addEventListener("blur", function () {
-        document.body.classList.add("screen-blackout");
-      });
-
+      window.addEventListener("blur", function () { document.body.classList.add("screen-blackout"); });
       window.addEventListener("focus", function () {
-        setTimeout(function () {
-          document.body.classList.remove("screen-blackout");
-        }, 250);
+        setTimeout(function () { document.body.classList.remove("screen-blackout"); }, 250);
       });
     })();
 
-    (function initSupportChatWidget() {
+    (function initSupportAndBellNotifications() {
       const fabBtn = document.getElementById("supportFabBtn");
       const winEl = document.getElementById("supportChatWindow");
       const closeBtn = document.getElementById("supportCloseBtn");
@@ -1333,8 +1483,12 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       const imgNameLbl = document.getElementById("supportImgName");
       const clearImgBtn = document.getElementById("supportClearImgBtn");
       const msgInput = document.getElementById("supportMsgInput");
+      const chatBadge = document.getElementById("supportChatBadge");
 
-      if (!fabBtn || !winEl || !bodyEl) return;
+      const bellBtn = document.getElementById("yellowNotifBellBtn");
+      const bellBadge = document.getElementById("yellowBellBadge");
+      const bellPopover = document.getElementById("yellowNotifPopover");
+      const bellList = document.getElementById("yellowNotifList");
 
       let sessionId = localStorage.getItem("jakh_sup_sid") || "";
       if (!sessionId) {
@@ -1345,6 +1499,10 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       let visitorName = localStorage.getItem("jakh_sup_name") || ${safeJsonForScript(defaultChatName)} || "";
       let attachedSingleImage = "";
       let messages = [];
+      let readSupportCount = Number(localStorage.getItem("jakh_sup_read_cnt") || "0");
+      let readAcademicKey = localStorage.getItem("jakh_acad_read_key") || "";
+
+      const serverAcademicItems = ${safeJsonForScript(academicUnreadItems)};
 
       function escLocal(s) {
         return String(s ?? "")
@@ -1354,7 +1512,98 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
           .replace(/"/g, "&quot;");
       }
 
+      function computeSupportUnread() {
+        const adminMsgs = messages.filter(m => m.sender === "admin");
+        if (winEl && winEl.classList.contains("open")) {
+          readSupportCount = adminMsgs.length;
+          localStorage.setItem("jakh_sup_read_cnt", String(readSupportCount));
+          return 0;
+        }
+        if (readSupportCount > adminMsgs.length) {
+          readSupportCount = adminMsgs.length;
+          localStorage.setItem("jakh_sup_read_cnt", String(readSupportCount));
+        }
+        return Math.max(0, adminMsgs.length - readSupportCount);
+      }
+
+      function refreshAllBells() {
+        const supUnread = computeSupportUnread();
+        const acadUnreadList = serverAcademicItems.filter(it => it.key !== readAcademicKey);
+        const totalUnread = supUnread + acadUnreadList.length;
+
+        if (chatBadge) {
+          chatBadge.textContent = String(supUnread);
+          chatBadge.classList.toggle("hidden-badge", supUnread <= 0);
+        }
+
+        if (bellBadge) {
+          bellBadge.textContent = String(totalUnread);
+          bellBadge.classList.toggle("hidden-badge", totalUnread <= 0);
+        }
+
+        if (bellBtn) {
+          bellBtn.classList.toggle("has-alert", totalUnread > 0);
+        }
+
+        if (bellList) {
+          const cards = [];
+          if (supUnread > 0) {
+            cards.push(
+              '<div class="notif-item-card">' +
+                '<span class="pill pill-ok">الدعم الفني</span>' +
+                '<div style="font-weight:800; margin-top:4px;">يوجد ' + supUnread + ' رد جديد من الدعم الفني</div>' +
+                '<button type="button" class="btn btn-blue btn-sm" style="margin-top:6px;" id="openChatFromBellBtn">فتح شات الدعم الفني</button>' +
+              '</div>'
+            );
+          }
+          acadUnreadList.forEach(it => {
+            cards.push(
+              '<div class="notif-item-card">' +
+                '<span class="pill pill-warn">' + escLocal(it.kind) + '</span>' +
+                '<div style="font-weight:800; margin-top:4px;">' + escLocal(it.title) + '</div>' +
+                '<div class="muted" style="margin-top:2px;">' + escLocal(it.preview) + '</div>' +
+                '<a href="' + escLocal(it.href) + '" style="display:inline-block; margin-top:6px; font-weight:800; font-size:0.8rem; color:var(--accent);">عرض الرد</a>' +
+              '</div>'
+            );
+          });
+          bellList.innerHTML = cards.length
+            ? cards.join("")
+            : '<div class="muted" style="font-size:0.84rem; margin-top:10px;">لا توجد رسائل جديدة غير مقروءة.</div>';
+
+          document.getElementById("openChatFromBellBtn")?.addEventListener("click", function () {
+            bellPopover?.classList.remove("open");
+            winEl?.classList.add("open");
+            renderChatMessages();
+            syncThread();
+          });
+        }
+      }
+
+      bellBtn?.addEventListener("click", function (e) {
+        e.stopPropagation();
+        const willOpen = !bellPopover?.classList.contains("open");
+        bellPopover?.classList.toggle("open", willOpen);
+        if (willOpen) {
+          const latestKey = serverAcademicItems.map(x => x.key).join("|");
+          if (latestKey) {
+            readAcademicKey = latestKey;
+            localStorage.setItem("jakh_acad_read_key", readAcademicKey);
+          }
+          const adminMsgs = messages.filter(m => m.sender === "admin");
+          readSupportCount = adminMsgs.length;
+          localStorage.setItem("jakh_sup_read_cnt", String(readSupportCount));
+          refreshAllBells();
+        }
+      });
+
+      document.addEventListener("click", function (e) {
+        if (bellPopover && !bellPopover.contains(e.target) && !bellBtn?.contains(e.target)) {
+          bellPopover.classList.remove("open");
+        }
+      });
+
       function renderChatMessages() {
+        if (!bodyEl) return;
         const parts = [];
         parts.push('<div class="chat-bubble-bot">أهلاً بك مع الدعم الفني لمستر محمد يوسف</div>');
         if (!visitorName) {
@@ -1385,13 +1634,16 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
         bodyEl.innerHTML = parts.join("");
         bodyEl.scrollTop = bodyEl.scrollHeight;
 
-        if (visitorName) {
-          nameBox.style.display = "none";
-          formEl.style.display = "block";
-        } else {
-          nameBox.style.display = "flex";
-          formEl.style.display = "none";
+        if (nameBox && formEl) {
+          if (visitorName) {
+            nameBox.style.display = "none";
+            formEl.style.display = "block";
+          } else {
+            nameBox.style.display = "flex";
+            formEl.style.display = "none";
+          }
         }
+        refreshAllBells();
       }
 
       async function syncThread() {
@@ -1408,7 +1660,8 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
         } catch {}
       }
 
-      fabBtn.addEventListener("click", function () {
+      fabBtn?.addEventListener("click", function () {
+        if (!winEl) return;
         const willOpen = !winEl.classList.contains("open");
         winEl.classList.toggle("open", willOpen);
         renderChatMessages();
@@ -1416,7 +1669,8 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       });
 
       closeBtn?.addEventListener("click", function () {
-        winEl.classList.remove("open");
+        winEl?.classList.remove("open");
+        refreshAllBells();
       });
 
       async function confirmVisitorName() {
@@ -1451,9 +1705,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
         }
       });
 
-      plusBtn?.addEventListener("click", function () {
-        fileInput?.click();
-      });
+      plusBtn?.addEventListener("click", function () { fileInput?.click(); });
 
       fileInput?.addEventListener("change", function () {
         const file = fileInput.files && fileInput.files[0];
@@ -1494,9 +1746,16 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
           image_url: attachedSingleImage
         };
 
+        messages.push({
+          sender: "user",
+          text: textVal,
+          image_url: attachedSingleImage,
+          at: new Date().toISOString()
+        });
         if (msgInput) msgInput.value = "";
         attachedSingleImage = "";
         imgChip?.classList.remove("has-img");
+        renderChatMessages();
 
         try {
           const res = await fetch("/api/support/send", {
@@ -1506,16 +1765,17 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
           });
           if (res.ok) {
             const data = await res.json();
-            messages = Array.isArray(data.messages) ? data.messages : messages;
-            renderChatMessages();
+            if (Array.isArray(data.messages)) {
+              messages = data.messages;
+              renderChatMessages();
+            }
           }
         } catch {}
       });
 
       renderChatMessages();
-      setInterval(function () {
-        if (winEl.classList.contains("open")) syncThread();
-      }, 6000);
+      syncThread();
+      setInterval(syncThread, 7000);
     })();
   </script>
 </body>
@@ -2204,8 +2464,8 @@ function renderStudentDash(settings, student, state) {
   } else if (section === "tickets") {
     mainContentHtml = `
       <div class="card">
-        <h2 style="font-weight:900; margin-bottom:8px;">اسأل سؤالاً</h2>
-        <p class="muted" style="font-size:0.88rem; margin-bottom:14px;">اختر صورة سؤالك مباشرة من جهازك ليراها الأستاذ محمد يوسف.</p>
+        <h2 style="font-weight:900; margin-bottom:8px;">اسأل سؤالاً (الدعم العلمي)</h2>
+        <p class="muted" style="font-size:0.88rem; margin-bottom:14px;">اختر صورة سؤالك مباشرة من جهازك ليراها الأستاذ محمد يوسف ويرد عليك.</p>
         <form method="post" action="/student/tickets" id="studentTicketForm">
           <input type="hidden" name="image_url" id="ticketImageData" />
           <div class="grid2">
@@ -2310,7 +2570,7 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
     </div>`;
   }
 
-  const activeSec = section || "codes";
+  const activeSec = section || "students";
   const allLectures = sortLectures(data.lectures || []);
   const allExams = data.exams || [];
   const allSubmissions = data.submissions || [];
@@ -2707,18 +2967,12 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
     sectionHtml = `
       <div class="card">
         <h3 style="font-weight:900; margin-bottom:10px;">طلاب المنصة</h3>
-        <div class="grid2" style="margin-bottom:12px;">
-          <div class="field" style="margin:0;">
-            <label>بحث بالاسم أو رقم الهاتف</label>
-            <input type="text" id="studentSearchInput" placeholder="اكتب اسم الطالب أو رقمه..." autocomplete="off" />
-          </div>
-          <div class="field" style="margin:0;">
-            <label>اختر الصف</label>
-            <select id="studentGradeFilter">
-              <option value="">كل الصفوف</option>
-              ${GRADES.map(g => `<option value="${esc(g)}">${esc(g)}</option>`).join("")}
-            </select>
-          </div>
+        <div class="field" style="max-width:420px;">
+          <label>اختر الصف</label>
+          <select id="studentGradeFilter">
+            <option value="">كل الصفوف</option>
+            ${GRADES.map(g => `<option value="${esc(g)}">${esc(g)}</option>`).join("")}
+          </select>
         </div>
 
         <div id="studentsListContainer"></div>
@@ -2730,22 +2984,9 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
         (function () {
           const allItems = ${safeJsonForScript(studentItemsPayload)};
           const allBranches = ${safeJsonForScript(BRANCHES)};
-          const searchEl = document.getElementById("studentSearchInput");
           const gradeEl = document.getElementById("studentGradeFilter");
           const listContainer = document.getElementById("studentsListContainer");
           const profileBox = document.getElementById("selectedStudentProfile");
-
-          function normalizeText(str) {
-            return String(str || "")
-              .replace(/[٠-٩]/g, d => String(d.charCodeAt(0) - 1632))
-              .replace(/[۰-۹]/g, d => String(d.charCodeAt(0) - 1776))
-              .replace(/[إأآا]/g, "ا")
-              .replace(/ى/g, "ي")
-              .replace(/ة/g, "ه")
-              .replace(/\s+/g, " ")
-              .trim()
-              .toLowerCase();
-          }
 
           function escHtml(v) {
             return String(v ?? "")
@@ -2758,11 +2999,12 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
           function openStudentProfile(phone) {
             const st = allItems.find(x => String(x.phone) === String(phone));
             if (!st) return;
+
             const subsHtml = st.submissions.length
               ? st.submissions.map(sub =>
                   '<div class="row" style="margin-top:6px;">' +
                     '<div><strong>' + escHtml(sub.exam_title) + '</strong> <span class="muted">(' + escHtml(sub.branch) + ')</span></div>' +
-                    '<span class="pill pill-ok">' + escHtml(sub.pct) + '% (' + escHtml(sub.score) + ' / ' + escHtml(sub.total) + ')</span>' +
+                    '<span class="pill pill-ok">درجته: ' + escHtml(sub.score) + ' / ' + escHtml(sub.total) + ' (' + escHtml(sub.pct) + '%)</span>' +
                   '</div>'
                 ).join("")
               : '<div class="muted" style="font-size:0.85rem; margin-top:6px;">لم يحل أي امتحان بعد.</div>';
@@ -2779,7 +3021,7 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
             profileBox.style.display = "block";
             profileBox.innerHTML =
               '<div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px;">' +
-                '<h4 style="font-weight:900; font-size:1.1rem;">بيانات الطالب: ' + escHtml(st.full_name) + '</h4>' +
+                '<h4 style="font-weight:900; font-size:1.12rem;">ملف الطالب: ' + escHtml(st.full_name) + '</h4>' +
                 '<div style="display:flex; gap:8px; flex-wrap:wrap;">' +
                   '<form method="post" action="/admin/delete-student" style="margin:0;" onsubmit="return confirm(\'هل أنت متأكد من حذف هذا الطالب نهائياً؟\');">' +
                     '<input type="hidden" name="phone" value="' + escHtml(st.phone) + '" />' +
@@ -2789,14 +3031,12 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
                 '</div>' +
               '</div>' +
               '<div class="row"><span>الاسم</span><strong>' + escHtml(st.full_name) + '</strong></div>' +
-              '<div class="row"><span>رقم الطالب</span><strong>' + escHtml(st.phone) + '</strong></div>' +
-              '<div class="row"><span>رقم ولي الأمر</span><strong>' + escHtml(st.parent_phone) + '</strong></div>' +
-              '<div class="row"><span>المحافظة</span><strong>' + escHtml(st.governorate) + '</strong></div>' +
-              '<div class="row"><span>الصف والشعبة</span><strong>' + escHtml(st.grade) + ' — ' + escHtml(st.track) + '</strong></div>' +
-              '<div class="row"><span>كلمة السر (مشفرة SHA-256)</span><strong style="font-size:0.78rem; word-break:break-all;">' + escHtml(st.password_hash) + '</strong></div>' +
-              '<div class="row"><span>أداء الطالب على المنصة</span><strong>' + escHtml(st.performanceLabel) + ' (' + escHtml(st.performanceScore) + '% — متوسط درجات ' + escHtml(st.avgPct) + '%)</strong></div>' +
-              '<div class="row"><span>المحاضرات</span><strong>شاهد: ' + escHtml(st.watchedCount) + ' • متراكم عليه: ' + escHtml(st.pendingLectures) + '</strong></div>' +
-              '<div class="row"><span>الامتحانات والواجبات</span><strong>حل: ' + escHtml(st.solvedExamsCount) + ' • متراكم عليه: ' + escHtml(st.pendingExams) + '</strong></div>' +
+              '<div class="row"><span>رقمه</span><strong>' + escHtml(st.phone) + '</strong></div>' +
+              '<div class="row"><span>رقم ولي أمره</span><strong>' + escHtml(st.parent_phone) + '</strong></div>' +
+              '<div class="row"><span>محافظته</span><strong>' + escHtml(st.governorate) + '</strong></div>' +
+              '<div class="row"><span>كلمة سره</span><strong style="font-size:0.78rem; word-break:break-all;">' + escHtml(st.password_hash) + '</strong></div>' +
+              '<div class="row"><span>متراكم كام محاضرة</span><strong>متراكم عليه: ' + escHtml(st.pendingLectures) + ' محاضرة (شاهد: ' + escHtml(st.watchedCount) + ')</strong></div>' +
+              '<div class="row"><span>جايب كام في الامتحانات</span><strong>متوسط: ' + escHtml(st.avgPct) + '% • حل: ' + escHtml(st.solvedExamsCount) + ' • متراكم: ' + escHtml(st.pendingExams) + '</strong></div>' +
               '<div class="row" style="display:block;">' +
                 '<div style="font-weight:800; margin-bottom:6px;">الفروع المفعلة: ' + branchesHtml + '</div>' +
                 '<form method="post" action="/admin/grant-branches" style="margin-top:8px;">' +
@@ -2805,7 +3045,7 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
                   '<button type="submit" class="btn btn-teal btn-sm">تفعيل اشتراك الفروع المحددة</button>' +
                 '</form>' +
               '</div>' +
-              '<div style="margin-top:12px;"><div style="font-weight:900;">درجاته في كل الامتحانات:</div>' + subsHtml + '</div>';
+              '<div style="margin-top:12px;"><div style="font-weight:900;">درجاته في الامتحانات:</div>' + subsHtml + '</div>';
 
             document.getElementById("closeStudentProfileBtn")?.addEventListener("click", function () {
               profileBox.style.display = "none";
@@ -2813,20 +3053,12 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
             profileBox.scrollIntoView({ behavior: "smooth", block: "nearest" });
           }
 
-          function renderFiltered() {
-            const q = normalizeText(searchEl?.value || "");
-            const g = normalizeText(gradeEl?.value || "");
-            const filtered = allItems.filter(item => {
-              const nameNorm = normalizeText(item.full_name);
-              const phoneNorm = normalizeText(item.phone);
-              const gradeNorm = normalizeText(item.grade);
-              const matchQuery = !q || nameNorm.includes(q) || phoneNorm.includes(q);
-              const matchGrade = !g || gradeNorm === g || gradeNorm.includes(g);
-              return matchQuery && matchGrade;
-            });
+          function renderByGrade() {
+            const g = (gradeEl?.value || "").trim();
+            const filtered = allItems.filter(item => !g || String(item.grade) === g);
 
             if (!filtered.length) {
-              listContainer.innerHTML = '<p class="muted">لا يوجد طلاب مطابقون للبحث.</p>';
+              listContainer.innerHTML = '<p class="muted">لا يوجد طلاب في هذا الصف حالياً.</p>';
               return;
             }
 
@@ -2834,7 +3066,7 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
               '<div class="row" style="cursor:pointer;" data-open-phone="' + escHtml(item.phone) + '">' +
                 '<div>' +
                   '<strong>' + escHtml(item.full_name) + '</strong> — <span class="muted">' + escHtml(item.phone) + '</span>' +
-                  '<div class="muted" style="font-size:0.8rem;">' + escHtml(item.grade) + ' (' + escHtml(item.track) + ') • الأداء: ' + escHtml(item.performanceLabel) + '</div>' +
+                  '<div class="muted" style="font-size:0.8rem;">' + escHtml(item.grade) + ' (' + escHtml(item.track) + ') • متراكم: ' + escHtml(item.pendingLectures) + ' محاضرة</div>' +
                 '</div>' +
                 '<button type="button" class="btn btn-blue btn-sm">فتح ملف الطالب</button>' +
               '</div>'
@@ -2847,10 +3079,8 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
             });
           }
 
-          searchEl?.addEventListener("input", renderFiltered);
-          searchEl?.addEventListener("keyup", renderFiltered);
-          gradeEl?.addEventListener("change", renderFiltered);
-          renderFiltered();
+          gradeEl?.addEventListener("change", renderByGrade);
+          renderByGrade();
         })();
       </script>
     `;
@@ -2892,7 +3122,7 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
   } else if (activeSec === "tickets") {
     sectionHtml = `
       <div class="card">
-        <h3 style="font-weight:900; margin-bottom:10px;">أسئلة الطلاب</h3>
+        <h3 style="font-weight:900; margin-bottom:10px;">أسئلة الطلاب (الدعم العلمي)</h3>
         ${ticketsRows}
       </div>
     `;
@@ -3004,6 +3234,19 @@ export default {
       student = await fsGet(env, "students", stCookie.phone);
     }
 
+    const allTickets = await fsList(env, "tickets");
+    const academicUnreadItems = student
+      ? allTickets
+          .filter(t => String(t.student_phone || "") === String(student.phone || "") && Boolean(String(t.reply || "").trim()))
+          .map(t => ({
+            key: `t_${t.id}_${String(t.reply || "").length}`,
+            kind: "دعم علمي",
+            title: String(t.subject || "سؤال طالب"),
+            preview: String(t.reply || "").slice(0, 70),
+            href: "/student?section=tickets"
+          }))
+      : [];
+
     if (path === "/api/support/thread" && method === "GET") {
       const sid = String(url.searchParams.get("session_id") || "").trim();
       if (!sid) {
@@ -3075,7 +3318,12 @@ export default {
     }
 
     if (path === "/" && method === "GET") {
-      return htmlRes(renderLayout("الرئيسية", settings, student, isAdmin, renderLanding(settings), { showLandingAdminAvatar: true, showSupportWidget: true }));
+      return htmlRes(renderLayout("الرئيسية", settings, student, isAdmin, renderLanding(settings), {
+        showLandingAdminAvatar: true,
+        showSupportWidget: true,
+        academicUnreadCount: academicUnreadItems.length,
+        academicUnreadItems
+      }));
     }
 
     if (path === "/student" && method === "GET") {
@@ -3091,7 +3339,11 @@ export default {
       const notice = url.searchParams.get("notice") || "";
 
       if (!student) {
-        return htmlRes(renderLayout("بوابة الطالب", settings, null, isAdmin, renderStudentAuth(settings, tab, step, draft, error, notice), { showSupportWidget: true }));
+        return htmlRes(renderLayout("بوابة الطالب", settings, null, isAdmin, renderStudentAuth(settings, tab, step, draft, error, notice), {
+          showSupportWidget: true,
+          academicUnreadCount: 0,
+          academicUnreadItems: []
+        }));
       }
 
       const lectureIdParam = url.searchParams.get("lecture") || "";
@@ -3103,16 +3355,15 @@ export default {
         });
       }
 
-      const [lectures, exams, tickets, submissions, drafts, watched] = await Promise.all([
+      const [lectures, exams, submissions, drafts, watched] = await Promise.all([
         fsList(env, "lectures"),
         fsList(env, "exams"),
-        fsList(env, "tickets"),
         fsList(env, "submissions"),
         fsList(env, "exam_drafts"),
         fsList(env, "watched_lectures")
       ]);
 
-      const myTickets = tickets.filter(t => t.student_phone === student.phone);
+      const myTickets = allTickets.filter(t => t.student_phone === student.phone);
       const mySubmissions = submissions.filter(s => s.student_phone === student.phone);
       const myDrafts = drafts.filter(d => d.student_phone === student.phone);
       const myWatched = watched.filter(w => w.student_phone === student.phone);
@@ -3131,7 +3382,11 @@ export default {
         error,
         notice
       });
-      return htmlRes(renderLayout("لوحة الطالب", settings, student, isAdmin, dashHtml, { showSupportWidget: true }));
+      return htmlRes(renderLayout("لوحة الطالب", settings, student, isAdmin, dashHtml, {
+        showSupportWidget: true,
+        academicUnreadCount: academicUnreadItems.length,
+        academicUnreadItems
+      }));
     }
 
     if (path === "/student/login" && method === "POST") {
@@ -3349,20 +3604,33 @@ export default {
       const preselectLectureId = url.searchParams.get("lecture_id") || "";
       const rankingGrade = url.searchParams.get("rank_grade") || GRADES[0];
       let data = {};
+      let adminBellCount = 0;
+
       if (isAdmin) {
-        const [codes, lectures, exams, students, tickets, submissions, watched, supportThreads] = await Promise.all([
+        const [codes, lectures, exams, students, submissions, watched, supportThreads] = await Promise.all([
           fsList(env, "codes"),
           fsList(env, "lectures"),
           fsList(env, "exams"),
           fsList(env, "students"),
-          fsList(env, "tickets"),
           fsList(env, "submissions"),
           fsList(env, "watched_lectures"),
           fsList(env, "support_chats")
         ]);
-        data = { codes, lectures, exams, students, tickets, submissions, watched, supportThreads, preselectLectureId, rankingGrade };
+        const unansweredTickets = allTickets.filter(t => !String(t.reply || "").trim()).length;
+        const unansweredSupport = supportThreads.filter(th => {
+          const msgs = Array.isArray(th.messages) ? th.messages : [];
+          const last = msgs[msgs.length - 1];
+          return last && last.sender === "user";
+        }).length;
+        adminBellCount = unansweredTickets + unansweredSupport;
+        data = { codes, lectures, exams, students, tickets: allTickets, submissions, watched, supportThreads, preselectLectureId, rankingGrade };
       }
-      return htmlRes(renderLayout("لوحة الأدمن", settings, student, isAdmin, renderAdminPage(settings, isAdmin, data, section, error, notice), { showLandingAdminAvatar: false, showSupportWidget: false }));
+
+      return htmlRes(renderLayout("لوحة الأدمن", settings, student, isAdmin, renderAdminPage(settings, isAdmin, data, section, error, notice), {
+        showLandingAdminAvatar: false,
+        showSupportWidget: false,
+        adminBellCount
+      }));
     }
 
     if (path === "/admin/login" && method === "POST") {
