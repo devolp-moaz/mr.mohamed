@@ -36,6 +36,7 @@ const EGYPT_GOVERNORATES = [
 const TEACHER_MAIN_PHOTO = "https://www.mohammedyoussef2027.com/public/heroPhotos/teacher-photo.png";
 const DEFAULT_ADMIN_EMAIL = "mohmed@mr.com";
 const DEFAULT_ADMIN_PASS = "admin123456";
+const PLATFORM_NAME = "أنت جخ مع محمد يوسف";
 
 async function sha256(val) {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(val || "")));
@@ -290,45 +291,51 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>${esc(title)} | نور البيان — أ. محمد يوسف</title>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" />
+  <title>${esc(title)} | ${PLATFORM_NAME}</title>
+  <link rel="icon" type="image/png" href="${esc(settings.teacher_image)}" />
   <link rel="shortcut icon" href="${esc(settings.teacher_image)}" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" />
   <style>
     :root {
-      --bg: #f6f8fb;
+      --bg: #f4f7f5;
       --surface: #ffffff;
-      --surface-soft: #f1f5f9;
+      --surface-soft: #eef3f0;
       --txt: #0f172a;
-      --muted: #64748b;
-      --accent: #1d4ed8;
+      --muted: #5f6d7e;
+      --accent: #4d7c0f;
+      --accent-dark: #2c4712;
       --accent-2: #0f766e;
-      --gold: #b45309;
+      --gold: #ca8a04;
       --err: #be123c;
-      --bdr: #e2e8f0;
-      --glyph: rgba(29, 78, 216, 0.08);
-      --shadow-sm: 0 2px 10px rgba(15, 23, 42, 0.04);
-      --shadow-md: 0 10px 28px rgba(15, 23, 42, 0.07);
-      --shadow-lg: 0 18px 40px rgba(15, 23, 42, 0.1);
+      --bdr: #dce5df;
+      --glyph: rgba(77, 124, 15, 0.08);
+      --shadow-sm: 0 2px 10px rgba(15, 23, 42, 0.05);
+      --shadow-md: 0 12px 28px rgba(15, 23, 42, 0.08);
+      --shadow-lg: 0 20px 44px rgba(15, 23, 42, 0.13);
     }
     body.dark {
-      --bg: #070b14;
-      --surface: #0e1525;
-      --surface-soft: #152036;
-      --txt: #f1f5f9;
-      --muted: #94a3b8;
-      --accent: #3b82f6;
-      --accent-2: #14b8a6;
-      --gold: #f59e0b;
+      --bg: #070b07;
+      --surface: #0f170d;
+      --surface-soft: #162213;
+      --txt: #f3f7f2;
+      --muted: #9eb09a;
+      --accent: #84cc16;
+      --accent-dark: #5c8d14;
+      --accent-2: #2dd4bf;
+      --gold: #eab308;
       --err: #fb7185;
-      --bdr: rgba(148, 163, 184, 0.16);
-      --glyph: rgba(59, 130, 246, 0.11);
-      --shadow-sm: 0 2px 12px rgba(0, 0, 0, 0.25);
-      --shadow-md: 0 12px 30px rgba(0, 0, 0, 0.42);
-      --shadow-lg: 0 20px 44px rgba(0, 0, 0, 0.58);
+      --bdr: rgba(163, 230, 53, 0.16);
+      --glyph: rgba(132, 204, 22, 0.1);
+      --shadow-sm: 0 2px 12px rgba(0, 0, 0, 0.35);
+      --shadow-md: 0 14px 32px rgba(0, 0, 0, 0.52);
+      --shadow-lg: 0 22px 48px rgba(0, 0, 0, 0.72);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; }
     body {
-      background: var(--bg);
+      background:
+        radial-gradient(circle at 12% 8%, rgba(132, 204, 22, 0.09), transparent 42%),
+        radial-gradient(circle at 88% 85%, rgba(202, 138, 4, 0.08), transparent 45%),
+        var(--bg);
       color: var(--txt);
       min-height: 100vh;
       line-height: 1.72;
@@ -354,8 +361,8 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
 
     .topbar {
       background: color-mix(in srgb, var(--surface) 88%, transparent);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
       border-bottom: 1px solid var(--bdr);
       padding: 12px 24px;
       display: flex;
@@ -370,10 +377,11 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     }
     .brand-box { display: flex; align-items: center; gap: 12px; }
     .brand-logo-badge {
-      width: 42px; height: 42px; border-radius: 13px;
-      background: linear-gradient(135deg, var(--accent), var(--accent-2));
-      color: #fff; font-weight: 900; display: grid; place-items: center; font-size: 1rem;
-      box-shadow: 0 6px 16px rgba(29, 78, 216, 0.24);
+      width: 46px; height: 46px; border-radius: 14px;
+      background: linear-gradient(135deg, #65a30d, #15803d);
+      color: #fff; font-weight: 900; display: grid; place-items: center; font-size: 1.05rem;
+      box-shadow: 0 8px 20px rgba(77, 124, 15, 0.28);
+      border: 1px solid rgba(255, 255, 255, 0.25);
     }
 
     .mode-switch {
@@ -438,28 +446,28 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .btn:active { transform: translateY(0) scale(0.985); }
 
     .btn-blue {
-      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      background: linear-gradient(135deg, #65a30d, #3f6212);
       color: #fff;
-      box-shadow: 0 6px 16px rgba(37, 99, 235, 0.25);
+      box-shadow: 0 6px 18px rgba(77, 124, 15, 0.28);
     }
-    .btn-blue:hover { box-shadow: 0 10px 22px rgba(37, 99, 235, 0.34); }
+    .btn-blue:hover { box-shadow: 0 10px 24px rgba(77, 124, 15, 0.38); }
 
     .btn-teal {
-      background: linear-gradient(135deg, #0d9488, #0f766e);
+      background: linear-gradient(135deg, #0d9488, #115e59);
       color: #fff;
-      box-shadow: 0 6px 16px rgba(13, 148, 136, 0.24);
+      box-shadow: 0 6px 18px rgba(13, 148, 136, 0.26);
     }
-    .btn-teal:hover { box-shadow: 0 10px 22px rgba(13, 148, 136, 0.33); }
+    .btn-teal:hover { box-shadow: 0 10px 24px rgba(13, 148, 136, 0.36); }
 
     .btn-gold {
-      background: linear-gradient(135deg, #d97706, #b45309);
+      background: linear-gradient(135deg, #eab308, #a16207);
       color: #fff;
-      box-shadow: 0 6px 16px rgba(217, 119, 6, 0.24);
+      box-shadow: 0 6px 18px rgba(202, 138, 4, 0.26);
     }
     .btn-red {
       background: linear-gradient(135deg, #e11d48, #be123c);
       color: #fff;
-      box-shadow: 0 6px 16px rgba(225, 29, 72, 0.22);
+      box-shadow: 0 6px 16px rgba(225, 29, 72, 0.24);
     }
     .btn-out {
       background: var(--surface);
@@ -470,7 +478,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .btn-out:hover { border-color: var(--accent); background: var(--surface-soft); }
     .btn-sm { padding: 7px 13px; font-size: 0.82rem; border-radius: 10px; }
 
-    .card, .right-drawer, .landing-hero-card, .course-card, .blue-week-banner, .blue-lesson-strip, .student-detail-box, .q-builder-card {
+    .card, .right-drawer, .landing-hero-card, .course-card, .student-detail-box, .q-builder-card {
       background: var(--surface);
       border: 1px solid var(--bdr);
       border-radius: 18px;
@@ -482,6 +490,167 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       transform: translateY(-3px);
       box-shadow: var(--shadow-lg);
     }
+
+    /* أسلوب الأكورديون الفخم لعرض المحاضرات والأقسام للطلاب */
+    .jakh-week-banner {
+      background: linear-gradient(120deg, #65a30d 0%, #3f6212 100%);
+      color: #fff;
+      padding: 20px 24px;
+      border-radius: 18px;
+      margin-bottom: 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+      box-shadow: var(--shadow-md);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+    }
+    .you-here-pill {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 5px 14px; border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.55);
+      background: rgba(255, 255, 255, 0.16);
+      color: #fff; font-weight: 800; font-size: 0.84rem; white-space: nowrap;
+    }
+    .lecture-accordion-list { display: flex; flex-direction: column; gap: 12px; }
+    .lec-accordion-item {
+      border-radius: 16px;
+      border: 1px solid var(--bdr);
+      background: var(--surface);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+      transition: border-color 0.22s ease, box-shadow 0.22s ease, transform 0.18s ease;
+    }
+    .lec-accordion-item.is-open {
+      border-color: #7da13c;
+      box-shadow: var(--shadow-md);
+    }
+    .lec-accordion-header {
+      width: 100%;
+      background: var(--surface-soft);
+      border: none;
+      color: var(--txt);
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      cursor: pointer;
+      text-align: right;
+      transition: background-color 0.22s ease, color 0.22s ease;
+    }
+    .lec-accordion-item.is-open .lec-accordion-header {
+      background: linear-gradient(120deg, #749b36 0%, #567622 100%);
+      color: #ffffff;
+    }
+    .lec-header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+    .lec-chevron-circle {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: #84cc16;
+      color: #0b1307;
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+      font-size: 0.9rem;
+      box-shadow: 0 4px 12px rgba(132, 204, 22, 0.35);
+      transition: transform 0.25s ease;
+    }
+    .lec-accordion-item:not(.is-open) .lec-chevron-circle {
+      transform: rotate(180deg);
+    }
+    .lec-counter-badge {
+      font-weight: 800;
+      font-size: 0.9rem;
+      opacity: 0.92;
+      direction: ltr;
+    }
+    .lec-header-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+      flex: 1;
+    }
+    .lec-main-title {
+      font-weight: 900;
+      font-size: 1.04rem;
+      line-height: 1.45;
+    }
+    .lec-sub-icons {
+      font-size: 0.85rem;
+      opacity: 0.9;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .lec-accordion-body {
+      display: none;
+      padding: 18px;
+      background: var(--surface);
+      border-top: 1px solid var(--bdr);
+    }
+    .lec-accordion-item.is-open .lec-accordion-body {
+      display: block;
+    }
+
+    .sub-topic-list { display: flex; flex-direction: column; gap: 10px; }
+    .sub-topic-card {
+      border: 1px solid var(--bdr);
+      border-radius: 14px;
+      background: var(--surface-soft);
+      overflow: hidden;
+      transition: border-color 0.2s ease;
+    }
+    .sub-topic-card.sub-open { border-color: var(--accent); }
+    .sub-topic-head {
+      width: 100%;
+      background: transparent;
+      border: none;
+      color: var(--txt);
+      padding: 13px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      font-weight: 800;
+      font-size: 0.98rem;
+      text-align: right;
+    }
+    .sub-topic-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 0.86rem;
+      font-weight: 800;
+    }
+    .sub-topic-panel {
+      display: none;
+      padding: 14px 18px 16px;
+      background: var(--surface);
+      border-top: 1px solid var(--bdr);
+    }
+    .sub-topic-card.sub-open .sub-topic-panel { display: block; }
+
+    .jakh-action-btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 8px 16px; border-radius: 11px;
+      background: linear-gradient(135deg, #65a30d, #3f6212);
+      color: #fff; font-weight: 800; font-size: 0.85rem;
+      text-decoration: none; border: none; cursor: pointer;
+      box-shadow: 0 5px 14px rgba(77, 124, 15, 0.28);
+      transition: transform 0.15s ease, opacity 0.15s ease;
+    }
+    .jakh-action-btn:hover { transform: translateY(-1px); opacity: 0.96; }
 
     .field { margin-bottom: 14px; }
     label { display: block; font-weight: 800; margin-bottom: 6px; font-size: 0.88rem; color: var(--txt); }
@@ -501,7 +670,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     input:focus, select:focus, textarea:focus {
       background: var(--surface);
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+      box-shadow: 0 0 0 3px rgba(132, 204, 22, 0.2);
     }
     textarea { min-height: 96px; resize: vertical; }
     input[type="radio"], input[type="checkbox"] { width: auto; box-shadow: none; }
@@ -510,8 +679,8 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       position: fixed;
       bottom: 18px;
       left: 18px;
-      width: 42px;
-      height: 42px;
+      width: 44px;
+      height: 44px;
       border-radius: 50%;
       overflow: hidden;
       border: 2px solid var(--accent);
@@ -529,7 +698,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       margin: 14px auto 0;
       padding: 14px 20px;
       border-radius: 16px;
-      background: linear-gradient(120deg, var(--accent), var(--accent-2));
+      background: linear-gradient(120deg, #65a30d, #0f766e);
       color: #fff;
       box-shadow: var(--shadow-md);
       display: flex;
@@ -590,16 +759,16 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       flex-wrap: wrap;
     }
     .pill { display: inline-block; padding: 3px 11px; border-radius: 999px; font-size: 0.78rem; font-weight: 800; }
-    .pill-ok { background: rgba(13, 148, 136, 0.14); color: var(--accent-2); }
-    .pill-warn { background: rgba(217, 119, 6, 0.14); color: var(--gold); }
-    .pill-err { background: rgba(225, 29, 72, 0.14); color: var(--err); }
+    .pill-ok { background: rgba(101, 163, 13, 0.16); color: var(--accent); }
+    .pill-warn { background: rgba(202, 138, 4, 0.16); color: var(--gold); }
+    .pill-err { background: rgba(225, 29, 72, 0.15); color: var(--err); }
     .msg-err {
       background: rgba(225, 29, 72, 0.1); border: 1px solid rgba(225, 29, 72, 0.35);
       color: var(--err); padding: 12px 16px; border-radius: 12px; font-weight: 800; margin-bottom: 14px;
     }
     .msg-ok {
-      background: rgba(13, 148, 136, 0.1); border: 1px solid rgba(13, 148, 136, 0.35);
-      color: var(--accent-2); padding: 12px 16px; border-radius: 12px; font-weight: 800; margin-bottom: 14px;
+      background: rgba(101, 163, 13, 0.12); border: 1px solid rgba(101, 163, 13, 0.36);
+      color: var(--accent); padding: 12px 16px; border-radius: 12px; font-weight: 800; margin-bottom: 14px;
     }
     .muted { color: var(--muted); }
 
@@ -623,24 +792,24 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       font-size: 0.9rem; margin-bottom: 4px; transition: background-color 0.18s ease, color 0.18s ease;
     }
     .nav-item-link:hover { background: var(--surface-soft); }
-    .nav-item-link.active { background: var(--accent); color: #fff; }
+    .nav-item-link.active { background: linear-gradient(135deg, #65a30d, #3f6212); color: #fff; }
     .sub-nav { padding-right: 14px; margin-bottom: 8px; }
     .sub-link {
       display: block; padding: 5px 12px; border-radius: 9px; color: var(--muted);
       text-decoration: none; font-weight: 700; font-size: 0.83rem; margin-bottom: 2px;
     }
-    .sub-link.active, .sub-link:hover { background: rgba(13, 148, 136, 0.12); color: var(--accent-2); }
+    .sub-link.active, .sub-link:hover { background: rgba(101, 163, 13, 0.14); color: var(--accent); }
     .dash-shell.collapsed .nav-label, .dash-shell.collapsed .sub-nav, .dash-shell.collapsed .drawer-title { display: none; }
 
     .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-bottom: 18px; }
     .kpi-card {
-      background: linear-gradient(135deg, #2563eb 0%, #1e3a8a 100%);
+      background: linear-gradient(135deg, #65a30d 0%, #2c4712 100%);
       color: #fff; border-radius: 16px; padding: 18px;
       display: flex; justify-content: space-between; align-items: center;
       box-shadow: var(--shadow-md);
     }
     .kpi-card.teal-kpi { background: linear-gradient(135deg, #0d9488 0%, #115e59 100%); }
-    .kpi-card.gold-kpi { background: linear-gradient(135deg, #d97706 0%, #92400e 100%); }
+    .kpi-card.gold-kpi { background: linear-gradient(135deg, #ca8a04 0%, #854d0e 100%); }
     .kpi-num { font-size: 1.62rem; font-weight: 900; line-height: 1.1; }
     .kpi-lbl { font-size: 0.86rem; font-weight: 700; opacity: 0.92; margin-top: 4px; }
     .kpi-icon-box {
@@ -662,45 +831,10 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .teacher-color-meter .bw-layer { filter: grayscale(100%) contrast(1.05); }
     .teacher-color-meter .color-reveal { position: absolute; inset: 0; overflow: hidden; transition: clip-path 0.45s ease; }
     .prog-bar-bg { height: 8px; border-radius: 999px; background: var(--surface-soft); overflow: hidden; margin: 10px 0; }
-    .prog-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent-2), var(--accent)); border-radius: 999px; transition: width 0.4s ease; }
+    .prog-bar-fill { height: 100%; background: linear-gradient(90deg, #84cc16, #0d9488); border-radius: 999px; transition: width 0.4s ease; }
 
     .course-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(265px, 1fr)); gap: 16px; }
     .course-card { overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; }
-    .blue-week-banner {
-      background: linear-gradient(120deg, #2563eb 0%, #1e3a8a 100%);
-      color: #fff; padding: 18px 22px; margin-bottom: 16px;
-      display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap;
-    }
-    .you-here-pill {
-      display: inline-flex; align-items: center; justify-content: center;
-      padding: 5px 14px; border-radius: 999px;
-      border: 1px solid rgba(255, 255, 255, 0.6);
-      background: rgba(255, 255, 255, 0.14);
-      color: #fff; font-weight: 800; font-size: 0.84rem; white-space: nowrap;
-    }
-    .blue-lesson-strip {
-      background: var(--surface-soft);
-      padding: 14px 18px;
-      margin-top: 10px;
-      display: flex; justify-content: space-between; align-items: center;
-      gap: 12px; flex-wrap: wrap;
-    }
-    .blue-strip-left { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-    .blue-play-badge {
-      width: 34px; height: 34px; border-radius: 50%;
-      background: rgba(59, 130, 246, 0.14); border: 1px solid rgba(59, 130, 246, 0.35);
-      color: var(--accent); display: grid; place-items: center; font-weight: 900; font-size: 0.88rem;
-    }
-    .blue-action-btn {
-      display: inline-flex; align-items: center; justify-content: center;
-      padding: 8px 15px; border-radius: 10px;
-      background: var(--accent); color: #fff; font-weight: 800; font-size: 0.84rem;
-      text-decoration: none; border: none; cursor: pointer;
-      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.24);
-      transition: transform 0.15s ease, opacity 0.15s ease;
-    }
-    .blue-action-btn:hover { transform: translateY(-1px); opacity: 0.95; }
-
     .branch-book-card {
       display: flex; align-items: center; gap: 10px;
       background: rgba(255, 255, 255, 0.14); border: 1px solid rgba(255, 255, 255, 0.25);
@@ -712,7 +846,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     }
     .course-banner {
       min-height: 156px; position: relative; overflow: hidden;
-      background: linear-gradient(135deg, #2563eb 0%, #0f766e 100%);
+      background: linear-gradient(135deg, #65a30d 0%, #0f766e 100%);
       color: #fff; padding: 16px; display: flex; justify-content: space-between; align-items: flex-end; gap: 10px;
     }
     .course-banner img.book-thumb {
@@ -726,7 +860,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .landing-hero-card { padding: 26px; display: grid; grid-template-columns: 310px 1fr; gap: 26px; align-items: center; }
     @media (max-width: 860px) { .landing-hero-card { grid-template-columns: 1fr; } }
     .hero-teacher-frame {
-      background: linear-gradient(155deg, rgba(37, 99, 235, 0.12), rgba(13, 148, 136, 0.12));
+      background: linear-gradient(155deg, rgba(101, 163, 13, 0.14), rgba(13, 148, 136, 0.14));
       border-radius: 16px; padding: 12px; display: flex; justify-content: center; align-items: center;
       min-height: 340px; border: 1px solid var(--bdr);
     }
@@ -750,25 +884,25 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     }
     @media (max-width: 840px) { .split-auth { grid-template-columns: 1fr; } }
     .promo-pane {
-      background: linear-gradient(155deg, #2563eb 0%, #0f766e 100%);
+      background: linear-gradient(155deg, #65a30d 0%, #0f766e 100%);
       color: #fff; border-radius: 18px; padding: 24px; box-shadow: var(--shadow-md);
       display: flex; flex-direction: column; justify-content: space-between; min-height: 440px;
     }
-    .promo-pane.gold-mode { background: linear-gradient(155deg, #d97706 0%, #0f766e 100%); }
+    .promo-pane.gold-mode { background: linear-gradient(155deg, #ca8a04 0%, #3f6212 100%); }
     .promo-img {
       width: 215px; height: 265px; object-fit: contain; object-position: center top;
       background: rgba(255, 255, 255, 0.14);
       border-radius: 14px; border: 1.5px solid rgba(255, 255, 255, 0.45); margin: 14px auto 0; display: block;
     }
     .step-track { height: 6px; background: var(--surface-soft); border-radius: 999px; overflow: hidden; margin-bottom: 14px; }
-    .step-fill { height: 100%; background: linear-gradient(90deg, var(--accent-2), var(--accent)); }
+    .step-fill { height: 100%; background: linear-gradient(90deg, #84cc16, #0d9488); }
 
     .secure-player-box {
-      position: relative; width: 100%; max-width: 860px; margin: 14px auto 0;
+      position: relative; width: 100%; max-width: 860px; margin: 12px auto 0;
       border-radius: 16px; overflow: hidden; background: #000;
       border: 1px solid var(--bdr); user-select: none; box-shadow: var(--shadow-md);
     }
-    .secure-player-box video, .secure-player-box iframe { width: 100%; min-height: 380px; display: block; border: none; }
+    .secure-player-box video, .secure-player-box iframe { width: 100%; min-height: 360px; display: block; border: none; }
     .watermark-layer { position: absolute; inset: 0; pointer-events: none; z-index: 5; overflow: hidden; }
     .watermark-tag {
       position: absolute; color: rgba(255, 255, 255, 0.34); font-size: 0.84rem;
@@ -805,7 +939,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       <div class="brand-box">
         <div class="brand-logo-badge">جخ</div>
         <div>
-          <div style="font-weight:900; font-size:1.06rem; color:var(--accent);">نور البيان — أ. محمد يوسف</div>
+          <div style="font-weight:900; font-size:1.08rem; color:var(--accent);">${PLATFORM_NAME}</div>
           <div class="muted" style="font-size:0.78rem; font-weight:700;">اللغة العربية للثانوية الأزهرية (خبرة 30 عاماً)</div>
         </div>
       </div>
@@ -825,7 +959,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
         <img class="inline-dua-avatar" src="${esc(settings.teacher_image)}" alt="الأستاذ محمد يوسف" onerror="this.style.display='none';" />
         <div>
           <div class="inline-dua-text">اللهم فهمني كما فهمت داوود وسليمان</div>
-          <div class="inline-dua-sub">دعاء البداية • الأستاذ محمد يوسف — معلم أول اللغة العربية الأزهرية</div>
+          <div class="inline-dua-sub">دعاء البداية • ${PLATFORM_NAME} — معلم أول اللغة العربية الأزهرية</div>
         </div>
       </div>
       <button type="button" class="btn btn-out btn-sm" style="color:var(--txt);" id="hideDuaBtn">إخفاء</button>
@@ -940,7 +1074,7 @@ function renderLanding(settings) {
     </div>
     <div>
       <span class="pill pill-ok">معلم أول لغة عربية</span>
-      <h1 style="font-size:1.85rem; font-weight:900; margin-top:10px; color:var(--accent);">الأستاذ محمد يوسف</h1>
+      <h1 style="font-size:1.85rem; font-weight:900; margin-top:10px; color:var(--accent);">${PLATFORM_NAME}</h1>
       <div style="font-size:1.08rem; font-weight:800; color:var(--gold); margin-top:6px;">
         30 سنة خبرة تدريس في اللغة العربية للثانوية الأزهرية
       </div>
@@ -953,7 +1087,7 @@ function renderLanding(settings) {
 
 <div class="landing-start-section">
   <div class="card" style="margin-bottom:0; text-align:center; padding:26px 22px;">
-    <h2 style="font-size:1.45rem; font-weight:900; margin-bottom:8px;">أهلاً بك في منصة نور البيان ✦ ۝ جخ ۝ ✦</h2>
+    <h2 style="font-size:1.45rem; font-weight:900; margin-bottom:8px;">أهلاً بك في ${PLATFORM_NAME} ✦ ۝ جخ ۝ ✦</h2>
     <p class="muted" style="margin-bottom:20px;">ابدأ رحلتك الآن مع الأستاذ محمد يوسف في فروع اللغة العربية والواجبات والامتحانات.</p>
     <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap; max-width:500px; margin:0 auto;">
       <a class="btn btn-teal" style="flex:1; min-width:170px;" href="/student?tab=login">ابدأ معنا</a>
@@ -980,7 +1114,7 @@ function renderStudentAuth(settings, authTab, step, draft, error, notice) {
       <div class="promo-pane">
         <div>
           <h2 style="font-size:1.32rem; font-weight:900;">انضم الآن لمجتمع طلاب الثانوية الأزهرية</h2>
-          <p style="margin-top:10px; font-size:0.92rem; opacity:0.95;">تعلم اللغة العربية وفروعها السبعة بأسلوب منظم مع أ. محمد يوسف.</p>
+          <p style="margin-top:10px; font-size:0.92rem; opacity:0.95;">تعلم اللغة العربية وفروعها السبعة بأسلوب منظم في ${PLATFORM_NAME}.</p>
         </div>
         <img class="promo-img" src="${esc(settings.teacher_image)}" alt="الأستاذ محمد يوسف" onerror="this.style.display='none';" />
       </div>
@@ -1138,6 +1272,20 @@ function renderStudentDash(settings, student, state) {
     return solvedExamIds.has(String(prevHw.id));
   }
 
+  function buildPlayerEmbed(lec) {
+    const ytId = extractYoutubeId(lec.video_url);
+    if (ytId) {
+      return `<iframe src="https://www.youtube.com/embed/${esc(ytId)}?rel=0" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>`;
+    }
+    if (lec.video_url && /^https?:\/\//i.test(lec.video_url)) {
+      return `<iframe src="${esc(lec.video_url)}" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>`;
+    }
+    if (lec.video_url) {
+      return `<video controls controlsList="nodownload"><source src="${esc(lec.video_url)}" /></video>`;
+    }
+    return `<div class="msg-err" style="margin:0;">لا يوجد رابط فيديو مضاف لهذه المحاضرة بعد.</div>`;
+  }
+
   const branchCardsHtml = BRANCHES.map(br => {
     const isUnlocked = unlocked.has(br);
     const brLectures = allLectures.filter(l => l.branch === br);
@@ -1146,16 +1294,16 @@ function renderStudentDash(settings, student, state) {
         <div>
           <div class="course-banner">
             <div>
-              <span class="pill" style="background:rgba(255,255,255,0.2); color:#fff;">${isUnlocked ? "مفعل ✓" : "مغلق 🔒"}</span>
+              <span class="pill" style="background:rgba(255,255,255,0.22); color:#fff;">${isUnlocked ? "مفعل ✓" : "مغلق 🔒"}</span>
               <div style="font-size:1.22rem; font-weight:900; margin-top:6px;">${esc(br)}</div>
-              <div style="font-size:0.8rem; opacity:0.9;">${brLectures.length} محاضرة متاحة</div>
+              <div style="font-size:0.8rem; opacity:0.92;">${brLectures.length} محاضرة متاحة</div>
             </div>
             <img class="book-thumb" src="${esc(settings.teacher_image)}" alt="${esc(br)}" onerror="this.style.display='none';" />
           </div>
           <div class="course-body">
             <div class="course-title">منهج ${esc(br)} — ${esc(student.grade)} (${esc(student.track)})</div>
             <p class="muted" style="font-size:0.84rem; margin-bottom:12px;">
-              ${isUnlocked ? "افتح المحاضرات وحل واجب كل درس لفتح الدرس التالي." : "هذا الفرع يحتاج إلى كود تفعيل خاص بالفرع لفتحه."}
+              ${isUnlocked ? "افتح المحاضرة واستعرض الكتاب والشرح والمذاكرة وحل الواجب." : "هذا الفرع يحتاج إلى كود تفعيل خاص بالفرع لفتحه."}
             </p>
           </div>
         </div>
@@ -1169,103 +1317,30 @@ function renderStudentDash(settings, student, state) {
     `;
   }).join("");
 
-  let activeLectureHtml = "";
-  if (lectureId) {
-    const lec = allLectures.find(x => String(x.id) === String(lectureId));
-    if (lec) {
-      const brList = allLectures.filter(x => x.branch === lec.branch);
-      const lecIdx = brList.findIndex(x => String(x.id) === String(lec.id));
-      const allowedByOrder = lecIdx <= 0 ? true : isLectureUnlockedForStudent(brList, lecIdx);
-
-      if (!unlocked.has(lec.branch)) {
-        activeLectureHtml = `<div class="msg-err">عذراً، فرع (${esc(lec.branch)}) غير مفعل على حسابك.</div>`;
-      } else if (!allowedByOrder) {
-        activeLectureHtml = `<div class="msg-err">هذا الدرس مغلق حالياً. يجب حل وتسليم واجب الدرس السابق أولاً لفتح هذا الدرس.</div>`;
-      } else {
-        const ytId = extractYoutubeId(lec.video_url);
-        let playerHtml = "";
-        if (ytId) {
-          playerHtml = `<iframe src="https://www.youtube.com/embed/${esc(ytId)}?rel=0" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>`;
-        } else if (lec.video_url && /^https?:\/\//i.test(lec.video_url)) {
-          playerHtml = `<iframe src="${esc(lec.video_url)}" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>`;
-        } else if (lec.video_url) {
-          playerHtml = `<video controls controlsList="nodownload"><source src="${esc(lec.video_url)}" /></video>`;
-        } else {
-          playerHtml = `<div class="msg-err">لا يوجد رابط فيديو مضاف لهذه المحاضرة بعد.</div>`;
-        }
-
-        const hw = getLessonHomework(lec.id);
-        const hwSub = hw ? mySubmissions.find(s => String(s.exam_id) === String(hw.id)) : null;
-        const wmText = `${student.full_name} • ${student.phone} • نور البيان`;
-
-        activeLectureHtml = `
-          <div class="card" style="margin-top:16px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
-              <div>
-                <span class="pill pill-ok">${esc(lec.branch)}</span>
-                <h3 style="font-weight:900; margin-top:6px;">${esc(lec.title)}</h3>
-              </div>
-              <a class="btn btn-out btn-sm" href="/student?section=branch&branch=${encodeURIComponent(lec.branch)}">رجوع للفرع</a>
-            </div>
-            <div class="secure-player-box">
-              <div class="watermark-layer">
-                <span class="watermark-tag" style="top:18%; right:10%;">${esc(wmText)}</span>
-                <span class="watermark-tag" style="top:54%; right:35%; animation-delay:-4s;">${esc(wmText)}</span>
-              </div>
-              ${playerHtml}
-            </div>
-            ${lec.video_url && /^https?:\/\//i.test(lec.video_url) && !ytId
-              ? `<div style="margin-top:10px;"><a class="btn btn-teal btn-sm" href="${esc(lec.video_url)}" target="_blank" rel="noopener">فتح الفيديو في نافذة المشغل الخارجية</a></div>`
-              : ""
-            }
-            <div class="blue-lesson-strip" style="margin-top:16px;">
-              <div class="blue-strip-left">
-                <span class="blue-play-badge">📝</span>
-                <div>
-                  <div style="font-weight:900;">واجب المحاضرة (${hw ? (Array.isArray(hw.questions) ? hw.questions.length : 5) + " أسئلة" : "5 أسئلة"})</div>
-                  <div class="muted" style="font-size:0.82rem;">
-                    ${hw
-                      ? (hwSub
-                        ? `تم تسليم الواجب بنجاح (${hwSub.pct}% — ${hwSub.score} من ${hwSub.total}) وتم فتح الدرس التالي.`
-                        : "يجب حل الواجب لفتح الدرس التالي في هذا الفرع.")
-                      : "لم يتم ربط أسئلة واجب لهذه المحاضرة بعد."
-                    }
-                  </div>
-                </div>
-              </div>
-              ${hw
-                ? (hwSub
-                  ? `<a class="blue-action-btn" href="/student?section=results">نتائجي</a>`
-                  : `<a class="blue-action-btn" href="/student?section=solve-exam&exam_id=${encodeURIComponent(hw.id)}">حل الواجب لفتح الدرس</a>`)
-                : ""
-              }
-            </div>
-          </div>
-        `;
-      }
-    }
-  }
-
   const branchDetailHtml = branchParam ? (() => {
     const canEnter = unlocked.has(branchParam);
     const list = allLectures.filter(l => l.branch === branchParam);
+    const wmText = `${student.full_name} • ${student.phone} • ${PLATFORM_NAME}`;
+    const denominator = Math.max(list.length, 99);
+
     return `
-      <div class="blue-week-banner">
+      <div class="jakh-week-banner">
         <div>
-          <div style="font-size:1.3rem; font-weight:900;">فرع ${esc(branchParam)} — ${esc(student.grade)}</div>
-          <div style="font-size:0.88rem; opacity:0.95; margin-top:2px;">الشعبة: ${esc(student.track)} • متابعة المحاضرات والواجبات</div>
+          <div style="font-size:1.34rem; font-weight:900;">فرع ${esc(branchParam)} — ${esc(student.grade)}</div>
+          <div style="font-size:0.88rem; opacity:0.95; margin-top:2px;">${PLATFORM_NAME} • الشعبة: ${esc(student.track)}</div>
         </div>
         <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-          <span class="you-here-pill">انت هنا</span>
+          <span class="you-here-pill">أنت هنا</span>
           <div class="branch-book-card">
             <img src="${esc(settings.teacher_image)}" alt="أ. محمد يوسف" onerror="this.style.display='none';" />
             <div>
               <div style="font-weight:900; font-size:0.88rem;">أ. محمد يوسف</div>
-              <div style="font-size:0.74rem; opacity:0.9;">نور البيان الأزهرية</div>
+              <div style="font-size:0.74rem; opacity:0.92;">${PLATFORM_NAME}</div>
             </div>
           </div>
         </div>
       </div>
+
       ${!canEnter ? `
         <div class="card">
           <div class="msg-err">هذا الفرع مغلق على حسابك حالياً. فعّله بكود خاص بفرع (${esc(branchParam)}).</div>
@@ -1274,46 +1349,167 @@ function renderStudentDash(settings, student, state) {
               <label>كود تفعيل الفرع (لمرة واحدة)</label>
               <input name="code" type="text" required placeholder="مثال: BR-XXXXXX" />
             </div>
-            <button type="submit" class="blue-action-btn">تفعيل الفرع الآن</button>
+            <button type="submit" class="jakh-action-btn">تفعيل الفرع الآن</button>
           </form>
         </div>
       ` : `
-        <div class="card">
-          <h3 style="font-weight:900; margin-bottom:10px;">قائمة المحاضرات</h3>
+        <div class="lecture-accordion-list" id="lecturesAccordion">
           ${list.length ? list.map((l, idx) => {
             const openByOrder = isLectureUnlockedForStudent(list, idx);
             const hw = getLessonHomework(l.id);
-            const hwDone = hw ? solvedExamIds.has(String(hw.id)) : false;
+            const hwSub = hw ? mySubmissions.find(s => String(s.exam_id) === String(hw.id)) : null;
             const isSeen = myWatchedSet.has(String(l.id));
+            const isInitiallyOpen = lectureId ? String(l.id) === String(lectureId) : (idx === 0 && openByOrder);
+            const stepNum = Number(l.order_num) > 0 ? Number(l.order_num) : (idx + 1) * 10;
+            const ytId = extractYoutubeId(l.video_url);
+
             return `
-              <div class="blue-lesson-strip">
-                <div class="blue-strip-left">
-                  <span class="blue-play-badge">${openByOrder ? "▶" : "🔒"}</span>
-                  <div>
-                    <div style="font-weight:900;">${idx + 1}. ${esc(l.title)}</div>
-                    <div class="muted" style="font-size:0.8rem;">
-                      ${openByOrder
-                        ? (isSeen ? "تمت المشاهدة" : "متاحة للمشاهدة")
-                        : "مغلقة لحين حل واجب الدرس السابق"
-                      }
+              <div class="lec-accordion-item ${isInitiallyOpen ? "is-open" : ""}" data-lec-id="${esc(l.id)}">
+                <button type="button" class="lec-accordion-header" aria-expanded="${isInitiallyOpen}">
+                  <div class="lec-header-left">
+                    <span class="lec-chevron-circle">^</span>
+                    <span class="lec-counter-badge">(${stepNum}/${denominator})</span>
+                  </div>
+                  <div class="lec-header-right">
+                    <div class="lec-main-title">${esc(l.title)} ${openByOrder ? "" : "🔒"}</div>
+                    <div class="lec-sub-icons">
+                      <span>${openByOrder ? (isSeen ? "✓ تمت المشاهدة" : "📖 ✍️") : "مغلق لحين تسليم واجب الدرس السابق"}</span>
                     </div>
                   </div>
-                </div>
-                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                  ${openByOrder
-                    ? `<a class="blue-action-btn" href="/student?section=branch&branch=${encodeURIComponent(branchParam)}&lecture=${encodeURIComponent(l.id)}">مشاهدة</a>`
-                    : `<span class="pill pill-warn">مغلق</span>`
-                  }
-                  ${openByOrder && hw && !hwDone
-                    ? `<a class="blue-action-btn" href="/student?section=solve-exam&exam_id=${encodeURIComponent(hw.id)}">حل الواجب لفتح الدرس</a>`
-                    : ""
-                  }
+                </button>
+
+                <div class="lec-accordion-body">
+                  ${!openByOrder ? `
+                    <div class="msg-err" style="margin-bottom:0;">هذا الدرس مغلق حالياً. يجب حل وتسليم واجب الدرس السابق أولاً لفتح هذا الدرس.</div>
+                  ` : `
+                    <div class="sub-topic-list">
+                      <!-- 1. الكتاب -->
+                      <div class="sub-topic-card">
+                        <button type="button" class="sub-topic-head">
+                          <span>الكتاب</span>
+                          <span class="sub-topic-left"><span>^</span><span>عرض</span></span>
+                        </button>
+                        <div class="sub-topic-panel">
+                          <p class="muted" style="font-size:0.9rem; margin-bottom:10px;">
+                            ملخص ومذكرة <strong>${esc(l.title)}</strong> في فرع <strong>${esc(l.branch)}</strong> (${esc(student.grade)}).
+                          </p>
+                          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                            <a class="jakh-action-btn" href="/student?section=tickets">الاستفسار عن نقطة في الكتاب</a>
+                            <a class="btn btn-out btn-sm" href="/student?section=exams">الواجبات والامتحانات</a>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- 2. الشرح -->
+                      <div class="sub-topic-card ${isInitiallyOpen ? "sub-open" : ""}">
+                        <button type="button" class="sub-topic-head">
+                          <span>الشرح</span>
+                          <span class="sub-topic-left"><span>^</span><span>عرض</span></span>
+                        </button>
+                        <div class="sub-topic-panel">
+                          <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
+                            <span class="pill pill-ok">${isSeen ? "تم تسجيل المشاهدة ✓" : "محاضرة شرح"}</span>
+                            <a class="btn btn-out btn-sm" href="/student?section=branch&branch=${encodeURIComponent(branchParam)}&lecture=${encodeURIComponent(l.id)}">تثبيت وحفظ المشاهدة</a>
+                          </div>
+                          <div class="secure-player-box">
+                            <div class="watermark-layer">
+                              <span class="watermark-tag" style="top:18%; right:10%;">${esc(wmText)}</span>
+                              <span class="watermark-tag" style="top:54%; right:35%; animation-delay:-4s;">${esc(wmText)}</span>
+                            </div>
+                            ${buildPlayerEmbed(l)}
+                          </div>
+                          ${l.video_url && /^https?:\/\//i.test(l.video_url) && !ytId
+                            ? `<div style="margin-top:10px;"><a class="btn btn-teal btn-sm" href="${esc(l.video_url)}" target="_blank" rel="noopener">فتح الفيديو في نافذة المشغل الخارجية</a></div>`
+                            : ""
+                          }
+                        </div>
+                      </div>
+
+                      <!-- 3. المذاكرة -->
+                      <div class="sub-topic-card">
+                        <button type="button" class="sub-topic-head">
+                          <span>المذاكرة</span>
+                          <span class="sub-topic-left"><span>^</span><span>عرض</span></span>
+                        </button>
+                        <div class="sub-topic-panel">
+                          <p class="muted" style="font-size:0.9rem; margin-bottom:10px;">
+                            راجع قواعد وأمثلة <strong>${esc(l.title)}</strong> ثم ابدأ حل الواجب لفتح المحاضرة التالية.
+                          </p>
+                          ${hw
+                            ? (hwSub
+                              ? `<a class="jakh-action-btn" href="/student?section=results">تم حل الواجب (${hwSub.pct}%) — عرض النتيجة</a>`
+                              : `<a class="jakh-action-btn" href="/student?section=solve-exam&exam_id=${encodeURIComponent(hw.id)}">بدء حل واجب المحاضرة</a>`
+                            )
+                            : `<span class="pill pill-warn">لا يوجد واجب مرتبط بهذه المحاضرة بعد</span>`
+                          }
+                        </div>
+                      </div>
+
+                      <!-- 4. حل المقالي -->
+                      <div class="sub-topic-card">
+                        <button type="button" class="sub-topic-head">
+                          <span>حل المقالي</span>
+                          <span class="sub-topic-left"><span>^</span><span>عرض</span></span>
+                        </button>
+                        <div class="sub-topic-panel">
+                          <p class="muted" style="font-size:0.9rem; margin-bottom:10px;">
+                            اكتب سؤالك المقالي أو صوّر حلك ليراجعه الأستاذ محمد يوسف ويرد عليك مباشرة.
+                          </p>
+                          <a class="jakh-action-btn" href="/student?section=tickets">إرسال سؤال أو حل مقالي</a>
+                        </div>
+                      </div>
+
+                      <!-- 5. حل الكتب -->
+                      <div class="sub-topic-card">
+                        <button type="button" class="sub-topic-head">
+                          <span>حل الكتب</span>
+                          <span class="sub-topic-left"><span>^</span><span>عرض</span></span>
+                        </button>
+                        <div class="sub-topic-panel">
+                          <p class="muted" style="font-size:0.9rem; margin-bottom:10px;">
+                            تدريبات واختبارات الكتب الخارجية على <strong>${esc(l.title)}</strong>:
+                          </p>
+                          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                            ${hw
+                              ? (hwSub
+                                ? `<a class="jakh-action-btn" href="/student?section=results">نتيجة التدريب (${hwSub.pct}%)</a>`
+                                : `<a class="jakh-action-btn" href="/student?section=solve-exam&exam_id=${encodeURIComponent(hw.id)}">حل التدريب الآن</a>`
+                              )
+                              : `<a class="btn btn-out btn-sm" href="/student?section=exams">كل الامتحانات والواجبات</a>`
+                            }
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  `}
                 </div>
               </div>
             `;
-          }).join("") : `<p class="muted">لا توجد محاضرات مضافة لهذا الفرع حتى الآن.</p>`}
+          }).join("") : `<div class="card"><p class="muted">لا توجد محاضرات مضافة لهذا الفرع حتى الآن.</p></div>`}
         </div>
-        ${activeLectureHtml}
+
+        <script>
+          (function () {
+            const root = document.getElementById("lecturesAccordion");
+            if (!root) return;
+            root.querySelectorAll(".lec-accordion-header").forEach(function (btn) {
+              btn.addEventListener("click", function () {
+                const item = btn.closest(".lec-accordion-item");
+                if (!item) return;
+                const willOpen = !item.classList.contains("is-open");
+                item.classList.toggle("is-open", willOpen);
+                btn.setAttribute("aria-expanded", willOpen ? "true" : "false");
+              });
+            });
+            root.querySelectorAll(".sub-topic-head").forEach(function (sBtn) {
+              sBtn.addEventListener("click", function () {
+                const card = sBtn.closest(".sub-topic-card");
+                if (!card) return;
+                card.classList.toggle("sub-open");
+              });
+            });
+          })();
+        </script>
       `}
     `;
   })() : "";
@@ -1504,7 +1700,7 @@ function renderStudentDash(settings, student, state) {
         </div>
 
         <div class="card" style="margin-bottom:0;">
-          <h3 style="font-weight:900; margin-bottom:6px;">أهلاً بك يا ${esc(student.full_name)}</h3>
+          <h3 style="font-weight:900; margin-bottom:6px;">أهلاً بك يا ${esc(student.full_name)} في ${PLATFORM_NAME}</h3>
           <p class="muted" style="font-size:0.88rem; margin-bottom:12px;">
             الصف: <strong>${esc(student.grade)}</strong> • الشعبة: <strong>${esc(student.track)}</strong> • رقم الهاتف: <strong>${esc(student.phone)}</strong> • ولي الأمر: <strong>${esc(student.parent_phone || "-")}</strong>
           </p>
@@ -2230,7 +2426,7 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
 
     <aside class="right-drawer">
       <div class="drawer-top">
-        <span class="drawer-title" style="font-weight:900; font-size:0.92rem;">إدارة نور البيان</span>
+        <span class="drawer-title" style="font-weight:900; font-size:0.92rem;">إدارة ${PLATFORM_NAME}</span>
         <button type="button" class="collapse-btn" onclick="document.getElementById('adminShell')?.classList.toggle('collapsed')">⇄</button>
       </div>
       <a class="nav-item-link ${activeSec === "students" ? "active" : ""}" href="/admin?section=students"><span>👨‍🎓</span><span class="nav-label">طلاب المنصة</span></a>
