@@ -37,6 +37,7 @@ const TEACHER_MAIN_PHOTO = "https://www.mohammedyoussef2027.com/public/heroPhoto
 const DEFAULT_ADMIN_EMAIL = "mohmed@mr.com";
 const DEFAULT_ADMIN_PASS = "admin123456";
 const PLATFORM_NAME = "أنت جخ مع محمد يوسف";
+const COURSE_PRICE_EGP = 500;
 
 async function sha256(val) {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(val || "")));
@@ -179,11 +180,18 @@ async function fsDelete(env, col, id) {
   }
 }
 
+function normalizeWaPhone(raw) {
+  const digits = String(raw || "").replace(/\D+/g, "");
+  if (!digits) return "201066329782";
+  if (digits.startsWith("01") && digits.length === 11) return "2" + digits;
+  return digits;
+}
+
 async function getSettings(env) {
   const saved = (await fsGet(env, "settings", "main")) || {};
   return {
     vodafone_number: saved.vodafone_number || "01066329782",
-    admin_whatsapp: saved.admin_whatsapp || "201066329782",
+    admin_whatsapp: saved.admin_whatsapp || "01066329782",
     admin_email: saved.admin_email || env.ADMIN_EMAIL || DEFAULT_ADMIN_EMAIL,
     admin_password: saved.admin_password || "",
     admin_password_hash: saved.admin_password_hash || (await sha256(env.ADMIN_PASSWORD || DEFAULT_ADMIN_PASS)),
@@ -309,44 +317,44 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" />
   <style>
     :root {
-      --bg: #f6f8f7;
+      --bg: #f3f7fc;
       --surface: #ffffff;
-      --surface-soft: #eef3f0;
-      --txt: #10201a;
-      --muted: #546961;
-      --accent: #0f766e;
-      --accent-dark: #115e59;
-      --accent-2: #b45309;
+      --surface-soft: #eaf1fa;
+      --txt: #0f2038;
+      --muted: #4b6182;
+      --accent: #1d4ed8;
+      --accent-dark: #1e3a8a;
+      --accent-2: #d97706;
       --gold: #b45309;
-      --err: #be123c;
-      --bdr: #d4e0da;
-      --glyph: rgba(15, 118, 110, 0.08);
-      --shadow-sm: 0 2px 10px rgba(16, 32, 26, 0.05);
-      --shadow-md: 0 12px 28px rgba(16, 32, 26, 0.08);
-      --shadow-lg: 0 20px 44px rgba(16, 32, 26, 0.14);
+      --err: #dc2626;
+      --bdr: #cbd9ed;
+      --glyph: rgba(29, 78, 216, 0.08);
+      --shadow-sm: 0 2px 10px rgba(15, 32, 56, 0.06);
+      --shadow-md: 0 12px 28px rgba(15, 32, 56, 0.09);
+      --shadow-lg: 0 20px 44px rgba(15, 32, 56, 0.16);
     }
     body.dark {
-      --bg: #07110e;
-      --surface: #0e1d18;
-      --surface-soft: #152922;
-      --txt: #f0fdf9;
-      --muted: #94a3b8;
-      --accent: #14b8a6;
-      --accent-dark: #0f766e;
+      --bg: #071021;
+      --surface: #0e1c36;
+      --surface-soft: #15284b;
+      --txt: #f0f6ff;
+      --muted: #93aed6;
+      --accent: #3b82f6;
+      --accent-dark: #1d4ed8;
       --accent-2: #f59e0b;
       --gold: #fbbf24;
-      --err: #fb7185;
-      --bdr: rgba(20, 184, 166, 0.22);
-      --glyph: rgba(20, 184, 166, 0.1);
-      --shadow-sm: 0 2px 12px rgba(0, 0, 0, 0.35);
-      --shadow-md: 0 14px 32px rgba(0, 0, 0, 0.52);
-      --shadow-lg: 0 22px 48px rgba(0, 0, 0, 0.72);
+      --err: #f87171;
+      --bdr: rgba(59, 130, 246, 0.25);
+      --glyph: rgba(96, 165, 250, 0.1);
+      --shadow-sm: 0 2px 12px rgba(0, 0, 0, 0.38);
+      --shadow-md: 0 14px 32px rgba(0, 0, 0, 0.55);
+      --shadow-lg: 0 22px 48px rgba(0, 0, 0, 0.75);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; }
     body {
       background:
-        radial-gradient(circle at 12% 8%, rgba(20, 184, 166, 0.1), transparent 42%),
-        radial-gradient(circle at 88% 85%, rgba(245, 158, 11, 0.08), transparent 45%),
+        radial-gradient(circle at 12% 8%, rgba(59, 130, 246, 0.12), transparent 42%),
+        radial-gradient(circle at 88% 85%, rgba(245, 158, 11, 0.1), transparent 45%),
         var(--bg);
       color: var(--txt);
       min-height: 100vh;
@@ -405,9 +413,9 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .brand-box { display: flex; align-items: center; gap: 12px; }
     .brand-logo-badge {
       width: 46px; height: 46px; border-radius: 14px;
-      background: linear-gradient(135deg, #0f766e, #b45309);
+      background: linear-gradient(135deg, #1d4ed8, #d97706);
       color: #fff; font-weight: 900; display: grid; place-items: center; font-size: 1.05rem;
-      box-shadow: 0 8px 20px rgba(15, 118, 110, 0.28);
+      box-shadow: 0 8px 20px rgba(29, 78, 216, 0.3);
       border: 1px solid rgba(255, 255, 255, 0.25);
     }
 
@@ -421,15 +429,15 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       width: 42px;
       height: 42px;
       border-radius: 12px;
-      border: 1px solid rgba(234, 179, 8, 0.55);
-      background: linear-gradient(135deg, #fef08a, #facc15);
-      color: #422006;
+      border: 1px solid rgba(245, 158, 11, 0.65);
+      background: linear-gradient(135deg, #fde047, #f59e0b);
+      color: #291500;
       font-size: 1.15rem;
       font-weight: 900;
       display: grid;
       place-items: center;
       cursor: pointer;
-      box-shadow: 0 6px 16px rgba(234, 179, 8, 0.3);
+      box-shadow: 0 6px 16px rgba(245, 158, 11, 0.32);
       transition: transform 0.16s ease;
     }
     .yellow-bell-btn:hover { transform: translateY(-1px) scale(1.04); }
@@ -437,8 +445,8 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       animation: bellPulse 1.4s infinite ease-in-out;
     }
     @keyframes bellPulse {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.65); }
-      50% { box-shadow: 0 0 0 8px rgba(250, 204, 21, 0); }
+      0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.65); }
+      50% { box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); }
     }
     .bell-badge-num {
       position: absolute;
@@ -546,28 +554,28 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .btn:active { transform: translateY(0) scale(0.985); }
 
     .btn-blue {
-      background: linear-gradient(135deg, #0f766e, #115e59);
+      background: linear-gradient(135deg, #1d4ed8, #1e3a8a);
       color: #fff;
-      box-shadow: 0 6px 18px rgba(15, 118, 110, 0.28);
+      box-shadow: 0 6px 18px rgba(29, 78, 216, 0.3);
     }
-    .btn-blue:hover { box-shadow: 0 10px 24px rgba(15, 118, 110, 0.38); }
+    .btn-blue:hover { box-shadow: 0 10px 24px rgba(29, 78, 216, 0.4); }
 
     .btn-teal {
-      background: linear-gradient(135deg, #b45309, #92400e);
+      background: linear-gradient(135deg, #d97706, #b45309);
       color: #fff;
-      box-shadow: 0 6px 18px rgba(180, 83, 9, 0.26);
+      box-shadow: 0 6px 18px rgba(217, 119, 6, 0.28);
     }
-    .btn-teal:hover { box-shadow: 0 10px 24px rgba(180, 83, 9, 0.36); }
+    .btn-teal:hover { box-shadow: 0 10px 24px rgba(217, 119, 6, 0.38); }
 
     .btn-gold {
-      background: linear-gradient(135deg, #0d9488, #0f766e);
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
       color: #fff;
-      box-shadow: 0 6px 18px rgba(13, 148, 136, 0.26);
+      box-shadow: 0 6px 18px rgba(37, 99, 235, 0.26);
     }
     .btn-red {
-      background: linear-gradient(135deg, #e11d48, #be123c);
+      background: linear-gradient(135deg, #ef4444, #dc2626);
       color: #fff;
-      box-shadow: 0 6px 16px rgba(225, 29, 72, 0.24);
+      box-shadow: 0 6px 16px rgba(239, 68, 68, 0.24);
     }
     .btn-out {
       background: var(--surface);
@@ -592,7 +600,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     }
 
     .jakh-week-banner {
-      background: linear-gradient(120deg, #0f766e 0%, #115e59 100%);
+      background: linear-gradient(120deg, #1d4ed8 0%, #1e3a8a 100%);
       color: #fff;
       padding: 20px 24px;
       border-radius: 18px;
@@ -640,7 +648,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       transition: background-color 0.22s ease, color 0.22s ease;
     }
     .lec-accordion-item.is-open .lec-accordion-header {
-      background: linear-gradient(120deg, #0f766e 0%, #115e59 100%);
+      background: linear-gradient(120deg, #1d4ed8 0%, #1e3a8a 100%);
       color: #ffffff;
     }
     .lec-header-left {
@@ -743,10 +751,10 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .jakh-action-btn {
       display: inline-flex; align-items: center; justify-content: center; gap: 6px;
       padding: 8px 16px; border-radius: 11px;
-      background: linear-gradient(135deg, #0f766e, #115e59);
+      background: linear-gradient(135deg, #1d4ed8, #1e3a8a);
       color: #fff; font-weight: 800; font-size: 0.85rem;
       text-decoration: none; border: none; cursor: pointer;
-      box-shadow: 0 5px 14px rgba(15, 118, 110, 0.28);
+      box-shadow: 0 5px 14px rgba(29, 78, 216, 0.3);
       transition: transform 0.15s ease, opacity 0.15s ease;
     }
     .jakh-action-btn:hover { transform: translateY(-1px); opacity: 0.96; }
@@ -796,7 +804,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     input:focus, select:focus, textarea:focus {
       background: var(--surface);
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.2);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
     }
     textarea { min-height: 96px; resize: vertical; }
     input[type="radio"], input[type="checkbox"] { width: auto; box-shadow: none; }
@@ -827,7 +835,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       padding: 0 20px;
       border-radius: 999px;
       border: 1.5px solid rgba(255, 255, 255, 0.35);
-      background: linear-gradient(135deg, #0f766e 0%, #b45309 100%);
+      background: linear-gradient(135deg, #1d4ed8 0%, #d97706 100%);
       color: #ffffff;
       font-weight: 900;
       font-size: 0.95rem;
@@ -835,13 +843,13 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       align-items: center;
       gap: 10px;
       cursor: pointer;
-      box-shadow: 0 14px 32px rgba(15, 118, 110, 0.45);
+      box-shadow: 0 14px 32px rgba(29, 78, 216, 0.45);
       z-index: 80;
       transition: transform 0.18s ease, box-shadow 0.2s ease;
     }
     .support-fab-btn:hover {
       transform: translateY(-2px) scale(1.03);
-      box-shadow: 0 18px 38px rgba(15, 118, 110, 0.56);
+      box-shadow: 0 18px 38px rgba(29, 78, 216, 0.56);
     }
     .support-fab-icon {
       width: 34px;
@@ -859,7 +867,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       padding: 0 6px;
       border-radius: 999px;
       background: #facc15;
-      color: #422006;
+      color: #291500;
       font-size: 0.76rem;
       font-weight: 900;
       display: inline-flex;
@@ -887,7 +895,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       display: flex;
     }
     .support-chat-header {
-      background: linear-gradient(120deg, #0f766e, #b45309);
+      background: linear-gradient(120deg, #1d4ed8, #d97706);
       color: #ffffff;
       padding: 15px 18px;
       display: flex;
@@ -927,7 +935,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       box-shadow: var(--shadow-sm);
     }
     .chat-bubble-user {
-      background: linear-gradient(135deg, #0f766e, #115e59);
+      background: linear-gradient(135deg, #1d4ed8, #1e3a8a);
       color: #ffffff;
       padding: 11px 14px;
       border-radius: 15px 15px 4px 15px;
@@ -938,8 +946,8 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       box-shadow: var(--shadow-sm);
     }
     .chat-bubble-admin {
-      background: rgba(180, 83, 9, 0.14);
-      border: 1px solid rgba(180, 83, 9, 0.35);
+      background: rgba(217, 119, 6, 0.14);
+      border: 1px solid rgba(217, 119, 6, 0.35);
       color: var(--txt);
       padding: 11px 14px;
       border-radius: 15px 15px 15px 4px;
@@ -1014,7 +1022,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       margin: 14px auto 0;
       padding: 14px 20px;
       border-radius: 16px;
-      background: linear-gradient(120deg, #0f766e, #b45309);
+      background: linear-gradient(120deg, #1d4ed8, #d97706);
       color: #fff;
       box-shadow: var(--shadow-md);
       display: flex;
@@ -1075,15 +1083,15 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       flex-wrap: wrap;
     }
     .pill { display: inline-block; padding: 3px 11px; border-radius: 999px; font-size: 0.78rem; font-weight: 800; }
-    .pill-ok { background: rgba(15, 118, 110, 0.15); color: var(--accent); }
-    .pill-warn { background: rgba(180, 83, 9, 0.16); color: var(--accent-2); }
-    .pill-err { background: rgba(225, 29, 72, 0.15); color: var(--err); }
+    .pill-ok { background: rgba(29, 78, 216, 0.14); color: var(--accent); }
+    .pill-warn { background: rgba(217, 119, 6, 0.16); color: var(--accent-2); }
+    .pill-err { background: rgba(220, 38, 38, 0.15); color: var(--err); }
     .msg-err {
-      background: rgba(225, 29, 72, 0.1); border: 1px solid rgba(225, 29, 72, 0.35);
+      background: rgba(220, 38, 38, 0.1); border: 1px solid rgba(220, 38, 38, 0.35);
       color: var(--err); padding: 12px 16px; border-radius: 12px; font-weight: 800; margin-bottom: 14px;
     }
     .msg-ok {
-      background: rgba(15, 118, 110, 0.12); border: 1px solid rgba(15, 118, 110, 0.36);
+      background: rgba(29, 78, 216, 0.12); border: 1px solid rgba(29, 78, 216, 0.36);
       color: var(--accent); padding: 12px 16px; border-radius: 12px; font-weight: 800; margin-bottom: 14px;
     }
     .muted { color: var(--muted); }
@@ -1108,24 +1116,24 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       font-size: 0.9rem; margin-bottom: 4px; transition: background-color 0.18s ease, color 0.18s ease;
     }
     .nav-item-link:hover { background: var(--surface-soft); }
-    .nav-item-link.active { background: linear-gradient(135deg, #0f766e, #115e59); color: #fff; }
+    .nav-item-link.active { background: linear-gradient(135deg, #1d4ed8, #1e3a8a); color: #fff; }
     .sub-nav { padding-right: 14px; margin-bottom: 8px; }
     .sub-link {
       display: block; padding: 5px 12px; border-radius: 9px; color: var(--muted);
       text-decoration: none; font-weight: 700; font-size: 0.83rem; margin-bottom: 2px;
     }
-    .sub-link.active, .sub-link:hover { background: rgba(15, 118, 110, 0.14); color: var(--accent); }
+    .sub-link.active, .sub-link:hover { background: rgba(29, 78, 216, 0.14); color: var(--accent); }
     .dash-shell.collapsed .nav-label, .dash-shell.collapsed .sub-nav, .dash-shell.collapsed .drawer-title { display: none; }
 
     .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-bottom: 18px; }
     .kpi-card {
-      background: linear-gradient(135deg, #0f766e 0%, #115e59 100%);
+      background: linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%);
       color: #fff; border-radius: 16px; padding: 18px;
       display: flex; justify-content: space-between; align-items: center;
       box-shadow: var(--shadow-md);
     }
-    .kpi-card.teal-kpi { background: linear-gradient(135deg, #b45309 0%, #78350f 100%); }
-    .kpi-card.gold-kpi { background: linear-gradient(135deg, #0d9488 0%, #042f2e 100%); }
+    .kpi-card.teal-kpi { background: linear-gradient(135deg, #d97706 0%, #92400e 100%); }
+    .kpi-card.gold-kpi { background: linear-gradient(135deg, #2563eb 0%, #172554 100%); }
     .kpi-num { font-size: 1.62rem; font-weight: 900; line-height: 1.1; }
     .kpi-lbl { font-size: 0.86rem; font-weight: 700; opacity: 0.92; margin-top: 4px; }
     .kpi-icon-box {
@@ -1147,7 +1155,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .teacher-color-meter .bw-layer { filter: grayscale(100%) contrast(1.05); }
     .teacher-color-meter .color-reveal { position: absolute; inset: 0; overflow: hidden; transition: clip-path 0.45s ease; }
     .prog-bar-bg { height: 8px; border-radius: 999px; background: var(--surface-soft); overflow: hidden; margin: 10px 0; }
-    .prog-bar-fill { height: 100%; background: linear-gradient(90deg, #0f766e, #d97706); border-radius: 999px; transition: width 0.4s ease; }
+    .prog-bar-fill { height: 100%; background: linear-gradient(90deg, #1d4ed8, #f59e0b); border-radius: 999px; transition: width 0.4s ease; }
 
     .course-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(265px, 1fr)); gap: 16px; }
     .course-card { overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; }
@@ -1162,7 +1170,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     }
     .course-banner {
       min-height: 156px; position: relative; overflow: hidden;
-      background: linear-gradient(135deg, #0f766e 0%, #b45309 100%);
+      background: linear-gradient(135deg, #1d4ed8 0%, #d97706 100%);
       color: #fff; padding: 16px; display: flex; justify-content: space-between; align-items: flex-end; gap: 10px;
     }
     .course-banner img.book-thumb {
@@ -1176,7 +1184,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .landing-hero-card { padding: 26px; display: grid; grid-template-columns: 310px 1fr; gap: 26px; align-items: center; }
     @media (max-width: 860px) { .landing-hero-card { grid-template-columns: 1fr; } }
     .hero-teacher-frame {
-      background: linear-gradient(155deg, rgba(15, 118, 110, 0.14), rgba(180, 83, 9, 0.14));
+      background: linear-gradient(155deg, rgba(29, 78, 216, 0.14), rgba(217, 119, 6, 0.14));
       border-radius: 16px; padding: 12px; display: flex; justify-content: center; align-items: center;
       min-height: 340px; border: 1px solid var(--bdr);
     }
@@ -1192,18 +1200,18 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     }
     @media (max-width: 840px) { .split-auth { grid-template-columns: 1fr; } }
     .promo-pane {
-      background: linear-gradient(155deg, #0f766e 0%, #b45309 100%);
+      background: linear-gradient(155deg, #1d4ed8 0%, #d97706 100%);
       color: #fff; border-radius: 18px; padding: 24px; box-shadow: var(--shadow-md);
       display: flex; flex-direction: column; justify-content: space-between; min-height: 440px;
     }
-    .promo-pane.gold-mode { background: linear-gradient(155deg, #92400e 0%, #0f766e 100%); }
+    .promo-pane.gold-mode { background: linear-gradient(155deg, #b45309 0%, #1d4ed8 100%); }
     .promo-img {
       width: 215px; height: 265px; object-fit: contain; object-position: center top;
       background: rgba(255, 255, 255, 0.14);
       border-radius: 14px; border: 1.5px solid rgba(255, 255, 255, 0.45); margin: 14px auto 0; display: block;
     }
     .step-track { height: 6px; background: var(--surface-soft); border-radius: 999px; overflow: hidden; margin-bottom: 14px; }
-    .step-fill { height: 100%; background: linear-gradient(90deg, #0f766e, #d97706); }
+    .step-fill { height: 100%; background: linear-gradient(90deg, #1d4ed8, #f59e0b); }
 
     .secure-player-box {
       position: relative; width: 100%; max-width: 860px; margin: 12px auto 0;
@@ -1233,6 +1241,13 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .q-builder-card { padding: 16px; margin-bottom: 14px; }
     .opt-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
     .student-detail-box { padding: 18px; margin-top: 16px; }
+    .price-summary-box {
+      background: var(--surface-soft);
+      border: 1px solid var(--bdr);
+      border-radius: 16px;
+      padding: 16px;
+      margin: 14px 0;
+    }
   </style>
 </head>
 <body>
@@ -1499,9 +1514,21 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       let visitorName = localStorage.getItem("jakh_sup_name") || ${safeJsonForScript(defaultChatName)} || "";
       let attachedSingleImage = "";
       let messages = [];
-      let seenAdminCount = Number(localStorage.getItem("jakh_sup_seen_admin_cnt") || "0");
-      let dismissedAcademicKeys = JSON.parse(localStorage.getItem("jakh_acad_dismissed") || "[]");
-      if (!Array.isArray(dismissedAcademicKeys)) dismissedAcademicKeys = [];
+      let readAdminIds = [];
+      try {
+        readAdminIds = JSON.parse(localStorage.getItem("jakh_sup_read_ids") || "[]");
+        if (!Array.isArray(readAdminIds)) readAdminIds = [];
+      } catch {
+        readAdminIds = [];
+      }
+
+      let dismissedAcademicKeys = [];
+      try {
+        dismissedAcademicKeys = JSON.parse(localStorage.getItem("jakh_acad_dismissed") || "[]");
+        if (!Array.isArray(dismissedAcademicKeys)) dismissedAcademicKeys = [];
+      } catch {
+        dismissedAcademicKeys = [];
+      }
 
       const serverAcademicItems = ${safeJsonForScript(academicUnreadItems)};
 
@@ -1513,20 +1540,52 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
           .replace(/"/g, "&quot;");
       }
 
-      function markSupportSeenIfNeeded() {
-        const adminMsgs = messages.filter(m => m.sender === "admin");
-        if (winEl && winEl.classList.contains("open")) {
-          seenAdminCount = adminMsgs.length;
-          localStorage.setItem("jakh_sup_seen_admin_cnt", String(seenAdminCount));
-        } else if (seenAdminCount > adminMsgs.length) {
-          seenAdminCount = adminMsgs.length;
-          localStorage.setItem("jakh_sup_seen_admin_cnt", String(seenAdminCount));
-        }
-        return Math.max(0, adminMsgs.length - seenAdminCount);
+      function getAdminMsgKey(m, idx) {
+        return String(m.id || m.at || ("adm_" + idx + "_" + (m.text || "").slice(0, 20)));
+      }
+
+      function getUnreadAdminMessages() {
+        const list = [];
+        messages.forEach(function (m, idx) {
+          if (m.sender === "admin") {
+            const k = getAdminMsgKey(m, idx);
+            if (!readAdminIds.includes(k)) {
+              list.push({ msg: m, key: k });
+            }
+          }
+        });
+        return list;
+      }
+
+      function persistReadStateToServer(ids) {
+        fetch("/api/support/mark-read", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ session_id: sessionId, read_admin_ids: ids })
+        }).catch(function () {});
+      }
+
+      function markAllCurrentAdminMessagesAsRead() {
+        let changed = false;
+        messages.forEach(function (m, idx) {
+          if (m.sender === "admin") {
+            const k = getAdminMsgKey(m, idx);
+            if (!readAdminIds.includes(k)) {
+              readAdminIds.push(k);
+              changed = true;
+            }
+          }
+        });
+        localStorage.setItem("jakh_sup_read_ids", JSON.stringify(readAdminIds));
+        if (changed) persistReadStateToServer(readAdminIds);
       }
 
       function refreshAllBells() {
-        const supUnread = markSupportSeenIfNeeded();
+        if (winEl && winEl.classList.contains("open")) {
+          markAllCurrentAdminMessagesAsRead();
+        }
+        const unreadAdmin = getUnreadAdminMessages();
+        const supUnread = unreadAdmin.length;
         const acadUnreadList = serverAcademicItems.filter(it => !dismissedAcademicKeys.includes(it.key));
         const totalUnread = supUnread + acadUnreadList.length;
 
@@ -1547,13 +1606,13 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
         if (bellList) {
           const cards = [];
           if (supUnread > 0) {
-            const latestAdminMsg = messages.filter(m => m.sender === "admin").slice(-1)[0];
+            const latestAdminMsg = unreadAdmin[unreadAdmin.length - 1].msg;
             cards.push(
               '<div class="notif-item-card">' +
                 '<span class="pill pill-ok">الدعم الفني</span>' +
                 '<div style="font-weight:800; margin-top:4px;">رسالة جديدة من الدعم الفني (' + supUnread + ')</div>' +
                 (latestAdminMsg?.text ? '<div class="muted" style="margin-top:2px;">' + escLocal(latestAdminMsg.text.slice(0, 75)) + '</div>' : '') +
-                '<button type="button" class="btn btn-blue btn-sm" style="margin-top:6px;" id="openChatFromBellBtn">فتح وقراءة الرسالة</button>' +
+                '<button type="button" class="btn btn-blue btn-sm" style="margin-top:6px;" id="openChatFromBellBtn">فتح الرسالة وإخفاء الإشعار</button>' +
               '</div>'
             );
           }
@@ -1574,9 +1633,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
           document.getElementById("openChatFromBellBtn")?.addEventListener("click", function () {
             bellPopover?.classList.remove("open");
             winEl?.classList.add("open");
-            const adminMsgs = messages.filter(m => m.sender === "admin");
-            seenAdminCount = adminMsgs.length;
-            localStorage.setItem("jakh_sup_seen_admin_cnt", String(seenAdminCount));
+            markAllCurrentAdminMessagesAsRead();
             renderChatMessages();
           });
 
@@ -1657,11 +1714,15 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
             visitorName = data.visitor_name;
             localStorage.setItem("jakh_sup_name", visitorName);
           }
+          if (Array.isArray(data.read_admin_ids)) {
+            data.read_admin_ids.forEach(function (id) {
+              if (!readAdminIds.includes(id)) readAdminIds.push(id);
+            });
+            localStorage.setItem("jakh_sup_read_ids", JSON.stringify(readAdminIds));
+          }
           messages = Array.isArray(data.messages) ? data.messages : [];
           if (winEl && winEl.classList.contains("open")) {
-            const adminMsgs = messages.filter(m => m.sender === "admin");
-            seenAdminCount = adminMsgs.length;
-            localStorage.setItem("jakh_sup_seen_admin_cnt", String(seenAdminCount));
+            markAllCurrentAdminMessagesAsRead();
           }
           renderChatMessages();
         } catch {}
@@ -1672,9 +1733,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
         const willOpen = !winEl.classList.contains("open");
         winEl.classList.toggle("open", willOpen);
         if (willOpen) {
-          const adminMsgs = messages.filter(m => m.sender === "admin");
-          seenAdminCount = adminMsgs.length;
-          localStorage.setItem("jakh_sup_seen_admin_cnt", String(seenAdminCount));
+          markAllCurrentAdminMessagesAsRead();
         }
         renderChatMessages();
         if (willOpen) syncThread();
@@ -1750,15 +1809,18 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
           return;
         }
 
+        const msgId = "m_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6);
         const payload = {
           session_id: sessionId,
           visitor_name: visitorName,
           student_phone: ${safeJsonForScript(defaultChatPhone)},
           text: textVal,
-          image_url: attachedSingleImage
+          image_url: attachedSingleImage,
+          msg_id: msgId
         };
 
         messages.push({
+          id: msgId,
           sender: "user",
           text: textVal,
           image_url: attachedSingleImage,
@@ -1867,13 +1929,13 @@ function renderStudentAuth(settings, authTab, step, draft, error, notice) {
       <div class="promo-pane gold-mode">
         <div>
           <h2 style="font-size:1.32rem; font-weight:900;">دخول طلاب السنتر بكود التفعيل</h2>
-          <p style="margin-top:10px; font-size:0.92rem; opacity:0.95;">أدخل بياناتك وكود السنتر المخصص لمرة واحدة ليتم فتح المنصة وكل الفروع لك مباشرة.</p>
+          <p style="margin-top:10px; font-size:0.92rem; opacity:0.95;">أدخل بياناتك وكلمة السر وكود السنتر المخصص لمرة واحدة ليتم فتح المنصة وكل الفروع لك مباشرة.</p>
         </div>
         <img class="promo-img" src="${esc(settings.teacher_image)}" alt="الأستاذ محمد يوسف" onerror="this.style.display='none';" />
       </div>
       <div class="card" style="margin-bottom:0;">
         <h2 style="font-weight:900; margin-bottom:8px;">تفعيل المنصة بكود السنتر</h2>
-        <p class="muted" style="font-size:0.86rem; margin-bottom:14px;">يُستخدم كود السنتر مرة واحدة فقط لفتح المنصة وكل الفروع على حسابك.</p>
+        <p class="muted" style="font-size:0.86rem; margin-bottom:14px;">كلمة السر إجبارية هنا وتُحفظ في ملفك لدى الأدمن.</p>
         ${error ? `<div class="msg-err">${esc(error)}</div>` : ""}
         ${notice ? `<div class="msg-ok">${esc(notice)}</div>` : ""}
         <form method="post" action="/student/center-login" autocomplete="off">
@@ -1884,7 +1946,7 @@ function renderStudentAuth(settings, authTab, step, draft, error, notice) {
             <div class="field"><label>الصف الدراسي *</label><select name="grade">${gradeOpts}</select></div>
             <div class="field"><label>الشعبة *</label><select name="track">${trackOpts}</select></div>
           </div>
-          <div class="field"><label>كلمة السر *</label><input name="password" type="password" required autocomplete="new-password" minlength="4" placeholder="اختر كلمة سر لحسابك" /></div>
+          <div class="field"><label>كلمة السر (إجبارية) *</label><input name="password" type="password" required autocomplete="new-password" minlength="4" placeholder="أدخل كلمة سر لحسابك" /></div>
           <button type="submit" class="btn btn-teal" style="width:100%;">فتح المنصة بكود السنتر</button>
         </form>
         <div style="margin-top:14px; text-align:center; font-size:0.86rem;">
@@ -1898,7 +1960,7 @@ function renderStudentAuth(settings, authTab, step, draft, error, notice) {
     return `
     <div class="card" style="max-width:520px; margin:24px auto;">
       <h2 style="font-weight:900; margin-bottom:8px;">استعادة كلمة السر</h2>
-      <p class="muted" style="font-size:0.86rem; margin-bottom:14px;">أدخل رقم هاتف الطالب ورقم هاتف ولي الأمر (مختلفين) لتعيين كلمة سر جديدة.</p>
+      <p class="muted" style="font-size:0.86rem; margin-bottom:14px;">أدخل رقم هاتف الطالب ورقم هاتف ولي الأمر (مختلفين) لتعيين كلمة سر جديدة وتحديثها في ملفك.</p>
       ${error ? `<div class="msg-err">${esc(error)}</div>` : ""}
       ${notice ? `<div class="msg-ok">${esc(notice)}</div>` : ""}
       <form method="post" action="/student/reset-password" autocomplete="off">
@@ -1995,6 +2057,7 @@ function renderStudentDash(settings, student, state) {
   const mySubmissions = state.submissions || [];
   const myDrafts = state.drafts || [];
   const myWatchedSet = new Set((state.watched || []).map(w => String(w.lecture_id)));
+  const activeDiscounts = (state.discounts || []).filter(d => !d.used);
 
   const solvedExamIds = new Set(mySubmissions.map(s => String(s.exam_id)));
 
@@ -2040,7 +2103,7 @@ function renderStudentDash(settings, student, state) {
             <div>
               <span class="pill" style="background:rgba(255,255,255,0.22); color:#fff;">${isUnlocked ? (isCenterStudent ? "مفعل سنتر ✓" : "مفعل ✓") : "مغلق 🔒"}</span>
               <div style="font-size:1.22rem; font-weight:900; margin-top:6px;">${esc(br)}</div>
-              <div style="font-size:0.8rem; opacity:0.92;">${brLectures.length} محاضرة متاحة</div>
+              <div style="font-size:0.8rem; opacity:0.92;">${brLectures.length} محاضرة متاحة • ${COURSE_PRICE_EGP} ج</div>
             </div>
             <img class="book-thumb" src="${esc(settings.teacher_image)}" alt="${esc(br)}" onerror="this.style.display='none';" />
           </div>
@@ -2054,7 +2117,7 @@ function renderStudentDash(settings, student, state) {
         <div style="padding:0 16px 16px;">
           ${isUnlocked
             ? `<a class="btn btn-blue btn-sm" style="width:100%;" href="/student?section=branch&branch=${encodeURIComponent(br)}">دخول الفرع</a>`
-            : `<a class="btn btn-teal btn-sm" style="width:100%;" href="/student?section=codes">تفعيل بكود الفرع</a>`
+            : `<a class="btn btn-teal btn-sm" style="width:100%;" href="/student?section=codes">تفعيل / طلب كود (${COURSE_PRICE_EGP} ج)</a>`
           }
         </div>
       </div>
@@ -2087,7 +2150,7 @@ function renderStudentDash(settings, student, state) {
 
       ${!canEnter ? `
         <div class="card">
-          <div class="msg-err">هذا الفرع مغلق على حسابك حالياً. فعّله بكود خاص بفرع (${esc(branchParam)}).</div>
+          <div class="msg-err">هذا الفرع مغلق على حسابك حالياً. فعّله بكود خاص بفرع (${esc(branchParam)}) أو اطلب الكود عبر واتساب.</div>
           <form method="post" action="/student/redeem-code" style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
             <div class="field" style="flex:1; min-width:220px; margin:0;">
               <label>كود تفعيل الفرع (لمرة واحدة)</label>
@@ -2338,7 +2401,7 @@ function renderStudentDash(settings, student, state) {
           : `
             <div style="font-weight:900; margin:10px 0 6px; color:var(--err);">الأسئلة التي أخطأت فيها وإجاباتها الصحيحة:</div>
             ${wrongItems.map((w, idx) => `
-              <div class="row" style="display:block; border-color:rgba(225,29,72,0.35);">
+              <div class="row" style="display:block; border-color:rgba(220,38,38,0.35);">
                 <div style="font-weight:800;">${idx + 1}. ${esc(w.question)}</div>
                 <div style="font-size:0.86rem; color:var(--err); margin-top:4px;">إجابتك: ${esc(w.student_answer || "لم تُجب")}</div>
                 <div style="font-size:0.86rem; color:var(--accent-2); font-weight:800; margin-top:2px;">الإجابة الصحيحة: ${esc(w.correct_answer || "")}</div>
@@ -2358,9 +2421,19 @@ function renderStudentDash(settings, student, state) {
       </div>
       <p class="muted" style="font-size:0.88rem; margin-top:6px;">${esc(t.message)}</p>
       ${t.image_url ? `<img class="ticket-img-thumb" src="${esc(t.image_url)}" alt="صورة السؤال" onerror="this.style.display='none';" />` : ""}
-      ${t.reply ? `<div class="msg-ok" style="margin-top:8px; margin-bottom:0;">رد الإدارة: ${esc(t.reply)}</div>` : ""}
+      ${t.reply ? `<div class="msg-ok" style="margin-top:8px; margin-bottom:0;">رد تيم الدعم العلمي: ${esc(t.reply)}</div>` : ""}
     </div>
   `).join("") || `<p class="muted" style="margin-top:10px;">لم ترسل أسئلة من قبل.</p>`;
+
+  const waTargetDigits = normalizeWaPhone(settings.admin_whatsapp || settings.vodafone_number || "01066329782");
+  const discountLookupPayload = activeDiscounts.map(d => ({
+    code: String(d.code || "").trim().toUpperCase(),
+    amount: Number(d.amount || 0)
+  }));
+
+  const lectureSelectOptions = allLectures.map(l =>
+    `<option value="${esc(l.title)} (${esc(l.branch)})">محاضرة: ${esc(l.title)} — فرع ${esc(l.branch)}</option>`
+  ).join("");
 
   let mainContentHtml = "";
   if (section === "dashboard") {
@@ -2410,7 +2483,7 @@ function renderStudentDash(settings, student, state) {
             )}
           </div>
           <div style="display:flex; gap:8px; flex-wrap:wrap;">
-            <a class="btn btn-teal btn-sm" href="/student?section=codes">تفعيل كود فرع جديد</a>
+            <a class="btn btn-teal btn-sm" href="/student?section=codes">تفعيل / طلب كود (${COURSE_PRICE_EGP} ج)</a>
             <a class="btn btn-blue btn-sm" href="/student?section=results">عرض نتائجي</a>
           </div>
         </div>
@@ -2425,7 +2498,7 @@ function renderStudentDash(settings, student, state) {
     mainContentHtml = `
       <div class="card">
         <h2 style="font-weight:900; margin-bottom:8px;">تفعيل الفروع بالأكواد</h2>
-        <p class="muted" style="font-size:0.88rem; margin-bottom:14px;">أدخل كود الفرع (يُستخدم مرة واحدة فقط) لفتح محاضرات الفرع على حسابك.</p>
+        <p class="muted" style="font-size:0.88rem; margin-bottom:14px;">لو معاك كود تفعيل جاهز أدخله هنا ليُفعّل الفرع فوراً (يُستخدم مرة واحدة).</p>
         <form method="post" action="/student/redeem-code" class="grid2">
           <div class="field"><label>كود التفعيل *</label><input name="code" type="text" required placeholder="مثال: BR-XXXXXX" /></div>
           <div class="field" style="display:flex; align-items:flex-end;"><button type="submit" class="btn btn-teal" style="width:100%;">تفعيل الكود</button></div>
@@ -2437,6 +2510,142 @@ function renderStudentDash(settings, student, state) {
           )}
         </div>
       </div>
+
+      <div class="card">
+        <h2 style="font-weight:900; margin-bottom:6px;">طلب كود لتفعيل محاضرة أو فرع عبر واتساب</h2>
+        <p class="muted" style="font-size:0.88rem; margin-bottom:14px;">
+          سعر الكورس <strong>${COURSE_PRICE_EGP} ج</strong>. اختر الفرع أو المحاضرة، وإذا كان لديك كود خصم يمكنك إضافته اختيارياً (يُستخدم مرة واحدة).
+        </p>
+
+        <form id="waCodeRequestForm">
+          <div class="grid2">
+            <div class="field">
+              <label>اختر الفرع *</label>
+              <select id="reqBranchSelect">
+                ${BRANCHES.map(b => `<option value="فرع ${esc(b)}">فرع ${esc(b)} (${COURSE_PRICE_EGP} ج)</option>`).join("")}
+              </select>
+            </div>
+            <div class="field">
+              <label>أو اختر محاضرة محددة (اختياري)</label>
+              <select id="reqLectureSelect">
+                <option value="">— كل محاضرات الفرع المختار —</option>
+                ${lectureSelectOptions}
+              </select>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>كود الخصم (اختياري — يُستخدم لمرة واحدة)</label>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <input type="text" id="reqDiscountInput" placeholder="اكتب كود الخصم إن وُجد (اختياري)" style="flex:1; min-width:200px;" />
+              <button type="button" class="btn btn-out btn-sm" id="applyDiscountBtn">تطبيق الخصم</button>
+            </div>
+            <div id="discountStatusMsg" style="font-size:0.84rem; font-weight:800; margin-top:6px;"></div>
+          </div>
+
+          <div class="price-summary-box">
+            <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+              <span>سعر الكورس الأساسي:</span>
+              <strong>${COURSE_PRICE_EGP} ج</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+              <span>قيمة الخصم:</span>
+              <strong id="summaryDiscountAmt" style="color:var(--accent-2);">0 ج</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; border-top:1px solid var(--bdr); padding-top:8px; font-size:1.05rem;">
+              <span>المطلوب دفعه:</span>
+              <strong id="summaryFinalPrice" style="color:var(--accent);">${COURSE_PRICE_EGP} ج</strong>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-blue" style="width:100%;">طلب الكود على واتساب (${esc(settings.admin_whatsapp || "01066329782")})</button>
+        </form>
+      </div>
+
+      <script>
+        (function () {
+          const basePrice = ${COURSE_PRICE_EGP};
+          const waPhone = ${safeJsonForScript(waTargetDigits)};
+          const stName = ${safeJsonForScript(String(student.full_name || ""))};
+          const stPhone = ${safeJsonForScript(String(student.phone || ""))};
+          const stGrade = ${safeJsonForScript(String(student.grade || ""))};
+          const availableDiscounts = ${safeJsonForScript(discountLookupPayload)};
+
+          const branchEl = document.getElementById("reqBranchSelect");
+          const lecEl = document.getElementById("reqLectureSelect");
+          const discInput = document.getElementById("reqDiscountInput");
+          const applyBtn = document.getElementById("applyDiscountBtn");
+          const statusMsg = document.getElementById("discountStatusMsg");
+          const discAmtEl = document.getElementById("summaryDiscountAmt");
+          const finalPriceEl = document.getElementById("summaryFinalPrice");
+          const formEl = document.getElementById("waCodeRequestForm");
+
+          let appliedCode = "";
+          let appliedDiscount = 0;
+
+          function checkDiscount() {
+            const raw = (discInput?.value || "").trim().toUpperCase();
+            if (!raw) {
+              appliedCode = "";
+              appliedDiscount = 0;
+              discAmtEl.textContent = "0 ج";
+              finalPriceEl.textContent = basePrice + " ج";
+              statusMsg.textContent = "";
+              return;
+            }
+            const found = availableDiscounts.find(d => d.code === raw);
+            if (!found) {
+              appliedCode = "";
+              appliedDiscount = 0;
+              discAmtEl.textContent = "0 ج";
+              finalPriceEl.textContent = basePrice + " ج";
+              statusMsg.style.color = "var(--err)";
+              statusMsg.textContent = "كود الخصم غير صحيح أو تم استخدامه من قبل.";
+              return;
+            }
+            appliedCode = found.code;
+            appliedDiscount = Math.min(basePrice, Math.max(0, Number(found.amount || 0)));
+            const finalP = Math.max(0, basePrice - appliedDiscount);
+            discAmtEl.textContent = appliedDiscount + " ج";
+            finalPriceEl.textContent = finalP + " ج";
+            statusMsg.style.color = "var(--accent)";
+            statusMsg.textContent = "تم تطبيق كود الخصم (" + appliedCode + ") بقيمة " + appliedDiscount + " ج.";
+          }
+
+          applyBtn?.addEventListener("click", checkDiscount);
+          discInput?.addEventListener("change", checkDiscount);
+
+          formEl?.addEventListener("submit", async function (e) {
+            e.preventDefault();
+            checkDiscount();
+            const chosenItem = lecEl?.value ? lecEl.value : (branchEl?.value || "");
+            const finalP = Math.max(0, basePrice - appliedDiscount);
+
+            if (appliedCode) {
+              try {
+                await fetch("/student/consume-discount", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ code: appliedCode })
+                });
+              } catch {}
+            }
+
+            const lines = [
+              "السلام عليكم، أريد طلب كود تفعيل في منصة ${PLATFORM_NAME}",
+              "الطالب: " + stName,
+              "رقم الهاتف: " + stPhone,
+              "الصف: " + stGrade,
+              "المطلوب: " + chosenItem,
+              "سعر الكورس: " + basePrice + " ج",
+              appliedCode ? ("كود الخصم: " + appliedCode + " (خصم " + appliedDiscount + " ج)") : "كود الخصم: بدون",
+              "الإجمالي المطلوب: " + finalP + " ج"
+            ];
+            const waUrl = "https://wa.me/" + waPhone + "?text=" + encodeURIComponent(lines.join("\\n"));
+            window.open(waUrl, "_blank", "noopener");
+          });
+        })();
+      </script>
     `;
   } else if (section === "exams") {
     mainContentHtml = `
@@ -2459,8 +2668,8 @@ function renderStudentDash(settings, student, state) {
   } else if (section === "tickets") {
     mainContentHtml = `
       <div class="card">
-        <h2 style="font-weight:900; margin-bottom:8px;">اسأل سؤالاً (الدعم العلمي)</h2>
-        <p class="muted" style="font-size:0.88rem; margin-bottom:14px;">اختر صورة سؤالك مباشرة من جهازك ليراها الأستاذ محمد يوسف ويرد عليك.</p>
+        <h2 style="font-weight:900; margin-bottom:8px;">تيم الدعم العلمي — اسأل سؤالك</h2>
+        <p class="muted" style="font-size:0.88rem; margin-bottom:14px;">اختر صورة سؤالك مباشرة من جهازك ليراجعه تيم الدعم العلمي والأستاذ محمد يوسف ويرد عليك.</p>
         <form method="post" action="/student/tickets" id="studentTicketForm">
           <input type="hidden" name="image_url" id="ticketImageData" />
           <div class="grid2">
@@ -2469,11 +2678,11 @@ function renderStudentDash(settings, student, state) {
           </div>
           <img id="ticketImagePreview" class="ticket-img-thumb" style="display:none;" alt="معاينة صورة السؤال" />
           <div class="field"><label>تفاصيل السؤال *</label><textarea name="message" required placeholder="اكتب سؤالك بوضوح..."></textarea></div>
-          <button type="submit" class="btn btn-blue">إرسال السؤال</button>
+          <button type="submit" class="btn btn-blue">إرسال إلى تيم الدعم العلمي</button>
         </form>
       </div>
       <div class="card">
-        <h3 style="font-weight:900;">أسئلتك السابقة</h3>
+        <h3 style="font-weight:900;">ردود تيم الدعم العلمي على أسئلتك</h3>
         ${ticketsHtml}
       </div>
       <script>
@@ -2535,10 +2744,10 @@ function renderStudentDash(settings, student, state) {
       <a class="nav-item-link ${section === "dashboard" ? "active" : ""}" href="/student?section=dashboard"><span>🏠</span><span class="nav-label">الرئيسية</span></a>
       <a class="nav-item-link ${section === "branch" ? "active" : ""}" href="/student?section=branch&branch=${encodeURIComponent(branchParam || BRANCHES[0])}"><span>📖</span><span class="nav-label">فروع اللغة العربية</span></a>
       <div class="sub-nav">${branchSubLinks}</div>
-      <a class="nav-item-link ${section === "codes" ? "active" : ""}" href="/student?section=codes"><span>🔑</span><span class="nav-label">تفعيل الفروع</span></a>
+      <a class="nav-item-link ${section === "codes" ? "active" : ""}" href="/student?section=codes"><span>🔑</span><span class="nav-label">تفعيل وطلب كود</span></a>
       <a class="nav-item-link ${(section === "exams" || section === "solve-exam") ? "active" : ""}" href="/student?section=exams"><span>📝</span><span class="nav-label">الواجبات والامتحانات</span></a>
       <a class="nav-item-link ${section === "results" ? "active" : ""}" href="/student?section=results"><span>📊</span><span class="nav-label">نتائجي</span></a>
-      <a class="nav-item-link ${section === "tickets" ? "active" : ""}" href="/student?section=tickets"><span>❓</span><span class="nav-label">أسئلة الطلاب</span></a>
+      <a class="nav-item-link ${section === "tickets" ? "active" : ""}" href="/student?section=tickets"><span>❓</span><span class="nav-label">تيم الدعم العلمي</span></a>
       <a class="nav-item-link ${section === "account" ? "active" : ""}" href="/student?section=account"><span>👤</span><span class="nav-label">حسابي</span></a>
       <a class="nav-item-link" href="/logout" style="color:var(--err);"><span>🚪</span><span class="nav-label">تسجيل الخروج</span></a>
     </aside>
@@ -2571,6 +2780,7 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
   const allSubmissions = data.submissions || [];
   const allWatched = data.watched || [];
   const allStudents = data.students || [];
+  const allDiscounts = data.discounts || [];
   const allSupportThreads = (data.supportThreads || []).slice().sort((a, b) =>
     String(b.updated_at || "").localeCompare(String(a.updated_at || ""))
   );
@@ -2587,6 +2797,19 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
       </form>
     </div>
   `).join("") || `<p class="muted">لا توجد أكواد مولدة بعد.</p>`;
+
+  const discountsRows = allDiscounts.slice().reverse().map(d => `
+    <div class="row">
+      <div>
+        <strong>${esc(d.code)}</strong> — <span class="pill pill-warn">خصم ${esc(d.amount)} ج</span>
+        <span class="pill ${d.used ? "pill-err" : "pill-ok"}" style="margin-right:6px;">${d.used ? "مُستخدم (لمرة واحدة)" : "متاح للاستخدام مرة واحدة"}</span>
+      </div>
+      <form method="post" action="/admin/delete-discount" style="margin:0;">
+        <input type="hidden" name="discount_id" value="${esc(d.id)}" />
+        <button type="submit" class="btn btn-red btn-sm">حذف كود الخصم</button>
+      </form>
+    </div>
+  `).join("") || `<p class="muted">لا توجد أكواد خصم مُنشأة حالياً.</p>`;
 
   const lecturesRows = allLectures.map(l => {
     const linkedHw = allExams.find(ex => String(ex.lecture_id || "") === String(l.id));
@@ -2643,7 +2866,7 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
       ${t.image_url ? `<img class="ticket-img-thumb" src="${esc(t.image_url)}" alt="صورة السؤال" onerror="this.style.display='none';" />` : ""}
       <form method="post" action="/admin/reply-ticket" style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
         <input type="hidden" name="ticket_id" value="${esc(t.id)}" />
-        <input name="reply" type="text" value="${esc(t.reply || "")}" placeholder="اكتب رد الإدارة هنا..." style="flex:1; min-width:220px;" />
+        <input name="reply" type="text" value="${esc(t.reply || "")}" placeholder="اكتب رد تيم الدعم العلمي هنا..." style="flex:1; min-width:220px;" />
         <button type="submit" class="btn btn-teal btn-sm">حفظ الرد</button>
       </form>
     </div>
@@ -2712,6 +2935,25 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
           <div style="grid-column:1/-1;"><button type="submit" class="btn btn-teal">توليد الأكواد الآن</button></div>
         </form>
         <div style="margin-top:12px;">${codesRows}</div>
+      </div>
+
+      <div class="card">
+        <h3 style="font-weight:900; margin-bottom:6px;">أكواد الخصم (اختيارية للطالب • تُستخدم مرة واحدة • قابلة للحذف)</h3>
+        <p class="muted" style="font-size:0.84rem; margin-bottom:12px;">سعر الكورس الأساسي ${COURSE_PRICE_EGP} ج. أنشئ كود خصم بقيمة بالجنيه ليُستخدم مرة واحدة فقط أو احذفه في أي وقت.</p>
+        <form method="post" action="/admin/create-discount" class="grid3">
+          <div class="field">
+            <label>كود الخصم (اختياري كتابته أو يُولّد تلقائياً)</label>
+            <input name="discount_code" type="text" placeholder="مثال: JAKH100" />
+          </div>
+          <div class="field">
+            <label>قيمة الخصم بالجنيه *</label>
+            <input name="discount_amount" type="number" min="1" max="${COURSE_PRICE_EGP}" value="100" required />
+          </div>
+          <div class="field" style="display:flex; align-items:flex-end;">
+            <button type="submit" class="btn btn-blue" style="width:100%;">إضافة كود خصم</button>
+          </div>
+        </form>
+        <div style="margin-top:12px;">${discountsRows}</div>
       </div>
     `;
   } else if (activeSec === "lectures") {
@@ -3049,6 +3291,7 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
       governorate: String(item.student.governorate || "-"),
       grade: String(item.student.grade || ""),
       track: String(item.student.track || ""),
+      password_plain: String(item.student.password_plain || ""),
       password_hash: String(item.student.password_hash || ""),
       branches: Array.isArray(item.student.branches) ? item.student.branches.map(String) : [],
       watchedCount: item.metrics.watchedCount,
@@ -3121,6 +3364,8 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
               return '<label class="branch-check-pill"><input type="checkbox" name="branches" value="' + escHtml(br) + '" ' + checked + ' /><span>' + escHtml(br) + '</span></label>';
             }).join("");
 
+            const pwdDisplay = st.password_plain ? st.password_plain : st.password_hash;
+
             profileBox.style.display = "block";
             profileBox.innerHTML =
               '<div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px;">' +
@@ -3137,7 +3382,7 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
               '<div class="row"><span>رقمه</span><strong>' + escHtml(st.phone) + '</strong></div>' +
               '<div class="row"><span>رقم ولي أمره</span><strong>' + escHtml(st.parent_phone) + '</strong></div>' +
               '<div class="row"><span>محافظته</span><strong>' + escHtml(st.governorate) + '</strong></div>' +
-              '<div class="row"><span>كلمة سره</span><strong style="font-size:0.78rem; word-break:break-all;">' + escHtml(st.password_hash) + '</strong></div>' +
+              '<div class="row"><span>كلمة سره</span><strong style="font-size:0.9rem; word-break:break-all;">' + escHtml(pwdDisplay) + '</strong></div>' +
               '<div class="row"><span>متراكم كام محاضرة</span><strong>متراكم عليه: ' + escHtml(st.pendingLectures) + ' محاضرة (شاهد: ' + escHtml(st.watchedCount) + ')</strong></div>' +
               '<div class="row"><span>جايب كام في الامتحانات</span><strong>متوسط: ' + escHtml(st.avgPct) + '% • حل: ' + escHtml(st.solvedExamsCount) + ' • متراكم: ' + escHtml(st.pendingExams) + '</strong></div>' +
               '<div class="row" style="display:block;">' +
@@ -3196,6 +3441,7 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
         center_code: String(st.center_code || ""),
         grade: String(st.grade || ""),
         track: String(st.track || ""),
+        password_plain: String(st.password_plain || ""),
         password_hash: String(st.password_hash || "")
       }));
 
@@ -3246,7 +3492,7 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
                 '</div>' +
                 '<div class="row" style="margin-top:8px;"><span>رقمه</span><strong>' + escLocal(st.phone) + '</strong></div>' +
                 '<div class="row" style="margin-top:6px;"><span>كود السنتر</span><strong>' + escLocal(st.center_code || "-") + '</strong></div>' +
-                '<div class="row" style="margin-top:6px;"><span>كلمة سره</span><strong style="font-size:0.78rem; word-break:break-all;">' + escLocal(st.password_hash) + '</strong></div>' +
+                '<div class="row" style="margin-top:6px;"><span>كلمة سره</span><strong style="font-size:0.9rem; word-break:break-all;">' + escLocal(st.password_plain || st.password_hash) + '</strong></div>' +
               '</div>'
             ).join("");
           }
@@ -3294,7 +3540,7 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
   } else if (activeSec === "tickets") {
     sectionHtml = `
       <div class="card">
-        <h3 style="font-weight:900; margin-bottom:10px;">أسئلة الطلاب (الدعم العلمي)</h3>
+        <h3 style="font-weight:900; margin-bottom:10px;">تيم الدعم العلمي — أسئلة الطلاب والرد عليها</h3>
         ${ticketsRows}
       </div>
     `;
@@ -3309,7 +3555,7 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
           </div>
           <div class="grid2">
             <div class="field"><label>رقم فودافون كاش</label><input name="vodafone_number" type="text" value="${esc(settings.vodafone_number)}" /></div>
-            <div class="field"><label>واتساب الإدارة</label><input name="admin_whatsapp" type="text" value="${esc(settings.admin_whatsapp)}" /></div>
+            <div class="field"><label>رقم واتساب استقبال طلبات الأكواد (قابل للتغيير من الأدمن)</label><input name="admin_whatsapp" type="text" value="${esc(settings.admin_whatsapp)}" required /></div>
           </div>
           <div class="field"><label>رابط صورة الأستاذ (اختياري)</label><input name="teacher_image" type="text" value="${esc(settings.teacher_image)}" /></div>
           <div class="field"><label>رسالة إشعار التنبيه الشفاف المتوهج (اتركه فارغاً لعدم ظهوره)</label><input name="global_notice" type="text" value="${esc(settings.global_notice)}" placeholder="اكتب رسالة التنبيه هنا..." /></div>
@@ -3344,9 +3590,9 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
       <a class="nav-item-link ${activeSec === "center_students" ? "active" : ""}" href="/admin?section=center_students"><span>🏫</span><span class="nav-label">طلاب السنتر</span></a>
       <a class="nav-item-link ${activeSec === "ranking" ? "active" : ""}" href="/admin?section=ranking"><span>🏆</span><span class="nav-label">ترتيب الطلاب</span></a>
       <a class="nav-item-link ${activeSec === "lectures" ? "active" : ""}" href="/admin?section=lectures"><span>🎥</span><span class="nav-label">إضافة محاضرة</span></a>
-      <a class="nav-item-link ${activeSec === "codes" ? "active" : ""}" href="/admin?section=codes"><span>🔑</span><span class="nav-label">توليد أكواد</span></a>
+      <a class="nav-item-link ${activeSec === "codes" ? "active" : ""}" href="/admin?section=codes"><span>🔑</span><span class="nav-label">الأكواد والخصومات</span></a>
       <a class="nav-item-link ${activeSec === "exams" ? "active" : ""}" href="/admin?section=exams"><span>📝</span><span class="nav-label">الواجبات والاختبارات</span></a>
-      <a class="nav-item-link ${activeSec === "tickets" ? "active" : ""}" href="/admin?section=tickets"><span>❓</span><span class="nav-label">أسئلة الطلاب</span></a>
+      <a class="nav-item-link ${activeSec === "tickets" ? "active" : ""}" href="/admin?section=tickets"><span>❓</span><span class="nav-label">تيم الدعم العلمي</span></a>
       <a class="nav-item-link ${activeSec === "support" ? "active" : ""}" href="/admin?section=support"><span>💬</span><span class="nav-label">دعم فني</span></a>
       <a class="nav-item-link ${activeSec === "settings" ? "active" : ""}" href="/admin?section=settings"><span>⚙️</span><span class="nav-label">الإعدادات والإشعار</span></a>
     </aside>
@@ -3413,7 +3659,7 @@ export default {
           .filter(t => String(t.student_phone || "") === String(student.phone || "") && Boolean(String(t.reply || "").trim()))
           .map(t => ({
             key: `t_${t.id}_${String(t.reply || "").length}`,
-            kind: "دعم علمي",
+            kind: "تيم الدعم العلمي",
             title: String(t.subject || "سؤال طالب"),
             preview: String(t.reply || "").slice(0, 70),
             href: "/student?section=tickets"
@@ -3423,15 +3669,32 @@ export default {
     if (path === "/api/support/thread" && method === "GET") {
       const sid = String(url.searchParams.get("session_id") || "").trim();
       if (!sid) {
-        return new Response(JSON.stringify({ visitor_name: "", messages: [] }), {
+        return new Response(JSON.stringify({ visitor_name: "", messages: [], read_admin_ids: [] }), {
           headers: { "Content-Type": "application/json; charset=utf-8" }
         });
       }
       const doc = await fsGet(env, "support_chats", sid);
       return new Response(JSON.stringify({
         visitor_name: doc?.visitor_name || "",
-        messages: Array.isArray(doc?.messages) ? doc.messages : []
+        messages: Array.isArray(doc?.messages) ? doc.messages : [],
+        read_admin_ids: Array.isArray(doc?.read_admin_ids) ? doc.read_admin_ids : []
       }), {
+        headers: { "Content-Type": "application/json; charset=utf-8" }
+      });
+    }
+
+    if (path === "/api/support/mark-read" && method === "POST") {
+      const body = await parseFormBody(req);
+      const sid = String(body.session_id || "").trim();
+      const ids = Array.isArray(body.read_admin_ids) ? body.read_admin_ids.map(String) : [];
+      if (sid) {
+        const doc = await fsGet(env, "support_chats", sid);
+        if (doc) {
+          const merged = Array.from(new Set([...(Array.isArray(doc.read_admin_ids) ? doc.read_admin_ids : []), ...ids]));
+          await fsSet(env, "support_chats", sid, { ...doc, read_admin_ids: merged });
+        }
+      }
+      return new Response(JSON.stringify({ ok: true }), {
         headers: { "Content-Type": "application/json; charset=utf-8" }
       });
     }
@@ -3443,6 +3706,7 @@ export default {
       const studentPhone = String(body.student_phone || "").trim();
       const text = String(body.text || "").trim();
       const imageUrl = String(body.image_url || "").trim();
+      const msgId = String(body.msg_id || ("m_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6)));
       const nameOnly = Boolean(body.register_name_only);
 
       if (!sid) {
@@ -3453,12 +3717,14 @@ export default {
         visitor_name: visitorName || "زائر",
         student_phone: studentPhone,
         messages: [],
+        read_admin_ids: [],
         updated_at: new Date().toISOString()
       };
 
       const msgs = Array.isArray(existing.messages) ? [...existing.messages] : [];
       if (!nameOnly && (text || imageUrl)) {
         msgs.push({
+          id: msgId,
           sender: "user",
           text,
           image_url: imageUrl,
@@ -3470,6 +3736,7 @@ export default {
         visitor_name: visitorName || existing.visitor_name || "زائر",
         student_phone: studentPhone || existing.student_phone || "",
         messages: msgs,
+        read_admin_ids: Array.isArray(existing.read_admin_ids) ? existing.read_admin_ids : [],
         updated_at: new Date().toISOString()
       };
 
@@ -3478,8 +3745,28 @@ export default {
       return new Response(JSON.stringify({
         ok: true,
         visitor_name: updatedDoc.visitor_name,
-        messages: updatedDoc.messages
+        messages: updatedDoc.messages,
+        read_admin_ids: updatedDoc.read_admin_ids
       }), {
+        headers: { "Content-Type": "application/json; charset=utf-8" }
+      });
+    }
+
+    if (path === "/student/consume-discount" && method === "POST") {
+      const body = await parseFormBody(req);
+      const code = String(body.code || "").trim().toUpperCase();
+      if (code) {
+        const dDoc = await fsGet(env, "discount_codes", code);
+        if (dDoc && !dDoc.used) {
+          await fsSet(env, "discount_codes", code, {
+            ...dDoc,
+            used: true,
+            used_by: student?.phone || "",
+            used_at: new Date().toISOString()
+          });
+        }
+      }
+      return new Response(JSON.stringify({ ok: true }), {
         headers: { "Content-Type": "application/json; charset=utf-8" }
       });
     }
@@ -3528,12 +3815,13 @@ export default {
         });
       }
 
-      const [lectures, exams, submissions, drafts, watched] = await Promise.all([
+      const [lectures, exams, submissions, drafts, watched, discounts] = await Promise.all([
         fsList(env, "lectures"),
         fsList(env, "exams"),
         fsList(env, "submissions"),
         fsList(env, "exam_drafts"),
-        fsList(env, "watched_lectures")
+        fsList(env, "watched_lectures"),
+        fsList(env, "discount_codes")
       ]);
 
       const myTickets = allTickets.filter(t => t.student_phone === student.phone);
@@ -3552,6 +3840,7 @@ export default {
         submissions: mySubmissions,
         drafts: myDrafts,
         watched: myWatched,
+        discounts,
         error,
         notice
       });
@@ -3604,6 +3893,7 @@ export default {
         grade,
         track,
         governorate: existing?.governorate || "",
+        password_plain: rawPass,
         password_hash: await sha256(rawPass),
         branches: [...BRANCHES],
         is_center_student: true,
@@ -3645,6 +3935,7 @@ export default {
         grade,
         track,
         governorate,
+        password_plain: password,
         password_hash: await sha256(password),
         branches: [],
         is_center_student: false,
@@ -3661,7 +3952,7 @@ export default {
       const form = await parseFormBody(req);
       const phone = String(form.phone || "").trim();
       const parentPhone = String(form.parent_phone || "").trim();
-      const newPassword = String(form.new_password || "");
+      const newPassword = String(form.new_password || "").trim();
       if (phone && parentPhone && phone === parentPhone) {
         return redirectRes(`/student?tab=forgot&error=${encodeURIComponent("يجب أن يكون رقم هاتف ولي الأمر مختلفاً عن رقم الطالب")}`);
       }
@@ -3669,8 +3960,12 @@ export default {
       if (!st || (st.parent_phone && st.parent_phone !== parentPhone)) {
         return redirectRes(`/student?tab=forgot&error=${encodeURIComponent("تعذر التحقق من رقم الطالب أو ولي الأمر")}`);
       }
-      await fsSet(env, "students", phone, { ...st, password_hash: await sha256(newPassword) });
-      return redirectRes(`/student?tab=login&notice=${encodeURIComponent("تم تعيين كلمة السر الجديدة، سجل دخولك الآن")}`);
+      await fsSet(env, "students", phone, {
+        ...st,
+        password_plain: newPassword,
+        password_hash: await sha256(newPassword)
+      });
+      return redirectRes(`/student?tab=login&notice=${encodeURIComponent("تم تعيين كلمة السر الجديدة وتحديثها في ملفك، سجل دخولك الآن")}`);
     }
 
     if (path === "/student/redeem-code" && method === "POST") {
@@ -3778,7 +4073,7 @@ export default {
         reply: "",
         created_at: new Date().toISOString()
       });
-      return redirectRes(`/student?section=tickets&notice=${encodeURIComponent("تم إرسال سؤالك بنجاح")}`);
+      return redirectRes(`/student?section=tickets&notice=${encodeURIComponent("تم إرسال سؤالك إلى تيم الدعم العلمي بنجاح")}`);
     }
 
     if (path === "/admin" && method === "GET") {
@@ -3790,16 +4085,17 @@ export default {
       let data = {};
 
       if (isAdmin) {
-        const [codes, lectures, exams, students, submissions, watched, supportThreads] = await Promise.all([
+        const [codes, lectures, exams, students, submissions, watched, supportThreads, discounts] = await Promise.all([
           fsList(env, "codes"),
           fsList(env, "lectures"),
           fsList(env, "exams"),
           fsList(env, "students"),
           fsList(env, "submissions"),
           fsList(env, "watched_lectures"),
-          fsList(env, "support_chats")
+          fsList(env, "support_chats"),
+          fsList(env, "discount_codes")
         ]);
-        data = { codes, lectures, exams, students, tickets: allTickets, submissions, watched, supportThreads, preselectLectureId, rankingGrade };
+        data = { codes, lectures, exams, students, tickets: allTickets, submissions, watched, supportThreads, discounts, preselectLectureId, rankingGrade };
       }
 
       return htmlRes(renderLayout("لوحة الأدمن", settings, student, isAdmin, renderAdminPage(settings, isAdmin, data, section, error, notice), {
@@ -3834,7 +4130,9 @@ export default {
         const doc = await fsGet(env, "support_chats", sid);
         if (doc) {
           const msgs = Array.isArray(doc.messages) ? [...doc.messages] : [];
+          const newMsgId = "adm_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6);
           msgs.push({
+            id: newMsgId,
             sender: "admin",
             text: replyText,
             image_url: "",
@@ -3874,6 +4172,28 @@ export default {
       const codeId = String(form.code_id || "");
       if (codeId) await fsDelete(env, "codes", codeId);
       return redirectRes(`/admin?section=codes&notice=${encodeURIComponent("تم حذف الكود")}`);
+    }
+
+    if (path === "/admin/create-discount" && method === "POST") {
+      const form = await parseFormBody(req);
+      const rawCode = String(form.discount_code || "").trim().toUpperCase();
+      const code = rawCode || ("DISC-" + Math.random().toString(36).substring(2, 7).toUpperCase());
+      const amount = Math.min(COURSE_PRICE_EGP, Math.max(1, Number(form.discount_amount || 100)));
+      await fsSet(env, "discount_codes", code, {
+        code,
+        amount,
+        used: false,
+        used_by: "",
+        created_at: new Date().toISOString()
+      });
+      return redirectRes(`/admin?section=codes&notice=${encodeURIComponent(`تم إنشاء كود الخصم (${code}) بقيمة ${amount} ج لمرة واحدة`)}`);
+    }
+
+    if (path === "/admin/delete-discount" && method === "POST") {
+      const form = await parseFormBody(req);
+      const discountId = String(form.discount_id || "").trim();
+      if (discountId) await fsDelete(env, "discount_codes", discountId);
+      return redirectRes(`/admin?section=codes&notice=${encodeURIComponent("تم حذف كود الخصم")}`);
     }
 
     if (path === "/admin/add-lecture" && method === "POST") {
