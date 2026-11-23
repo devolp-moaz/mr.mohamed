@@ -1389,16 +1389,14 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       }
     })();
 
-    (function enforceAntiCaptureAndBlackout() {
+    (function enforceOnScreenshotOrCaptureOnly() {
       let blackoutTimer = null;
-      function triggerBlackout(ms = 2500) {
+      function triggerOnCapture(ms = 2600) {
         document.body.classList.add("screen-blackout");
         document.querySelectorAll("video").forEach((v) => { try { v.pause(); } catch {} });
         clearTimeout(blackoutTimer);
         blackoutTimer = setTimeout(function () {
-          if (document.hasFocus() && !document.hidden) {
-            document.body.classList.remove("screen-blackout");
-          }
+          document.body.classList.remove("screen-blackout");
         }, ms);
       }
 
@@ -1407,38 +1405,24 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
 
       window.addEventListener("keydown", function (e) {
         const k = (e.key || "").toLowerCase();
-        const isShotKey =
+        const isScreenshotKey =
           e.key === "PrintScreen" ||
           e.code === "PrintScreen" ||
           (e.ctrlKey && ["s", "u", "p", "c"].includes(k)) ||
           (e.metaKey && ["s", "p", "c", "g"].includes(k)) ||
           (e.ctrlKey && e.shiftKey && ["i", "j", "c", "s"].includes(k)) ||
           (e.metaKey && e.shiftKey && ["3", "4", "5", "s"].includes(k));
-        if (isShotKey) {
+        if (isScreenshotKey) {
           e.preventDefault();
-          triggerBlackout(3500);
+          triggerOnCapture(3200);
         }
       }, true);
 
       window.addEventListener("keyup", function (e) {
         if (e.key === "PrintScreen" || e.code === "PrintScreen") {
-          triggerBlackout(3500);
+          triggerOnCapture(3200);
         }
       }, true);
-
-      document.addEventListener("visibilitychange", function () {
-        if (document.hidden) {
-          document.body.classList.add("screen-blackout");
-          document.querySelectorAll("video").forEach((v) => { try { v.pause(); } catch {} });
-        } else {
-          setTimeout(function () { document.body.classList.remove("screen-blackout"); }, 300);
-        }
-      });
-
-      window.addEventListener("blur", function () { document.body.classList.add("screen-blackout"); });
-      window.addEventListener("focus", function () {
-        setTimeout(function () { document.body.classList.remove("screen-blackout"); }, 250);
-      });
     })();
 
     (function initSupportAndBellNotifications() {
@@ -2989,7 +2973,8 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
       metrics: computeStudentMetrics(st, allLectures, allExams, allSubmissions, allWatched)
     }));
 
-    const studentItemsPayload = enrichedStudents.map(item => ({
+    const studentItemsPayload = enrichedStudents.map((item, idx) => ({
+      idx,
       full_name: String(item.student.full_name || ""),
       phone: String(item.student.phone || ""),
       parent_phone: String(item.student.parent_phone || "-"),
@@ -3046,8 +3031,8 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
               .replace(/"/g, "&quot;");
           }
 
-          window.openStudentProfileByPhone = function (phone) {
-            const st = allItems.find(x => String(x.phone) === String(phone));
+          function openStudentByIndex(studentIdx) {
+            const st = allItems.find(x => Number(x.idx) === Number(studentIdx));
             if (!st) return;
 
             const subsHtml = st.submissions.length
@@ -3073,7 +3058,7 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
               '<div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px;">' +
                 '<h4 style="font-weight:900; font-size:1.12rem;">ملف الطالب: ' + escHtml(st.full_name) + '</h4>' +
                 '<div style="display:flex; gap:8px; flex-wrap:wrap;">' +
-                  '<form method="post" action="/admin/delete-student" style="margin:0;" onsubmit="return confirm(\'هل أنت متأكد من حذف هذا الطالب نهائياً؟\');">' +
+                  '<form method="post" action="/admin/delete-student" style="margin:0;">' +
                     '<input type="hidden" name="phone" value="' + escHtml(st.phone) + '" />' +
                     '<button type="submit" class="btn btn-red btn-sm">حذف الطالب</button>' +
                   '</form>' +
@@ -3101,7 +3086,7 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
               profileBox.style.display = "none";
             });
             profileBox.scrollIntoView({ behavior: "smooth", block: "nearest" });
-          };
+          }
 
           function renderByGrade() {
             const g = (gradeEl?.value || "").trim();
@@ -3118,9 +3103,15 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
                   '<strong>' + escHtml(item.full_name) + '</strong> — <span class="muted">' + escHtml(item.phone) + '</span>' +
                   '<div class="muted" style="font-size:0.8rem;">' + escHtml(item.grade) + ' (' + escHtml(item.track) + ') • متراكم: ' + escHtml(item.pendingLectures) + ' محاضرة • الامتحانات: ' + escHtml(item.avgPct) + '%</div>' +
                 '</div>' +
-                '<button type="button" class="btn btn-blue btn-sm" onclick="window.openStudentProfileByPhone(\'' + escHtml(item.phone) + '\')">فتح ملف الطالب</button>' +
+                '<button type="button" class="btn btn-blue btn-sm open-st-btn" data-st-idx="' + escHtml(item.idx) + '">فتح ملف الطالب</button>' +
               '</div>'
             ).join("");
+
+            listContainer.querySelectorAll(".open-st-btn").forEach(function (b) {
+              b.addEventListener("click", function () {
+                openStudentByIndex(b.getAttribute("data-st-idx"));
+              });
+            });
           }
 
           gradeEl?.addEventListener("change", renderByGrade);
