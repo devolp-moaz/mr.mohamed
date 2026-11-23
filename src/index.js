@@ -297,7 +297,6 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
   const defaultChatPhone = student ? String(student.phone || "") : "";
   const academicUnreadCount = Number(options.academicUnreadCount || 0);
   const academicUnreadItems = Array.isArray(options.academicUnreadItems) ? options.academicUnreadItems : [];
-  const adminBellCount = Number(options.adminBellCount || 0);
 
   return `<!DOCTYPE html>
 <html lang="ar" dir="rtl">
@@ -412,7 +411,6 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       border: 1px solid rgba(255, 255, 255, 0.25);
     }
 
-    /* جرس الإشعارات الأصفر للطالب / المستخدم */
     .notif-bell-wrap {
       position: relative;
       display: inline-flex;
@@ -460,25 +458,6 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       border: 2px solid var(--surface);
     }
     .bell-badge-num.hidden-badge { display: none; }
-
-    /* جرس الأدمن المميز */
-    .admin-bell-btn {
-      position: relative;
-      width: 42px;
-      height: 42px;
-      border-radius: 12px;
-      border: 1px solid rgba(56, 189, 248, 0.5);
-      background: linear-gradient(135deg, #1e3a8a, #0284c7);
-      color: #fef08a;
-      font-size: 1.15rem;
-      font-weight: 900;
-      display: inline-grid;
-      place-items: center;
-      text-decoration: none;
-      box-shadow: 0 6px 16px rgba(2, 132, 199, 0.3);
-      transition: transform 0.16s ease;
-    }
-    .admin-bell-btn:hover { transform: translateY(-1px) scale(1.04); }
 
     .notif-popover {
       display: none;
@@ -813,7 +792,6 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .floating-admin-avatar:hover { transform: scale(1.08); }
     .floating-admin-avatar img { width: 100%; height: 100%; object-fit: cover; object-position: center top; display: block; }
 
-    /* أيقونة الدعم المحسنة وشات أكبر */
     .support-fab-btn {
       position: fixed;
       bottom: 20px;
@@ -1289,12 +1267,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       </div>
 
       <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-        ${isAdmin ? `
-          <a class="admin-bell-btn" href="/admin?section=support" title="إشعارات الدعم الفني والأسئلة">
-            <span>🔔</span>
-            <span class="bell-badge-num ${adminBellCount > 0 ? "" : "hidden-badge"}">${adminBellCount}</span>
-          </a>
-        ` : `
+        ${!isAdmin ? `
           <div class="notif-bell-wrap">
             <button type="button" class="yellow-bell-btn ${academicUnreadCount > 0 ? "has-alert" : ""}" id="yellowNotifBellBtn" title="إشعارات الردود (الدعم الفني والدعم العلمي)">
               <span>🔔</span>
@@ -1317,7 +1290,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
               </div>
             </div>
           </div>
-        `}
+        ` : ""}
 
         <label class="mode-switch" title="تبديل الوضع النهاري والليلي">
           <input type="checkbox" id="themeToggle" />
@@ -1855,13 +1828,13 @@ function renderStudentAuth(settings, authTab, step, draft, error, notice) {
       <div class="promo-pane gold-mode">
         <div>
           <h2 style="font-size:1.32rem; font-weight:900;">دخول طلاب السنتر بكود التفعيل</h2>
-          <p style="margin-top:10px; font-size:0.92rem; opacity:0.95;">أدخل بياناتك وكود السنتر المخصص لمرة واحدة ليتم فتح المنصة لك مباشرة.</p>
+          <p style="margin-top:10px; font-size:0.92rem; opacity:0.95;">أدخل بياناتك وكود السنتر المخصص لمرة واحدة ليتم فتح المنصة وكل الفروع لك مباشرة.</p>
         </div>
         <img class="promo-img" src="${esc(settings.teacher_image)}" alt="الأستاذ محمد يوسف" onerror="this.style.display='none';" />
       </div>
       <div class="card" style="margin-bottom:0;">
         <h2 style="font-weight:900; margin-bottom:8px;">تفعيل المنصة بكود السنتر</h2>
-        <p class="muted" style="font-size:0.86rem; margin-bottom:14px;">يُستخدم كود السنتر مرة واحدة فقط لفتح المنصة على حسابك.</p>
+        <p class="muted" style="font-size:0.86rem; margin-bottom:14px;">يُستخدم كود السنتر مرة واحدة فقط لفتح المنصة وكل الفروع على حسابك.</p>
         ${error ? `<div class="msg-err">${esc(error)}</div>` : ""}
         ${notice ? `<div class="msg-ok">${esc(notice)}</div>` : ""}
         <form method="post" action="/student/center-login" autocomplete="off">
@@ -1872,6 +1845,7 @@ function renderStudentAuth(settings, authTab, step, draft, error, notice) {
             <div class="field"><label>الصف الدراسي *</label><select name="grade">${gradeOpts}</select></div>
             <div class="field"><label>الشعبة *</label><select name="track">${trackOpts}</select></div>
           </div>
+          <div class="field"><label>كلمة السر *</label><input name="password" type="password" required autocomplete="new-password" minlength="4" placeholder="اختر كلمة سر لحسابك" /></div>
           <button type="submit" class="btn btn-teal" style="width:100%;">فتح المنصة بكود السنتر</button>
         </form>
         <div style="margin-top:14px; text-align:center; font-size:0.86rem;">
@@ -1950,7 +1924,8 @@ function renderStudentAuth(settings, authTab, step, draft, error, notice) {
 }
 
 function renderStudentDash(settings, student, state) {
-  const unlocked = new Set(student.branches || []);
+  const isCenterStudent = Boolean(student.is_center_student || student.center_code);
+  const unlocked = isCenterStudent ? new Set(BRANCHES) : new Set(student.branches || []);
   const unlockedCount = unlocked.size;
   const totalBranches = BRANCHES.length;
   const progressPct = Math.round((unlockedCount / totalBranches) * 100);
@@ -1976,6 +1951,7 @@ function renderStudentDash(settings, student, state) {
   }
 
   function isLectureUnlockedForStudent(branchList, idx) {
+    if (isCenterStudent) return true;
     if (idx === 0) return true;
     const prevLec = branchList[idx - 1];
     const prevHw = getLessonHomework(prevLec.id);
@@ -1983,18 +1959,23 @@ function renderStudentDash(settings, student, state) {
     return solvedExamIds.has(String(prevHw.id));
   }
 
-  function buildPlayerEmbed(lec) {
-    const ytId = extractYoutubeId(lec.video_url);
+  function buildPlayerFromUrl(videoUrl) {
+    const ytId = extractYoutubeId(videoUrl);
     if (ytId) {
       return `<iframe src="https://www.youtube.com/embed/${esc(ytId)}?rel=0" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>`;
     }
-    if (lec.video_url && /^https?:\/\//i.test(lec.video_url)) {
-      return `<iframe src="${esc(lec.video_url)}" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>`;
+    if (videoUrl && /^https?:\/\//i.test(videoUrl)) {
+      return `<iframe src="${esc(videoUrl)}" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>`;
     }
-    if (lec.video_url) {
-      return `<video controls controlsList="nodownload"><source src="${esc(lec.video_url)}" /></video>`;
+    if (videoUrl) {
+      return `<video controls controlsList="nodownload"><source src="${esc(videoUrl)}" /></video>`;
     }
-    return `<div class="msg-err" style="margin:0;">لا يوجد رابط فيديو مضاف لهذه المحاضرة بعد.</div>`;
+    return "";
+  }
+
+  function buildPlayerEmbed(lec) {
+    const html = buildPlayerFromUrl(lec.video_url);
+    return html || `<div class="msg-err" style="margin:0;">لا يوجد رابط فيديو مضاف لهذه المحاضرة بعد.</div>`;
   }
 
   const branchCardsHtml = BRANCHES.map(br => {
@@ -2005,7 +1986,7 @@ function renderStudentDash(settings, student, state) {
         <div>
           <div class="course-banner">
             <div>
-              <span class="pill" style="background:rgba(255,255,255,0.22); color:#fff;">${isUnlocked ? "مفعل ✓" : "مغلق 🔒"}</span>
+              <span class="pill" style="background:rgba(255,255,255,0.22); color:#fff;">${isUnlocked ? (isCenterStudent ? "مفعل سنتر ✓" : "مفعل ✓") : "مغلق 🔒"}</span>
               <div style="font-size:1.22rem; font-weight:900; margin-top:6px;">${esc(br)}</div>
               <div style="font-size:0.8rem; opacity:0.92;">${brLectures.length} محاضرة متاحة</div>
             </div>
@@ -2014,7 +1995,7 @@ function renderStudentDash(settings, student, state) {
           <div class="course-body">
             <div class="course-title">منهج ${esc(br)} — ${esc(student.grade)} (${esc(student.track)})</div>
             <p class="muted" style="font-size:0.84rem; margin-bottom:12px;">
-              ${isUnlocked ? "افتح المحاضرة واستعرض الكتاب والشرح والمذاكرة وحل الواجب." : "هذا الفرع يحتاج إلى كود تفعيل خاص بالفرع لفتحه."}
+              ${isUnlocked ? "افتح المحاضرة واستعرض أقسامها ومحتواها وحل الواجب." : "هذا الفرع يحتاج إلى كود تفعيل خاص بالفرع لفتحه."}
             </p>
           </div>
         </div>
@@ -2072,7 +2053,15 @@ function renderStudentDash(settings, student, state) {
             const isSeen = myWatchedSet.has(String(l.id));
             const isInitiallyOpen = lectureId ? String(l.id) === String(lectureId) : (idx === 0 && openByOrder);
             const stepNum = Number(l.order_num) > 0 ? Number(l.order_num) : (idx + 1) * 10;
-            const ytId = extractYoutubeId(l.video_url);
+
+            const rawCustomItems = Array.isArray(l.custom_items) ? l.custom_items : [];
+            const customItems = rawCustomItems.length > 0 ? rawCustomItems : [
+              { title: "الكتاب", note: `ملخص ومذكرة ${l.title} في فرع ${l.branch}.`, url: "", image_url: "" },
+              { title: "الشرح", note: "", url: l.video_url || "", image_url: "" },
+              { title: "المذاكرة", note: `راجع قواعد وأمثلة ${l.title} ثم ابدأ حل الواجب.`, url: "", image_url: "" },
+              { title: "حل المقالي", note: "اكتب سؤالك المقالي أو صوّر حلك ليراجعه الأستاذ محمد يوسف.", url: "", image_url: "" },
+              { title: "حل الكتب", note: `تدريبات واختبارات الكتب الخارجية على ${l.title}.`, url: "", image_url: "" }
+            ];
 
             return `
               <div class="lec-accordion-item ${isInitiallyOpen ? "is-open" : ""}" data-lec-id="${esc(l.id)}">
@@ -2094,98 +2083,49 @@ function renderStudentDash(settings, student, state) {
                     <div class="msg-err" style="margin-bottom:0;">هذا الدرس مغلق حالياً. يجب حل وتسليم واجب الدرس السابق أولاً لفتح هذا الدرس.</div>
                   ` : `
                     <div class="sub-topic-list">
-                      <div class="sub-topic-card">
-                        <button type="button" class="sub-topic-head">
-                          <span>الكتاب</span>
-                          <span class="sub-topic-left"><span>^</span><span>عرض</span></span>
-                        </button>
-                        <div class="sub-topic-panel">
-                          <p class="muted" style="font-size:0.9rem; margin-bottom:10px;">
-                            ملخص ومذكرة <strong>${esc(l.title)}</strong> في فرع <strong>${esc(l.branch)}</strong> (${esc(student.grade)}).
-                          </p>
-                          <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                            <a class="jakh-action-btn" href="/student?section=tickets">الاستفسار عن نقطة في الكتاب</a>
-                            <a class="btn btn-out btn-sm" href="/student?section=exams">الواجبات والامتحانات</a>
-                          </div>
-                        </div>
-                      </div>
+                      ${customItems.map((ci, cIdx) => {
+                        const itemTitle = String(ci.title || "عنصر");
+                        const itemNote = String(ci.note || "");
+                        const itemUrl = String(ci.url || "");
+                        const itemImg = String(ci.image_url || "");
+                        const playerHtml = itemUrl ? buildPlayerFromUrl(itemUrl) : (itemTitle.includes("شرح") ? buildPlayerEmbed(l) : "");
+                        const isFirstOpen = isInitiallyOpen && cIdx === 0;
 
-                      <div class="sub-topic-card ${isInitiallyOpen ? "sub-open" : ""}">
-                        <button type="button" class="sub-topic-head">
-                          <span>الشرح</span>
-                          <span class="sub-topic-left"><span>^</span><span>عرض</span></span>
-                        </button>
-                        <div class="sub-topic-panel">
-                          <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
-                            <span class="pill pill-ok">${isSeen ? "تم تسجيل المشاهدة ✓" : "محاضرة شرح"}</span>
-                            <a class="btn btn-out btn-sm" href="/student?section=branch&branch=${encodeURIComponent(branchParam)}&lecture=${encodeURIComponent(l.id)}">تثبيت وحفظ المشاهدة</a>
-                          </div>
-                          <div class="secure-player-box">
-                            <div class="watermark-layer">
-                              <span class="watermark-tag" style="top:18%; right:10%;">${esc(wmText)}</span>
-                              <span class="watermark-tag" style="top:54%; right:35%; animation-delay:-4s;">${esc(wmText)}</span>
+                        return `
+                          <div class="sub-topic-card ${isFirstOpen ? "sub-open" : ""}">
+                            <button type="button" class="sub-topic-head">
+                              <span>${esc(itemTitle)}</span>
+                              <span class="sub-topic-left"><span>^</span><span>عرض</span></span>
+                            </button>
+                            <div class="sub-topic-panel">
+                              ${itemNote ? `<p class="muted" style="font-size:0.9rem; margin-bottom:10px;">${esc(itemNote)}</p>` : ""}
+                              ${itemImg ? `<img class="ticket-img-thumb" src="${esc(itemImg)}" alt="${esc(itemTitle)}" onerror="this.style.display='none';" style="margin-bottom:10px;" />` : ""}
+                              ${playerHtml ? `
+                                <div class="secure-player-box">
+                                  <div class="watermark-layer">
+                                    <span class="watermark-tag" style="top:18%; right:10%;">${esc(wmText)}</span>
+                                    <span class="watermark-tag" style="top:54%; right:35%; animation-delay:-4s;">${esc(wmText)}</span>
+                                  </div>
+                                  ${playerHtml}
+                                </div>
+                              ` : ""}
+                              <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;">
+                                ${itemUrl && /^https?:\/\//i.test(itemUrl) && !extractYoutubeId(itemUrl)
+                                  ? `<a class="jakh-action-btn" href="${esc(itemUrl)}" target="_blank" rel="noopener">فتح الرابط / الملف</a>`
+                                  : ""
+                                }
+                                ${hw
+                                  ? (hwSub
+                                    ? `<a class="btn btn-teal btn-sm" href="/student?section=results">نتيجة الواجب (${hwSub.pct}%)</a>`
+                                    : `<a class="btn btn-blue btn-sm" href="/student?section=solve-exam&exam_id=${encodeURIComponent(hw.id)}">حل واجب المحاضرة</a>`
+                                  )
+                                  : ""
+                                }
+                              </div>
                             </div>
-                            ${buildPlayerEmbed(l)}
                           </div>
-                          ${l.video_url && /^https?:\/\//i.test(l.video_url) && !ytId
-                            ? `<div style="margin-top:10px;"><a class="btn btn-teal btn-sm" href="${esc(l.video_url)}" target="_blank" rel="noopener">فتح الفيديو في نافذة المشغل الخارجية</a></div>`
-                            : ""
-                          }
-                        </div>
-                      </div>
-
-                      <div class="sub-topic-card">
-                        <button type="button" class="sub-topic-head">
-                          <span>المذاكرة</span>
-                          <span class="sub-topic-left"><span>^</span><span>عرض</span></span>
-                        </button>
-                        <div class="sub-topic-panel">
-                          <p class="muted" style="font-size:0.9rem; margin-bottom:10px;">
-                            راجع قواعد وأمثلة <strong>${esc(l.title)}</strong> ثم ابدأ حل الواجب لفتح المحاضرة التالية.
-                          </p>
-                          ${hw
-                            ? (hwSub
-                              ? `<a class="jakh-action-btn" href="/student?section=results">تم حل الواجب (${hwSub.pct}%) — عرض النتيجة</a>`
-                              : `<a class="jakh-action-btn" href="/student?section=solve-exam&exam_id=${encodeURIComponent(hw.id)}">بدء حل واجب المحاضرة</a>`
-                            )
-                            : `<span class="pill pill-warn">لا يوجد واجب مرتبط بهذه المحاضرة بعد</span>`
-                          }
-                        </div>
-                      </div>
-
-                      <div class="sub-topic-card">
-                        <button type="button" class="sub-topic-head">
-                          <span>حل المقالي</span>
-                          <span class="sub-topic-left"><span>^</span><span>عرض</span></span>
-                        </button>
-                        <div class="sub-topic-panel">
-                          <p class="muted" style="font-size:0.9rem; margin-bottom:10px;">
-                            اكتب سؤالك المقالي أو صوّر حلك ليراجعه الأستاذ محمد يوسف ويرد عليك مباشرة.
-                          </p>
-                          <a class="jakh-action-btn" href="/student?section=tickets">إرسال سؤال أو حل مقالي</a>
-                        </div>
-                      </div>
-
-                      <div class="sub-topic-card">
-                        <button type="button" class="sub-topic-head">
-                          <span>حل الكتب</span>
-                          <span class="sub-topic-left"><span>^</span><span>عرض</span></span>
-                        </button>
-                        <div class="sub-topic-panel">
-                          <p class="muted" style="font-size:0.9rem; margin-bottom:10px;">
-                            تدريبات واختبارات الكتب الخارجية على <strong>${esc(l.title)}</strong>:
-                          </p>
-                          <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                            ${hw
-                              ? (hwSub
-                                ? `<a class="jakh-action-btn" href="/student?section=results">نتيجة التدريب (${hwSub.pct}%)</a>`
-                                : `<a class="jakh-action-btn" href="/student?section=solve-exam&exam_id=${encodeURIComponent(hw.id)}">حل التدريب الآن</a>`
-                              )
-                              : `<a class="btn btn-out btn-sm" href="/student?section=exams">كل الامتحانات والواجبات</a>`
-                            }
-                          </div>
-                        </div>
-                      </div>
+                        `;
+                      }).join("")}
                     </div>
                   `}
                 </div>
@@ -2411,10 +2351,11 @@ function renderStudentDash(settings, student, state) {
             الصف: <strong>${esc(student.grade)}</strong> • الشعبة: <strong>${esc(student.track)}</strong> • رقم الهاتف: <strong>${esc(student.phone)}</strong> • ولي الأمر: <strong>${esc(student.parent_phone || "-")}</strong>
           </p>
           <div style="margin-bottom:12px;">
-            ${(student.branches || []).length
-              ? (student.branches || []).map(b => `<span class="pill pill-ok" style="margin-left:4px;">${esc(b)}</span>`).join("")
-              : `<span class="pill pill-warn">لم يتم تفعيل أي فرع بعد</span>`
-            }
+            ${isCenterStudent ? `<span class="pill pill-ok">طالب سنتر — كل الفروع مفتوحة</span>` : (
+              (student.branches || []).length
+                ? (student.branches || []).map(b => `<span class="pill pill-ok" style="margin-left:4px;">${esc(b)}</span>`).join("")
+                : `<span class="pill pill-warn">لم يتم تفعيل أي فرع بعد</span>`
+            )}
           </div>
           <div style="display:flex; gap:8px; flex-wrap:wrap;">
             <a class="btn btn-teal btn-sm" href="/student?section=codes">تفعيل كود فرع جديد</a>
@@ -2439,7 +2380,9 @@ function renderStudentDash(settings, student, state) {
         </form>
         <div style="margin-top:12px;">
           <strong>الفروع المفعلة حالياً:</strong>
-          ${(student.branches || []).length ? (student.branches || []).map(b => `<span class="pill pill-ok">${esc(b)}</span>`).join(" ") : `<span class="muted">لا يوجد</span>`}
+          ${isCenterStudent ? `<span class="pill pill-ok">جميع الفروع (حساب سنتر)</span>` : (
+            (student.branches || []).length ? (student.branches || []).map(b => `<span class="pill pill-ok">${esc(b)}</span>`).join(" ") : `<span class="muted">لا يوجد</span>`
+          )}
         </div>
       </div>
     `;
@@ -2595,11 +2538,12 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
 
   const lecturesRows = allLectures.map(l => {
     const linkedHw = allExams.find(ex => String(ex.lecture_id || "") === String(l.id));
+    const cItemsCount = Array.isArray(l.custom_items) ? l.custom_items.length : 0;
     return `
       <div class="row">
         <div>
           <strong>${esc(l.title)}</strong> — <span class="pill pill-ok">${esc(l.branch)}</span>
-          <div class="muted" style="font-size:0.8rem;">${esc(l.grade || "")} • ${esc(l.track || "")} • ترتيب: ${esc(l.order_num ?? 0)}</div>
+          <div class="muted" style="font-size:0.8rem;">${esc(l.grade || "")} • ${esc(l.track || "")} • ترتيب: ${esc(l.order_num ?? 0)} • عناصر داخل المحاضرة: ${cItemsCount}</div>
           <div style="margin-top:4px;">
             ${linkedHw
               ? `<span class="pill pill-ok">مرتبط بواجب: ${esc(linkedHw.title)} (${Array.isArray(linkedHw.questions) ? linkedHw.questions.length : 0} أسئلة)</span>`
@@ -2721,18 +2665,124 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
   } else if (activeSec === "lectures") {
     sectionHtml = `
       <div class="card">
-        <h3 style="font-weight:900; margin-bottom:10px;">إضافة محاضرة (ويتبعها واجب 5 أسئلة لفتح الدرس التالي)</h3>
-        <form method="post" action="/admin/add-lecture" class="grid2">
-          <div class="field"><label>عنوان المحاضرة *</label><input name="title" type="text" required placeholder="مثال: المحاضرة الأولى — المبتدأ والخبر" /></div>
-          <div class="field"><label>الفرع *</label><select name="branch">${BRANCHES.map(b => `<option value="${esc(b)}">${esc(b)}</option>`).join("")}</select></div>
-          <div class="field"><label>الصف الدراسي</label><select name="grade">${GRADES.map(g => `<option value="${esc(g)}">${esc(g)}</option>`).join("")}</select></div>
-          <div class="field"><label>الشعبة</label><select name="track">${TRACKS.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join("")}</select></div>
-          <div class="field"><label>رقم ترتيب الدرس في الفرع</label><input name="order_num" type="number" min="1" value="${allLectures.length + 1}" /></div>
-          <div class="field"><label>رابط الفيديو (iNK Player أو YouTube) *</label><input name="video_url" type="text" required placeholder="https://..." /></div>
-          <div style="grid-column:1/-1;"><button type="submit" class="btn btn-blue">إضافة المحاضرة</button></div>
+        <h3 style="font-weight:900; margin-bottom:10px;">إضافة محاضرة والعناصر التي بداخلها بمزاجك</h3>
+        <form method="post" action="/admin/add-lecture" id="addLectureCustomForm">
+          <input type="hidden" name="custom_items_json" id="customItemsJsonInput" />
+          <div class="grid2">
+            <div class="field"><label>عنوان المحاضرة *</label><input name="title" type="text" required placeholder="مثال: المحاضرة الأولى — المبتدأ والخبر" /></div>
+            <div class="field"><label>الفرع *</label><select name="branch">${BRANCHES.map(b => `<option value="${esc(b)}">${esc(b)}</option>`).join("")}</select></div>
+            <div class="field"><label>الصف الدراسي</label><select name="grade">${GRADES.map(g => `<option value="${esc(g)}">${esc(g)}</option>`).join("")}</select></div>
+            <div class="field"><label>الشعبة</label><select name="track">${TRACKS.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join("")}</select></div>
+            <div class="field"><label>رقم ترتيب الدرس في الفرع</label><input name="order_num" type="number" min="1" value="${allLectures.length + 1}" /></div>
+            <div class="field"><label>رابط الفيديو الرئيسي (اختياري إذا أضفت عناصر بالأسفل)</label><input name="video_url" type="text" placeholder="https://..." /></div>
+          </div>
+
+          <div style="margin-top:10px; margin-bottom:8px;">
+            <strong style="font-size:0.95rem;">الحاجات التي ستظهر داخل المحاضرة (أضف أو عدّل أو احذف كما تحب):</strong>
+          </div>
+          <div id="customLectureItemsBuilder"></div>
+          <div style="margin:10px 0 16px;">
+            <button type="button" class="btn btn-out btn-sm" id="addLectureItemBtn">+ إضافة عنصر جديد داخل المحاضرة</button>
+          </div>
+
+          <button type="submit" class="btn btn-blue" style="width:100%;">إضافة المحاضرة بالعناصر المحددة</button>
         </form>
-        <div style="margin-top:14px;">${lecturesRows}</div>
+        <div style="margin-top:16px;">${lecturesRows}</div>
       </div>
+
+      <script>
+        (function () {
+          const builder = document.getElementById("customLectureItemsBuilder");
+          const form = document.getElementById("addLectureCustomForm");
+          const hiddenJson = document.getElementById("customItemsJsonInput");
+          const defaults = ["الكتاب", "الشرح", "المذاكرة", "حل المقالي", "حل الكتب"];
+
+          function addCustomItemRow(defaultTitle = "") {
+            const box = document.createElement("div");
+            box.className = "q-builder-card";
+            box.innerHTML =
+              '<div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px;">' +
+                '<strong class="c-item-lbl">عنصر داخل المحاضرة</strong>' +
+                '<button type="button" class="btn btn-red btn-sm rm-c-item">حذف العنصر</button>' +
+              '</div>' +
+              '<div class="grid2">' +
+                '<div class="field"><label>اسم العنصر (مثلاً: الكتاب، الشرح، المذاكرة، حل المقالي، حل الكتب)</label>' +
+                  '<input type="text" class="c-item-title" value="' + defaultTitle.replace(/"/g, "&quot;") + '" placeholder="اكتب اسم العنصر..." required />' +
+                '</div>' +
+                '<div class="field"><label>رابط فيديو أو ملف (اختياري)</label>' +
+                  '<input type="text" class="c-item-url" placeholder="https://..." />' +
+                '</div>' +
+              '</div>' +
+              '<div class="field"><label>شرح / ملاحظات تظهر للطالب عند الضغط على عرض</label>' +
+                '<input type="text" class="c-item-note" placeholder="اكتب النص أو التعليمات للطالب..." />' +
+              '</div>' +
+              '<div class="field" style="margin-bottom:0;"><label>صورة مرفقة للعنصر (اختياري)</label>' +
+                '<input type="file" accept="image/*" class="c-item-file" />' +
+                '<input type="hidden" class="c-item-imgdata" />' +
+                '<img class="ticket-img-thumb c-item-preview" style="display:none;" alt="معاينة" />' +
+              '</div>';
+
+            const fileEl = box.querySelector(".c-item-file");
+            const imgDataEl = box.querySelector(".c-item-imgdata");
+            const prevEl = box.querySelector(".c-item-preview");
+
+            fileEl.addEventListener("change", function () {
+              const f = fileEl.files && fileEl.files[0];
+              if (!f) {
+                imgDataEl.value = "";
+                prevEl.src = "";
+                prevEl.style.display = "none";
+                return;
+              }
+              const r = new FileReader();
+              r.onload = function () {
+                const resStr = String(r.result || "");
+                imgDataEl.value = resStr;
+                prevEl.src = resStr;
+                prevEl.style.display = "block";
+              };
+              r.readAsDataURL(f);
+            });
+
+            box.querySelector(".rm-c-item").addEventListener("click", function () {
+              box.remove();
+              renumberItems();
+            });
+
+            builder.appendChild(box);
+            renumberItems();
+          }
+
+          function renumberItems() {
+            builder.querySelectorAll(".q-builder-card").forEach(function (el, idx) {
+              const l = el.querySelector(".c-item-lbl");
+              if (l) l.textContent = "عنصر رقم " + (idx + 1);
+            });
+          }
+
+          document.getElementById("addLectureItemBtn")?.addEventListener("click", function () {
+            addCustomItemRow("");
+          });
+
+          defaults.forEach(function (t) {
+            addCustomItemRow(t);
+          });
+
+          form?.addEventListener("submit", function () {
+            const items = [];
+            builder.querySelectorAll(".q-builder-card").forEach(function (el) {
+              const t = el.querySelector(".c-item-title").value.trim();
+              const u = el.querySelector(".c-item-url").value.trim();
+              const n = el.querySelector(".c-item-note").value.trim();
+              const img = el.querySelector(".c-item-imgdata").value.trim();
+              if (t) {
+                items.push({ title: t, url: u, note: n, image_url: img });
+              }
+            });
+            hiddenJson.value = JSON.stringify(items);
+          });
+        })();
+      </script>
     `;
   } else if (activeSec === "exams") {
     const preselectLecId = data.preselectLectureId || "";
@@ -2741,7 +2791,7 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
 
     sectionHtml = `
       <div class="card">
-        <h3 style="font-weight:900; margin-bottom:6px;">إنشاء واجب درس (5 أسئلة) أو اختبار بأي عدد أسئلة واختيارات</h3>
+        <h3 style="font-weight:900; margin-bottom:6px;">إنشاء واجب درس أو اختبار بأي عدد أسئلة واختيارات</h3>
         <p class="muted" style="font-size:0.85rem; margin-bottom:14px;">يمكنك إضافة أي عدد من الأسئلة، وإضافة سؤال نصي أو صورة سؤال، ولكل سؤال إضافة أي عدد من الاختيارات وتحديد الإجابة الصحيحة.</p>
 
         <form method="post" action="/admin/add-exam" id="dynamicExamForm">
@@ -2996,7 +3046,7 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
               .replace(/"/g, "&quot;");
           }
 
-          function openStudentProfile(phone) {
+          window.openStudentProfileByPhone = function (phone) {
             const st = allItems.find(x => String(x.phone) === String(phone));
             if (!st) return;
 
@@ -3051,7 +3101,7 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
               profileBox.style.display = "none";
             });
             profileBox.scrollIntoView({ behavior: "smooth", block: "nearest" });
-          }
+          };
 
           function renderByGrade() {
             const g = (gradeEl?.value || "").trim();
@@ -3063,24 +3113,87 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
             }
 
             listContainer.innerHTML = filtered.map(item =>
-              '<div class="row" style="cursor:pointer;" data-open-phone="' + escHtml(item.phone) + '">' +
+              '<div class="row">' +
                 '<div>' +
                   '<strong>' + escHtml(item.full_name) + '</strong> — <span class="muted">' + escHtml(item.phone) + '</span>' +
-                  '<div class="muted" style="font-size:0.8rem;">' + escHtml(item.grade) + ' (' + escHtml(item.track) + ') • متراكم: ' + escHtml(item.pendingLectures) + ' محاضرة</div>' +
+                  '<div class="muted" style="font-size:0.8rem;">' + escHtml(item.grade) + ' (' + escHtml(item.track) + ') • متراكم: ' + escHtml(item.pendingLectures) + ' محاضرة • الامتحانات: ' + escHtml(item.avgPct) + '%</div>' +
                 '</div>' +
-                '<button type="button" class="btn btn-blue btn-sm">فتح ملف الطالب</button>' +
+                '<button type="button" class="btn btn-blue btn-sm" onclick="window.openStudentProfileByPhone(\'' + escHtml(item.phone) + '\')">فتح ملف الطالب</button>' +
               '</div>'
             ).join("");
-
-            listContainer.querySelectorAll("[data-open-phone]").forEach(el => {
-              el.addEventListener("click", function () {
-                openStudentProfile(el.getAttribute("data-open-phone"));
-              });
-            });
           }
 
           gradeEl?.addEventListener("change", renderByGrade);
           renderByGrade();
+        })();
+      </script>
+    `;
+  } else if (activeSec === "center_students") {
+    const centerStudentsList = allStudents
+      .filter(st => Boolean(st.is_center_student || st.center_code))
+      .map(st => ({
+        full_name: String(st.full_name || ""),
+        phone: String(st.phone || ""),
+        center_code: String(st.center_code || ""),
+        grade: String(st.grade || ""),
+        track: String(st.track || ""),
+        password_hash: String(st.password_hash || "")
+      }));
+
+    sectionHtml = `
+      <div class="card">
+        <h3 style="font-weight:900; margin-bottom:6px;">طلاب السنتر</h3>
+        <p class="muted" style="font-size:0.85rem; margin-bottom:12px;">كل الطلاب الذين دخلوا بأكواد السنتر ولهم جميع الفروع والمحاضرات مفتوحة تلقائياً. اختر الصف لعرض طلابه:</p>
+        <div class="field" style="max-width:420px;">
+          <label>اختر الصف</label>
+          <select id="centerGradeSelect">
+            <option value="">— اختر الصف لعرض طلاب السنتر —</option>
+            ${GRADES.map(g => `<option value="${esc(g)}">${esc(g)}</option>`).join("")}
+          </select>
+        </div>
+        <div id="centerStudentsListBox"></div>
+      </div>
+
+      <script>
+        (function () {
+          const centerItems = ${safeJsonForScript(centerStudentsList)};
+          const selEl = document.getElementById("centerGradeSelect");
+          const outBox = document.getElementById("centerStudentsListBox");
+
+          function escLocal(v) {
+            return String(v ?? "")
+              .replace(/&/g, "&amp;")
+              .replace(/</g, "&lt;")
+              .replace(/>/g, "&gt;")
+              .replace(/"/g, "&quot;");
+          }
+
+          function drawCenterStudents() {
+            const g = (selEl?.value || "").trim();
+            if (!g) {
+              outBox.innerHTML = '<div class="muted" style="font-size:0.86rem;">اختر الصف من القائمة أعلاه لعرض طلاب السنتر وأرقامهم وأكوادهم وكلمة سرهم.</div>';
+              return;
+            }
+            const list = centerItems.filter(x => String(x.grade) === g);
+            if (!list.length) {
+              outBox.innerHTML = '<div class="msg-err">لا يوجد طلاب سنتر مسجلون في (' + escLocal(g) + ') بعد.</div>';
+              return;
+            }
+            outBox.innerHTML = list.map(st =>
+              '<div class="row" style="display:block;">' +
+                '<div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">' +
+                  '<strong>' + escLocal(st.full_name) + '</strong>' +
+                  '<span class="pill pill-ok">مفتوح له كل شيء ✓</span>' +
+                '</div>' +
+                '<div class="row" style="margin-top:8px;"><span>رقمه</span><strong>' + escLocal(st.phone) + '</strong></div>' +
+                '<div class="row" style="margin-top:6px;"><span>كود السنتر</span><strong>' + escLocal(st.center_code || "-") + '</strong></div>' +
+                '<div class="row" style="margin-top:6px;"><span>كلمة سره</span><strong style="font-size:0.78rem; word-break:break-all;">' + escLocal(st.password_hash) + '</strong></div>' +
+              '</div>'
+            ).join("");
+          }
+
+          selEl?.addEventListener("change", drawCenterStudents);
+          drawCenterStudents();
         })();
       </script>
     `;
@@ -3169,6 +3282,7 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
         <button type="button" class="collapse-btn" onclick="document.getElementById('adminShell')?.classList.toggle('collapsed')">⇄</button>
       </div>
       <a class="nav-item-link ${activeSec === "students" ? "active" : ""}" href="/admin?section=students"><span>👨‍🎓</span><span class="nav-label">طلاب المنصة</span></a>
+      <a class="nav-item-link ${activeSec === "center_students" ? "active" : ""}" href="/admin?section=center_students"><span>🏫</span><span class="nav-label">طلاب السنتر</span></a>
       <a class="nav-item-link ${activeSec === "ranking" ? "active" : ""}" href="/admin?section=ranking"><span>🏆</span><span class="nav-label">ترتيب الطلاب</span></a>
       <a class="nav-item-link ${activeSec === "lectures" ? "active" : ""}" href="/admin?section=lectures"><span>🎥</span><span class="nav-label">إضافة محاضرة</span></a>
       <a class="nav-item-link ${activeSec === "codes" ? "active" : ""}" href="/admin?section=codes"><span>🔑</span><span class="nav-label">توليد أكواد</span></a>
@@ -3410,9 +3524,10 @@ export default {
       const phone = String(form.phone || "").trim();
       const grade = String(form.grade || GRADES[0]);
       const track = String(form.track || TRACKS[0]);
+      const rawPass = String(form.password || "").trim();
 
-      if (!centerCode || !name || !phone) {
-        return redirectRes(`/student?tab=center&error=${encodeURIComponent("يرجى إدخال كود السنتر والاسم ورقم الهاتف")}`);
+      if (!centerCode || !name || !phone || !rawPass) {
+        return redirectRes(`/student?tab=center&error=${encodeURIComponent("يرجى إدخال كود السنتر والاسم ورقم الهاتف وكلمة السر")}`);
       }
 
       const codeDoc = await fsGet(env, "codes", centerCode);
@@ -3424,19 +3539,21 @@ export default {
 
       const existing = await fsGet(env, "students", phone);
       const updatedStudent = {
-        full_name: existing?.full_name || name,
+        full_name: name || existing?.full_name || "",
         phone,
         parent_phone: existing?.parent_phone || "",
         grade,
         track,
         governorate: existing?.governorate || "",
-        password_hash: existing?.password_hash || (await sha256(phone + "_center")),
-        branches: existing?.branches || []
+        password_hash: await sha256(rawPass),
+        branches: [...BRANCHES],
+        is_center_student: true,
+        center_code: centerCode
       };
       await fsSet(env, "students", phone, updatedStudent);
 
       const tok = makeToken({ phone, role: "student" }, secret);
-      return redirectRes(`/student?section=dashboard&notice=${encodeURIComponent("تم تفعيل المنصة بكود السنتر بنجاح")}`, {
+      return redirectRes(`/student?section=dashboard&notice=${encodeURIComponent("تم تفعيل المنصة وكل الفروع بكود السنتر بنجاح")}`, {
         "Set-Cookie": setCookieHeader("nb_st", tok)
       });
     }
@@ -3467,7 +3584,9 @@ export default {
         track,
         governorate,
         password_hash: await sha256(password),
-        branches: []
+        branches: [],
+        is_center_student: false,
+        center_code: ""
       });
 
       const tok = makeToken({ phone, role: "student" }, secret);
@@ -3604,7 +3723,6 @@ export default {
       const preselectLectureId = url.searchParams.get("lecture_id") || "";
       const rankingGrade = url.searchParams.get("rank_grade") || GRADES[0];
       let data = {};
-      let adminBellCount = 0;
 
       if (isAdmin) {
         const [codes, lectures, exams, students, submissions, watched, supportThreads] = await Promise.all([
@@ -3616,20 +3734,12 @@ export default {
           fsList(env, "watched_lectures"),
           fsList(env, "support_chats")
         ]);
-        const unansweredTickets = allTickets.filter(t => !String(t.reply || "").trim()).length;
-        const unansweredSupport = supportThreads.filter(th => {
-          const msgs = Array.isArray(th.messages) ? th.messages : [];
-          const last = msgs[msgs.length - 1];
-          return last && last.sender === "user";
-        }).length;
-        adminBellCount = unansweredTickets + unansweredSupport;
         data = { codes, lectures, exams, students, tickets: allTickets, submissions, watched, supportThreads, preselectLectureId, rankingGrade };
       }
 
       return htmlRes(renderLayout("لوحة الأدمن", settings, student, isAdmin, renderAdminPage(settings, isAdmin, data, section, error, notice), {
         showLandingAdminAvatar: false,
-        showSupportWidget: false,
-        adminBellCount
+        showSupportWidget: false
       }));
     }
 
@@ -3709,9 +3819,23 @@ export default {
       const track = String(form.track || TRACKS[0]);
       const orderNum = Number(form.order_num || 1);
       const videoUrl = String(form.video_url || "").trim();
+      let customItems = [];
+      try {
+        customItems = JSON.parse(String(form.custom_items_json || "[]"));
+      } catch {
+        customItems = [];
+      }
       const id = "lec_" + Date.now();
-      await fsSet(env, "lectures", id, { title, branch, grade, track, order_num: orderNum, video_url: videoUrl });
-      return redirectRes(`/admin?section=exams&lecture_id=${encodeURIComponent(id)}&notice=${encodeURIComponent("تمت إضافة المحاضرة — أضف الآن أسئلة الواجب الخاصة بها")}`);
+      await fsSet(env, "lectures", id, {
+        title,
+        branch,
+        grade,
+        track,
+        order_num: orderNum,
+        video_url: videoUrl,
+        custom_items: Array.isArray(customItems) ? customItems : []
+      });
+      return redirectRes(`/admin?section=exams&lecture_id=${encodeURIComponent(id)}&notice=${encodeURIComponent("تمت إضافة المحاضرة والعناصر التي بداخلها — أضف الآن أسئلة الواجب الخاصة بها")}`);
     }
 
     if (path === "/admin/delete-lecture" && method === "POST") {
