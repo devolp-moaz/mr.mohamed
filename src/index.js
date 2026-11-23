@@ -187,6 +187,13 @@ function normalizeWaPhone(raw) {
   return digits;
 }
 
+function safeExternalUrl(raw) {
+  const s = String(raw || "").trim();
+  if (!s) return "";
+  if (/^https?:\/\//i.test(s)) return s;
+  return "https://" + s;
+}
+
 async function getSettings(env) {
   const saved = (await fsGet(env, "settings", "main")) || {};
   return {
@@ -196,7 +203,10 @@ async function getSettings(env) {
     admin_password: saved.admin_password || "",
     admin_password_hash: saved.admin_password_hash || (await sha256(env.ADMIN_PASSWORD || DEFAULT_ADMIN_PASS)),
     global_notice: saved.global_notice || "",
-    teacher_image: saved.teacher_image || TEACHER_MAIN_PHOTO
+    teacher_image: saved.teacher_image || TEACHER_MAIN_PHOTO,
+    youtube_url: saved.youtube_url || "",
+    tiktok_url: saved.tiktok_url || "",
+    facebook_url: saved.facebook_url || ""
   };
 }
 
@@ -306,6 +316,10 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
   const academicUnreadCount = Number(options.academicUnreadCount || 0);
   const academicUnreadItems = Array.isArray(options.academicUnreadItems) ? options.academicUnreadItems : [];
 
+  const ytHref = safeExternalUrl(settings.youtube_url);
+  const ttHref = safeExternalUrl(settings.tiktok_url);
+  const fbHref = safeExternalUrl(settings.facebook_url);
+
   return `<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -317,44 +331,44 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" />
   <style>
     :root {
-      --bg: #f3f7fc;
+      --bg: #eff6ff;
       --surface: #ffffff;
-      --surface-soft: #eaf1fa;
-      --txt: #0f2038;
-      --muted: #4b6182;
+      --surface-soft: #dbeafe;
+      --txt: #0c2244;
+      --muted: #3b5987;
       --accent: #1d4ed8;
       --accent-dark: #1e3a8a;
-      --accent-2: #d97706;
-      --gold: #b45309;
+      --accent-2: #2563eb;
+      --sky: #0284c7;
       --err: #dc2626;
-      --bdr: #cbd9ed;
+      --bdr: #bfdbfe;
       --glyph: rgba(29, 78, 216, 0.08);
-      --shadow-sm: 0 2px 10px rgba(15, 32, 56, 0.06);
-      --shadow-md: 0 12px 28px rgba(15, 32, 56, 0.09);
-      --shadow-lg: 0 20px 44px rgba(15, 32, 56, 0.16);
+      --shadow-sm: 0 2px 10px rgba(12, 34, 68, 0.07);
+      --shadow-md: 0 12px 28px rgba(12, 34, 68, 0.1);
+      --shadow-lg: 0 20px 44px rgba(12, 34, 68, 0.16);
     }
     body.dark {
-      --bg: #071021;
-      --surface: #0e1c36;
-      --surface-soft: #15284b;
-      --txt: #f0f6ff;
-      --muted: #93aed6;
+      --bg: #050f24;
+      --surface: #0b1b3a;
+      --surface-soft: #122954;
+      --txt: #eff6ff;
+      --muted: #93c5fd;
       --accent: #3b82f6;
       --accent-dark: #1d4ed8;
-      --accent-2: #f59e0b;
-      --gold: #fbbf24;
+      --accent-2: #60a5fa;
+      --sky: #38bdf8;
       --err: #f87171;
-      --bdr: rgba(59, 130, 246, 0.25);
+      --bdr: rgba(59, 130, 246, 0.28);
       --glyph: rgba(96, 165, 250, 0.1);
-      --shadow-sm: 0 2px 12px rgba(0, 0, 0, 0.38);
-      --shadow-md: 0 14px 32px rgba(0, 0, 0, 0.55);
-      --shadow-lg: 0 22px 48px rgba(0, 0, 0, 0.75);
+      --shadow-sm: 0 2px 12px rgba(0, 0, 0, 0.4);
+      --shadow-md: 0 14px 32px rgba(0, 0, 0, 0.58);
+      --shadow-lg: 0 22px 48px rgba(0, 0, 0, 0.78);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; }
     body {
       background:
-        radial-gradient(circle at 12% 8%, rgba(59, 130, 246, 0.12), transparent 42%),
-        radial-gradient(circle at 88% 85%, rgba(245, 158, 11, 0.1), transparent 45%),
+        radial-gradient(circle at 12% 8%, rgba(59, 130, 246, 0.14), transparent 44%),
+        radial-gradient(circle at 88% 85%, rgba(29, 78, 216, 0.12), transparent 46%),
         var(--bg);
       color: var(--txt);
       min-height: 100vh;
@@ -395,7 +409,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .page-layer { position: relative; z-index: 1; }
 
     .topbar {
-      background: color-mix(in srgb, var(--surface) 88%, transparent);
+      background: color-mix(in srgb, var(--surface) 90%, transparent);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
       border-bottom: 1px solid var(--bdr);
@@ -413,9 +427,9 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .brand-box { display: flex; align-items: center; gap: 12px; }
     .brand-logo-badge {
       width: 46px; height: 46px; border-radius: 14px;
-      background: linear-gradient(135deg, #1d4ed8, #d97706);
+      background: linear-gradient(135deg, #2563eb, #1e3a8a);
       color: #fff; font-weight: 900; display: grid; place-items: center; font-size: 1.05rem;
-      box-shadow: 0 8px 20px rgba(29, 78, 216, 0.3);
+      box-shadow: 0 8px 20px rgba(29, 78, 216, 0.32);
       border: 1px solid rgba(255, 255, 255, 0.25);
     }
 
@@ -424,29 +438,29 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       display: inline-flex;
       align-items: center;
     }
-    .yellow-bell-btn {
+    .blue-bell-btn {
       position: relative;
       width: 42px;
       height: 42px;
       border-radius: 12px;
-      border: 1px solid rgba(245, 158, 11, 0.65);
-      background: linear-gradient(135deg, #fde047, #f59e0b);
-      color: #291500;
+      border: 1px solid rgba(59, 130, 246, 0.65);
+      background: linear-gradient(135deg, #2563eb, #1e40af);
+      color: #ffffff;
       font-size: 1.15rem;
       font-weight: 900;
       display: grid;
       place-items: center;
       cursor: pointer;
-      box-shadow: 0 6px 16px rgba(245, 158, 11, 0.32);
+      box-shadow: 0 6px 16px rgba(37, 99, 235, 0.34);
       transition: transform 0.16s ease;
     }
-    .yellow-bell-btn:hover { transform: translateY(-1px) scale(1.04); }
-    .yellow-bell-btn.has-alert {
+    .blue-bell-btn:hover { transform: translateY(-1px) scale(1.04); }
+    .blue-bell-btn.has-alert {
       animation: bellPulse 1.4s infinite ease-in-out;
     }
     @keyframes bellPulse {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.65); }
-      50% { box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); }
+      0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.65); }
+      50% { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0); }
     }
     .bell-badge-num {
       position: absolute;
@@ -456,7 +470,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       height: 20px;
       padding: 0 5px;
       border-radius: 999px;
-      background: #dc2626;
+      background: #0284c7;
       color: #ffffff;
       font-size: 0.72rem;
       font-weight: 900;
@@ -512,7 +526,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       width: 48px;
       height: 26px;
       border-radius: 999px;
-      background: #cbd5e1;
+      background: #93c5fd;
       transition: background-color 0.25s ease;
       display: inline-block;
     }
@@ -554,23 +568,23 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .btn:active { transform: translateY(0) scale(0.985); }
 
     .btn-blue {
-      background: linear-gradient(135deg, #1d4ed8, #1e3a8a);
+      background: linear-gradient(135deg, #2563eb, #1e3a8a);
       color: #fff;
-      box-shadow: 0 6px 18px rgba(29, 78, 216, 0.3);
+      box-shadow: 0 6px 18px rgba(37, 99, 235, 0.32);
     }
-    .btn-blue:hover { box-shadow: 0 10px 24px rgba(29, 78, 216, 0.4); }
+    .btn-blue:hover { box-shadow: 0 10px 24px rgba(37, 99, 235, 0.42); }
 
     .btn-teal {
-      background: linear-gradient(135deg, #d97706, #b45309);
+      background: linear-gradient(135deg, #0284c7, #1d4ed8);
       color: #fff;
-      box-shadow: 0 6px 18px rgba(217, 119, 6, 0.28);
+      box-shadow: 0 6px 18px rgba(2, 132, 199, 0.3);
     }
-    .btn-teal:hover { box-shadow: 0 10px 24px rgba(217, 119, 6, 0.38); }
+    .btn-teal:hover { box-shadow: 0 10px 24px rgba(2, 132, 199, 0.4); }
 
     .btn-gold {
-      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
       color: #fff;
-      box-shadow: 0 6px 18px rgba(37, 99, 235, 0.26);
+      box-shadow: 0 6px 18px rgba(59, 130, 246, 0.28);
     }
     .btn-red {
       background: linear-gradient(135deg, #ef4444, #dc2626);
@@ -600,7 +614,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     }
 
     .jakh-week-banner {
-      background: linear-gradient(120deg, #1d4ed8 0%, #1e3a8a 100%);
+      background: linear-gradient(120deg, #2563eb 0%, #1e3a8a 100%);
       color: #fff;
       padding: 20px 24px;
       border-radius: 18px;
@@ -611,7 +625,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       gap: 14px;
       flex-wrap: wrap;
       box-shadow: var(--shadow-md);
-      border: 1px solid rgba(255, 255, 255, 0.16);
+      border: 1px solid rgba(255, 255, 255, 0.18);
     }
     .you-here-pill {
       display: inline-flex; align-items: center; justify-content: center;
@@ -648,7 +662,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       transition: background-color 0.22s ease, color 0.22s ease;
     }
     .lec-accordion-item.is-open .lec-accordion-header {
-      background: linear-gradient(120deg, #1d4ed8 0%, #1e3a8a 100%);
+      background: linear-gradient(120deg, #2563eb 0%, #1e3a8a 100%);
       color: #ffffff;
     }
     .lec-header-left {
@@ -661,13 +675,13 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       width: 34px;
       height: 34px;
       border-radius: 50%;
-      background: #fbbf24;
-      color: #291500;
+      background: #60a5fa;
+      color: #091a38;
       display: grid;
       place-items: center;
       font-weight: 900;
       font-size: 0.9rem;
-      box-shadow: 0 4px 12px rgba(251, 191, 36, 0.35);
+      box-shadow: 0 4px 12px rgba(96, 165, 250, 0.35);
       transition: transform 0.25s ease;
     }
     .lec-accordion-item:not(.is-open) .lec-chevron-circle {
@@ -751,10 +765,10 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .jakh-action-btn {
       display: inline-flex; align-items: center; justify-content: center; gap: 6px;
       padding: 8px 16px; border-radius: 11px;
-      background: linear-gradient(135deg, #1d4ed8, #1e3a8a);
+      background: linear-gradient(135deg, #2563eb, #1e3a8a);
       color: #fff; font-weight: 800; font-size: 0.85rem;
       text-decoration: none; border: none; cursor: pointer;
-      box-shadow: 0 5px 14px rgba(29, 78, 216, 0.3);
+      box-shadow: 0 5px 14px rgba(37, 99, 235, 0.32);
       transition: transform 0.15s ease, opacity 0.15s ease;
     }
     .jakh-action-btn:hover { transform: translateY(-1px); opacity: 0.96; }
@@ -804,7 +818,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     input:focus, select:focus, textarea:focus {
       background: var(--surface);
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.22);
     }
     textarea { min-height: 96px; resize: vertical; }
     input[type="radio"], input[type="checkbox"] { width: auto; box-shadow: none; }
@@ -835,7 +849,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       padding: 0 20px;
       border-radius: 999px;
       border: 1.5px solid rgba(255, 255, 255, 0.35);
-      background: linear-gradient(135deg, #1d4ed8 0%, #d97706 100%);
+      background: linear-gradient(135deg, #2563eb 0%, #1e3a8a 100%);
       color: #ffffff;
       font-weight: 900;
       font-size: 0.95rem;
@@ -866,8 +880,8 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       height: 22px;
       padding: 0 6px;
       border-radius: 999px;
-      background: #facc15;
-      color: #291500;
+      background: #0ea5e9;
+      color: #ffffff;
       font-size: 0.76rem;
       font-weight: 900;
       display: inline-flex;
@@ -895,7 +909,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       display: flex;
     }
     .support-chat-header {
-      background: linear-gradient(120deg, #1d4ed8, #d97706);
+      background: linear-gradient(120deg, #2563eb, #1e3a8a);
       color: #ffffff;
       padding: 15px 18px;
       display: flex;
@@ -935,7 +949,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       box-shadow: var(--shadow-sm);
     }
     .chat-bubble-user {
-      background: linear-gradient(135deg, #1d4ed8, #1e3a8a);
+      background: linear-gradient(135deg, #2563eb, #1e3a8a);
       color: #ffffff;
       padding: 11px 14px;
       border-radius: 15px 15px 4px 15px;
@@ -946,8 +960,8 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       box-shadow: var(--shadow-sm);
     }
     .chat-bubble-admin {
-      background: rgba(217, 119, 6, 0.14);
-      border: 1px solid rgba(217, 119, 6, 0.35);
+      background: rgba(37, 99, 235, 0.14);
+      border: 1px solid rgba(37, 99, 235, 0.36);
       color: var(--txt);
       padding: 11px 14px;
       border-radius: 15px 15px 15px 4px;
@@ -1022,7 +1036,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       margin: 14px auto 0;
       padding: 14px 20px;
       border-radius: 16px;
-      background: linear-gradient(120deg, #1d4ed8, #d97706);
+      background: linear-gradient(120deg, #2563eb, #1e3a8a);
       color: #fff;
       box-shadow: var(--shadow-md);
       display: flex;
@@ -1084,7 +1098,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     }
     .pill { display: inline-block; padding: 3px 11px; border-radius: 999px; font-size: 0.78rem; font-weight: 800; }
     .pill-ok { background: rgba(29, 78, 216, 0.14); color: var(--accent); }
-    .pill-warn { background: rgba(217, 119, 6, 0.16); color: var(--accent-2); }
+    .pill-warn { background: rgba(2, 132, 199, 0.16); color: var(--sky); }
     .pill-err { background: rgba(220, 38, 38, 0.15); color: var(--err); }
     .msg-err {
       background: rgba(220, 38, 38, 0.1); border: 1px solid rgba(220, 38, 38, 0.35);
@@ -1116,7 +1130,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       font-size: 0.9rem; margin-bottom: 4px; transition: background-color 0.18s ease, color 0.18s ease;
     }
     .nav-item-link:hover { background: var(--surface-soft); }
-    .nav-item-link.active { background: linear-gradient(135deg, #1d4ed8, #1e3a8a); color: #fff; }
+    .nav-item-link.active { background: linear-gradient(135deg, #2563eb, #1e3a8a); color: #fff; }
     .sub-nav { padding-right: 14px; margin-bottom: 8px; }
     .sub-link {
       display: block; padding: 5px 12px; border-radius: 9px; color: var(--muted);
@@ -1127,13 +1141,13 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
 
     .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-bottom: 18px; }
     .kpi-card {
-      background: linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%);
+      background: linear-gradient(135deg, #2563eb 0%, #1e3a8a 100%);
       color: #fff; border-radius: 16px; padding: 18px;
       display: flex; justify-content: space-between; align-items: center;
       box-shadow: var(--shadow-md);
     }
-    .kpi-card.teal-kpi { background: linear-gradient(135deg, #d97706 0%, #92400e 100%); }
-    .kpi-card.gold-kpi { background: linear-gradient(135deg, #2563eb 0%, #172554 100%); }
+    .kpi-card.teal-kpi { background: linear-gradient(135deg, #0284c7 0%, #1e3a8a 100%); }
+    .kpi-card.gold-kpi { background: linear-gradient(135deg, #3b82f6 0%, #172554 100%); }
     .kpi-num { font-size: 1.62rem; font-weight: 900; line-height: 1.1; }
     .kpi-lbl { font-size: 0.86rem; font-weight: 700; opacity: 0.92; margin-top: 4px; }
     .kpi-icon-box {
@@ -1155,7 +1169,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .teacher-color-meter .bw-layer { filter: grayscale(100%) contrast(1.05); }
     .teacher-color-meter .color-reveal { position: absolute; inset: 0; overflow: hidden; transition: clip-path 0.45s ease; }
     .prog-bar-bg { height: 8px; border-radius: 999px; background: var(--surface-soft); overflow: hidden; margin: 10px 0; }
-    .prog-bar-fill { height: 100%; background: linear-gradient(90deg, #1d4ed8, #f59e0b); border-radius: 999px; transition: width 0.4s ease; }
+    .prog-bar-fill { height: 100%; background: linear-gradient(90deg, #38bdf8, #1d4ed8); border-radius: 999px; transition: width 0.4s ease; }
 
     .course-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(265px, 1fr)); gap: 16px; }
     .course-card { overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; }
@@ -1170,7 +1184,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     }
     .course-banner {
       min-height: 156px; position: relative; overflow: hidden;
-      background: linear-gradient(135deg, #1d4ed8 0%, #d97706 100%);
+      background: linear-gradient(135deg, #2563eb 0%, #1e3a8a 100%);
       color: #fff; padding: 16px; display: flex; justify-content: space-between; align-items: flex-end; gap: 10px;
     }
     .course-banner img.book-thumb {
@@ -1184,7 +1198,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .landing-hero-card { padding: 26px; display: grid; grid-template-columns: 310px 1fr; gap: 26px; align-items: center; }
     @media (max-width: 860px) { .landing-hero-card { grid-template-columns: 1fr; } }
     .hero-teacher-frame {
-      background: linear-gradient(155deg, rgba(29, 78, 216, 0.14), rgba(217, 119, 6, 0.14));
+      background: linear-gradient(155deg, rgba(37, 99, 235, 0.14), rgba(29, 78, 216, 0.18));
       border-radius: 16px; padding: 12px; display: flex; justify-content: center; align-items: center;
       min-height: 340px; border: 1px solid var(--bdr);
     }
@@ -1200,18 +1214,18 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     }
     @media (max-width: 840px) { .split-auth { grid-template-columns: 1fr; } }
     .promo-pane {
-      background: linear-gradient(155deg, #1d4ed8 0%, #d97706 100%);
+      background: linear-gradient(155deg, #2563eb 0%, #1e3a8a 100%);
       color: #fff; border-radius: 18px; padding: 24px; box-shadow: var(--shadow-md);
       display: flex; flex-direction: column; justify-content: space-between; min-height: 440px;
     }
-    .promo-pane.gold-mode { background: linear-gradient(155deg, #b45309 0%, #1d4ed8 100%); }
+    .promo-pane.gold-mode { background: linear-gradient(155deg, #0284c7 0%, #1e3a8a 100%); }
     .promo-img {
       width: 215px; height: 265px; object-fit: contain; object-position: center top;
       background: rgba(255, 255, 255, 0.14);
       border-radius: 14px; border: 1.5px solid rgba(255, 255, 255, 0.45); margin: 14px auto 0; display: block;
     }
     .step-track { height: 6px; background: var(--surface-soft); border-radius: 999px; overflow: hidden; margin-bottom: 14px; }
-    .step-fill { height: 100%; background: linear-gradient(90deg, #1d4ed8, #f59e0b); }
+    .step-fill { height: 100%; background: linear-gradient(90deg, #38bdf8, #1d4ed8); }
 
     .secure-player-box {
       position: relative; width: 100%; max-width: 860px; margin: 12px auto 0;
@@ -1247,6 +1261,84 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       border-radius: 16px;
       padding: 16px;
       margin: 14px 0;
+    }
+
+    .site-footer {
+      max-width: 1240px;
+      margin: 34px auto 0;
+      padding: 24px 16px 32px;
+    }
+    .footer-card {
+      background: var(--surface);
+      border: 1px solid var(--bdr);
+      border-radius: 20px;
+      padding: 20px 24px;
+      box-shadow: var(--shadow-md);
+    }
+    .footer-top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--bdr);
+    }
+    .footer-links-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .footer-social-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .social-chip-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 13px;
+      border-radius: 11px;
+      background: var(--surface-soft);
+      border: 1px solid var(--bdr);
+      color: var(--accent);
+      font-weight: 800;
+      font-size: 0.84rem;
+      text-decoration: none;
+      transition: transform 0.16s ease, background-color 0.2s ease;
+    }
+    .social-chip-link:hover {
+      transform: translateY(-1.5px);
+      background: var(--accent);
+      color: #ffffff;
+    }
+    .social-chip-link.disabled-link {
+      opacity: 0.55;
+      pointer-events: none;
+      color: var(--muted);
+    }
+    .footer-info-panel {
+      display: none;
+      margin-top: 16px;
+      padding: 16px 18px;
+      border-radius: 15px;
+      background: var(--surface-soft);
+      border: 1px solid var(--bdr);
+    }
+    .footer-info-panel.open {
+      display: block;
+    }
+    .footer-copyright {
+      text-align: center;
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid var(--bdr);
+      font-size: 0.88rem;
+      font-weight: 800;
+      color: var(--muted);
     }
   </style>
 </head>
@@ -1311,7 +1403,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
         ${!isAdmin ? `
           <div class="notif-bell-wrap">
-            <button type="button" class="yellow-bell-btn ${academicUnreadCount > 0 ? "has-alert" : ""}" id="yellowNotifBellBtn" title="إشعارات الردود">
+            <button type="button" class="blue-bell-btn ${academicUnreadCount > 0 ? "has-alert" : ""}" id="yellowNotifBellBtn" title="إشعارات الردود">
               <span>🔔</span>
               <span class="bell-badge-num ${academicUnreadCount > 0 ? "" : "hidden-badge"}" id="yellowBellBadge">${academicUnreadCount}</span>
             </button>
@@ -1357,9 +1449,78 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     ` : ""}
 
     ${bodyHtml}
+
+    <footer class="site-footer">
+      <div class="footer-card">
+        <div class="footer-top-row">
+          <div class="footer-links-group">
+            <button type="button" class="btn btn-blue btn-sm" id="footerAboutBtn">من نحن</button>
+            <button type="button" class="btn btn-out btn-sm" id="footerPrivacyBtn">سياسة الخصوصية</button>
+          </div>
+
+          <div class="footer-social-group">
+            <a class="social-chip-link ${ytHref ? "" : "disabled-link"}" ${ytHref ? `href="${esc(ytHref)}" target="_blank" rel="noopener"` : `href="javascript:void(0)"`}>▶ يوتيوب</a>
+            <a class="social-chip-link ${ttHref ? "" : "disabled-link"}" ${ttHref ? `href="${esc(ttHref)}" target="_blank" rel="noopener"` : `href="javascript:void(0)"`}>♪ تيك توك</a>
+            <a class="social-chip-link ${fbHref ? "" : "disabled-link"}" ${fbHref ? `href="${esc(fbHref)}" target="_blank" rel="noopener"` : `href="javascript:void(0)"`}>f فيسبوك</a>
+          </div>
+        </div>
+
+        <div class="footer-info-panel" id="footerAboutPanel">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:8px;">
+            <h3 style="font-weight:900; color:var(--accent);">من نحن — الأستاذ محمد يوسف</h3>
+            <button type="button" class="btn btn-out btn-sm" id="closeAboutPanelBtn">إغلاق</button>
+          </div>
+          <p style="font-size:0.9rem; line-height:1.85;">
+            منصة <strong>${PLATFORM_NAME}</strong> يقودها <strong>الأستاذ محمد يوسف</strong>، معلم أول اللغة العربية بخبرة تمتد إلى <strong>30 عاماً</strong> في تدريس مناهج الثانوية الأزهرية (الأول، الثاني، والثالث الثانوي — علمي وأدبي).
+            تقدم المنصة شرحاً منظماً لفروع اللغة العربية السبعة (النحو، الصرف، البلاغة، الأدب، النصوص، المطالعة، الإنشاء)، مع نظام واجبات وامتحانات، ومتابعة دقيقة لأداء الطالب، وتيم دعم علمي ودعم فني مباشر.
+          </p>
+        </div>
+
+        <div class="footer-info-panel" id="footerPrivacyPanel">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:8px;">
+            <h3 style="font-weight:900; color:var(--accent);">سياسة الخصوصية</h3>
+            <button type="button" class="btn btn-out btn-sm" id="closePrivacyPanelBtn">إغلاق</button>
+          </div>
+          <p style="font-size:0.9rem; line-height:1.85;">
+            نحن في <strong>${PLATFORM_NAME}</strong> نحترم خصوصية بيانات الطلاب وأولياء الأمور بالكامل. تُستخدم بيانات التسجيل (الاسم، رقم الهاتف، رقم ولي الأمر، الصف، الشعبة، والمحافظة) لأغراض إدارة الحسابات، متابعة المستوى الدراسي، وتفعيل الكورسات فقط، ولا يتم بيعها أو مشاركتها مع أي طرف خارجي. كما يُمنع منعاً باتاً تصوير المحاضرات أو إعادة نشر محتوى المنصة خارج الحساب الشخصي للطالب.
+          </p>
+        </div>
+
+        <div class="footer-copyright">
+          جميع الحقوق محفوظة © 2026 — ${PLATFORM_NAME}
+        </div>
+      </div>
+    </footer>
   </div>
 
   <script>
+    (function initFooterPanels() {
+      const aboutBtn = document.getElementById("footerAboutBtn");
+      const privacyBtn = document.getElementById("footerPrivacyBtn");
+      const aboutPanel = document.getElementById("footerAboutPanel");
+      const privacyPanel = document.getElementById("footerPrivacyPanel");
+
+      aboutBtn?.addEventListener("click", function () {
+        const willOpen = !aboutPanel?.classList.contains("open");
+        privacyPanel?.classList.remove("open");
+        aboutPanel?.classList.toggle("open", willOpen);
+      });
+
+      privacyBtn?.addEventListener("click", function () {
+        const willOpen = !privacyPanel?.classList.contains("open");
+        aboutPanel?.classList.remove("open");
+        privacyPanel?.classList.toggle("open", willOpen);
+      });
+
+      document.getElementById("closeAboutPanelBtn")?.addEventListener("click", function () {
+        aboutPanel?.classList.remove("open");
+      });
+
+      document.getElementById("closePrivacyPanelBtn")?.addEventListener("click", function () {
+        privacyPanel?.classList.remove("open");
+      });
+    })();
+
     (function () {
       const toggleEl = document.getElementById("themeToggle");
       const labelEl = document.getElementById("themeLabelText");
@@ -1866,7 +2027,7 @@ function renderLanding(settings) {
     <div>
       <span class="pill pill-ok">معلم أول لغة عربية</span>
       <h1 style="font-size:1.85rem; font-weight:900; margin-top:10px; color:var(--accent);">${PLATFORM_NAME}</h1>
-      <div style="font-size:1.08rem; font-weight:800; color:var(--gold); margin-top:6px;">
+      <div style="font-size:1.08rem; font-weight:800; color:var(--accent-2); margin-top:6px;">
         30 سنة خبرة تدريس في اللغة العربية للثانوية الأزهرية
       </div>
       <p class="muted" style="margin-top:12px; font-size:0.96rem; line-height:1.8;">
@@ -2404,7 +2565,7 @@ function renderStudentDash(settings, student, state) {
               <div class="row" style="display:block; border-color:rgba(220,38,38,0.35);">
                 <div style="font-weight:800;">${idx + 1}. ${esc(w.question)}</div>
                 <div style="font-size:0.86rem; color:var(--err); margin-top:4px;">إجابتك: ${esc(w.student_answer || "لم تُجب")}</div>
-                <div style="font-size:0.86rem; color:var(--accent-2); font-weight:800; margin-top:2px;">الإجابة الصحيحة: ${esc(w.correct_answer || "")}</div>
+                <div style="font-size:0.86rem; color:var(--sky); font-weight:800; margin-top:2px;">الإجابة الصحيحة: ${esc(w.correct_answer || "")}</div>
               </div>
             `).join("")}
           `
@@ -2550,7 +2711,7 @@ function renderStudentDash(settings, student, state) {
             </div>
             <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
               <span>قيمة الخصم:</span>
-              <strong id="summaryDiscountAmt" style="color:var(--accent-2);">0 ج</strong>
+              <strong id="summaryDiscountAmt" style="color:var(--sky);">0 ج</strong>
             </div>
             <div style="display:flex; justify-content:space-between; border-top:1px solid var(--bdr); padding-top:8px; font-size:1.05rem;">
               <span>المطلوب دفعه:</span>
@@ -3557,6 +3718,11 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
             <div class="field"><label>رقم فودافون كاش</label><input name="vodafone_number" type="text" value="${esc(settings.vodafone_number)}" /></div>
             <div class="field"><label>رقم واتساب استقبال طلبات الأكواد (قابل للتغيير من الأدمن)</label><input name="admin_whatsapp" type="text" value="${esc(settings.admin_whatsapp)}" required /></div>
           </div>
+          <div class="grid3">
+            <div class="field"><label>رابط قناة يوتيوب</label><input name="youtube_url" type="text" value="${esc(settings.youtube_url)}" placeholder="https://youtube.com/@..." /></div>
+            <div class="field"><label>رابط حساب تيك توك</label><input name="tiktok_url" type="text" value="${esc(settings.tiktok_url)}" placeholder="https://tiktok.com/@..." /></div>
+            <div class="field"><label>رابط صفحة فيسبوك</label><input name="facebook_url" type="text" value="${esc(settings.facebook_url)}" placeholder="https://facebook.com/..." /></div>
+          </div>
           <div class="field"><label>رابط صورة الأستاذ (اختياري)</label><input name="teacher_image" type="text" value="${esc(settings.teacher_image)}" /></div>
           <div class="field"><label>رسالة إشعار التنبيه الشفاف المتوهج (اتركه فارغاً لعدم ظهوره)</label><input name="global_notice" type="text" value="${esc(settings.global_notice)}" placeholder="اكتب رسالة التنبيه هنا..." /></div>
           <button type="submit" class="btn btn-blue">حفظ الإعدادات في Firebase</button>
@@ -4299,6 +4465,9 @@ export default {
         admin_password_hash: nextPassHash,
         vodafone_number: String(form.vodafone_number || settings.vodafone_number),
         admin_whatsapp: String(form.admin_whatsapp || settings.admin_whatsapp),
+        youtube_url: String(form.youtube_url || ""),
+        tiktok_url: String(form.tiktok_url || ""),
+        facebook_url: String(form.facebook_url || ""),
         teacher_image: String(form.teacher_image || settings.teacher_image),
         global_notice: String(form.global_notice || "")
       });
