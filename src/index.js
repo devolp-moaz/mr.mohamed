@@ -38,14 +38,6 @@ const DEFAULT_ADMIN_EMAIL = "mohmed@mr.com";
 const DEFAULT_ADMIN_PASS = "admin123456";
 const PLATFORM_NAME = "أنت جخ مع محمد يوسف";
 
-function normalizePhone(raw) {
-  let s = String(raw || "").trim().replace(/[^\d+]/g, "");
-  if (s.startsWith("+20")) s = "0" + s.slice(3);
-  else if (s.startsWith("0020")) s = "0" + s.slice(4);
-  else if (s.startsWith("20") && s.length === 12) s = "0" + s.slice(2);
-  return s;
-}
-
 async function sha256(val) {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(val || "")));
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
@@ -253,9 +245,9 @@ function sortLectures(list) {
 }
 
 function computeStudentMetrics(student, lectures, exams, submissions, watchedList) {
-  const stPhone = normalizePhone(student.phone || "");
-  const stSubs = (submissions || []).filter(s => normalizePhone(s.student_phone || "") === stPhone);
-  const stWatched = (watchedList || []).filter(w => normalizePhone(w.student_phone || "") === stPhone);
+  const stPhone = String(student.phone || "");
+  const stSubs = (submissions || []).filter(s => String(s.student_phone || "") === stPhone);
+  const stWatched = (watchedList || []).filter(w => String(w.student_phone || "") === stPhone);
   const watchedSet = new Set(stWatched.map(w => String(w.lecture_id)));
   const solvedExamSet = new Set(stSubs.map(s => String(s.exam_id)));
 
@@ -317,44 +309,44 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" />
   <style>
     :root {
-      --bg: #eef4fb;
+      --bg: #f6f8f7;
       --surface: #ffffff;
-      --surface-soft: #f4f7fc;
-      --txt: #132238;
-      --muted: #5c708a;
-      --accent: #2563eb;
-      --accent-dark: #1d4ed8;
-      --accent-2: #0d9488;
-      --gold: #0f766e;
-      --err: #dc2626;
-      --bdr: #dbe6f3;
-      --glyph: rgba(37, 99, 235, 0.075);
-      --shadow-sm: 0 3px 12px rgba(19, 34, 56, 0.05);
-      --shadow-md: 0 12px 28px rgba(19, 34, 56, 0.07);
-      --shadow-lg: 0 22px 46px rgba(19, 34, 56, 0.12);
+      --surface-soft: #eef3f0;
+      --txt: #10201a;
+      --muted: #546961;
+      --accent: #0f766e;
+      --accent-dark: #115e59;
+      --accent-2: #b45309;
+      --gold: #b45309;
+      --err: #be123c;
+      --bdr: #d4e0da;
+      --glyph: rgba(15, 118, 110, 0.08);
+      --shadow-sm: 0 2px 10px rgba(16, 32, 26, 0.05);
+      --shadow-md: 0 12px 28px rgba(16, 32, 26, 0.08);
+      --shadow-lg: 0 20px 44px rgba(16, 32, 26, 0.14);
     }
     body.dark {
-      --bg: #080f1e;
-      --surface: #101b31;
-      --surface-soft: #172542;
-      --txt: #f1f5f9;
-      --muted: #9fb0c7;
-      --accent: #60a5fa;
-      --accent-dark: #3b82f6;
-      --accent-2: #2dd4bf;
-      --gold: #5eead4;
-      --err: #f87171;
-      --bdr: rgba(148, 163, 184, 0.18);
-      --glyph: rgba(96, 165, 250, 0.09);
-      --shadow-sm: 0 3px 12px rgba(0, 0, 0, 0.32);
-      --shadow-md: 0 14px 32px rgba(0, 0, 0, 0.48);
-      --shadow-lg: 0 22px 48px rgba(0, 0, 0, 0.68);
+      --bg: #07110e;
+      --surface: #0e1d18;
+      --surface-soft: #152922;
+      --txt: #f0fdf9;
+      --muted: #94a3b8;
+      --accent: #14b8a6;
+      --accent-dark: #0f766e;
+      --accent-2: #f59e0b;
+      --gold: #fbbf24;
+      --err: #fb7185;
+      --bdr: rgba(20, 184, 166, 0.22);
+      --glyph: rgba(20, 184, 166, 0.1);
+      --shadow-sm: 0 2px 12px rgba(0, 0, 0, 0.35);
+      --shadow-md: 0 14px 32px rgba(0, 0, 0, 0.52);
+      --shadow-lg: 0 22px 48px rgba(0, 0, 0, 0.72);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; }
     body {
       background:
-        radial-gradient(circle at 10% 10%, rgba(37, 99, 235, 0.09), transparent 40%),
-        radial-gradient(circle at 90% 85%, rgba(13, 148, 136, 0.08), transparent 42%),
+        radial-gradient(circle at 12% 8%, rgba(20, 184, 166, 0.1), transparent 42%),
+        radial-gradient(circle at 88% 85%, rgba(245, 158, 11, 0.08), transparent 45%),
         var(--bg);
       color: var(--txt);
       min-height: 100vh;
@@ -395,7 +387,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .page-layer { position: relative; z-index: 1; }
 
     .topbar {
-      background: color-mix(in srgb, var(--surface) 90%, transparent);
+      background: color-mix(in srgb, var(--surface) 88%, transparent);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
       border-bottom: 1px solid var(--bdr);
@@ -413,10 +405,10 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .brand-box { display: flex; align-items: center; gap: 12px; }
     .brand-logo-badge {
       width: 46px; height: 46px; border-radius: 14px;
-      background: linear-gradient(135deg, #2563eb, #0d9488);
+      background: linear-gradient(135deg, #0f766e, #b45309);
       color: #fff; font-weight: 900; display: grid; place-items: center; font-size: 1.05rem;
-      box-shadow: 0 8px 20px rgba(37, 99, 235, 0.25);
-      border: 1px solid rgba(255, 255, 255, 0.28);
+      box-shadow: 0 8px 20px rgba(15, 118, 110, 0.28);
+      border: 1px solid rgba(255, 255, 255, 0.25);
     }
 
     .notif-bell-wrap {
@@ -429,23 +421,23 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       width: 42px;
       height: 42px;
       border-radius: 12px;
-      border: 1px solid rgba(217, 119, 6, 0.45);
-      background: linear-gradient(135deg, #fef3c7, #fde047);
-      color: #451a03;
+      border: 1px solid rgba(234, 179, 8, 0.55);
+      background: linear-gradient(135deg, #fef08a, #facc15);
+      color: #422006;
       font-size: 1.15rem;
       font-weight: 900;
       display: grid;
       place-items: center;
       cursor: pointer;
-      box-shadow: 0 6px 16px rgba(245, 158, 11, 0.24);
+      box-shadow: 0 6px 16px rgba(234, 179, 8, 0.3);
       transition: transform 0.16s ease;
     }
     .yellow-bell-btn:hover { transform: translateY(-1px) scale(1.04); }
     .yellow-bell-btn.has-alert {
-      animation: bellPulse 1.5s infinite ease-in-out;
+      animation: bellPulse 1.4s infinite ease-in-out;
     }
     @keyframes bellPulse {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.6); }
+      0%, 100% { box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.65); }
       50% { box-shadow: 0 0 0 8px rgba(250, 204, 21, 0); }
     }
     .bell-badge-num {
@@ -456,7 +448,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       height: 20px;
       padding: 0 5px;
       border-radius: 999px;
-      background: #ef4444;
+      background: #dc2626;
       color: #ffffff;
       font-size: 0.72rem;
       font-weight: 900;
@@ -554,28 +546,28 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .btn:active { transform: translateY(0) scale(0.985); }
 
     .btn-blue {
-      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      background: linear-gradient(135deg, #0f766e, #115e59);
       color: #fff;
-      box-shadow: 0 6px 18px rgba(37, 99, 235, 0.25);
+      box-shadow: 0 6px 18px rgba(15, 118, 110, 0.28);
     }
-    .btn-blue:hover { box-shadow: 0 10px 24px rgba(37, 99, 235, 0.35); }
+    .btn-blue:hover { box-shadow: 0 10px 24px rgba(15, 118, 110, 0.38); }
 
     .btn-teal {
-      background: linear-gradient(135deg, #0d9488, #0f766e);
+      background: linear-gradient(135deg, #b45309, #92400e);
       color: #fff;
-      box-shadow: 0 6px 18px rgba(13, 148, 136, 0.25);
+      box-shadow: 0 6px 18px rgba(180, 83, 9, 0.26);
     }
-    .btn-teal:hover { box-shadow: 0 10px 24px rgba(13, 148, 136, 0.35); }
+    .btn-teal:hover { box-shadow: 0 10px 24px rgba(180, 83, 9, 0.36); }
 
     .btn-gold {
-      background: linear-gradient(135deg, #3b82f6, #0d9488);
+      background: linear-gradient(135deg, #0d9488, #0f766e);
       color: #fff;
-      box-shadow: 0 6px 18px rgba(59, 130, 246, 0.24);
+      box-shadow: 0 6px 18px rgba(13, 148, 136, 0.26);
     }
     .btn-red {
-      background: linear-gradient(135deg, #ef4444, #dc2626);
+      background: linear-gradient(135deg, #e11d48, #be123c);
       color: #fff;
-      box-shadow: 0 6px 16px rgba(239, 68, 68, 0.22);
+      box-shadow: 0 6px 16px rgba(225, 29, 72, 0.24);
     }
     .btn-out {
       background: var(--surface);
@@ -600,7 +592,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     }
 
     .jakh-week-banner {
-      background: linear-gradient(125deg, #2563eb 0%, #0d9488 100%);
+      background: linear-gradient(120deg, #0f766e 0%, #115e59 100%);
       color: #fff;
       padding: 20px 24px;
       border-radius: 18px;
@@ -611,13 +603,13 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       gap: 14px;
       flex-wrap: wrap;
       box-shadow: var(--shadow-md);
-      border: 1px solid rgba(255, 255, 255, 0.18);
+      border: 1px solid rgba(255, 255, 255, 0.16);
     }
     .you-here-pill {
       display: inline-flex; align-items: center; justify-content: center;
       padding: 5px 14px; border-radius: 999px;
       border: 1px solid rgba(255, 255, 255, 0.55);
-      background: rgba(255, 255, 255, 0.18);
+      background: rgba(255, 255, 255, 0.16);
       color: #fff; font-weight: 800; font-size: 0.84rem; white-space: nowrap;
     }
     .lecture-accordion-list { display: flex; flex-direction: column; gap: 12px; }
@@ -648,7 +640,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       transition: background-color 0.22s ease, color 0.22s ease;
     }
     .lec-accordion-item.is-open .lec-accordion-header {
-      background: linear-gradient(125deg, #2563eb 0%, #0d9488 100%);
+      background: linear-gradient(120deg, #0f766e 0%, #115e59 100%);
       color: #ffffff;
     }
     .lec-header-left {
@@ -661,13 +653,13 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       width: 34px;
       height: 34px;
       border-radius: 50%;
-      background: #99f6e4;
-      color: #042f2e;
+      background: #fbbf24;
+      color: #291500;
       display: grid;
       place-items: center;
       font-weight: 900;
       font-size: 0.9rem;
-      box-shadow: 0 4px 12px rgba(153, 246, 228, 0.35);
+      box-shadow: 0 4px 12px rgba(251, 191, 36, 0.35);
       transition: transform 0.25s ease;
     }
     .lec-accordion-item:not(.is-open) .lec-chevron-circle {
@@ -751,16 +743,43 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .jakh-action-btn {
       display: inline-flex; align-items: center; justify-content: center; gap: 6px;
       padding: 8px 16px; border-radius: 11px;
-      background: linear-gradient(135deg, #2563eb, #0d9488);
+      background: linear-gradient(135deg, #0f766e, #115e59);
       color: #fff; font-weight: 800; font-size: 0.85rem;
       text-decoration: none; border: none; cursor: pointer;
-      box-shadow: 0 5px 14px rgba(37, 99, 235, 0.24);
+      box-shadow: 0 5px 14px rgba(15, 118, 110, 0.28);
       transition: transform 0.15s ease, opacity 0.15s ease;
     }
     .jakh-action-btn:hover { transform: translateY(-1px); opacity: 0.96; }
 
     .field { margin-bottom: 14px; }
     label { display: block; font-weight: 800; margin-bottom: 6px; font-size: 0.88rem; color: var(--txt); }
+
+    .pwd-input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .pwd-input-wrap input {
+      padding-left: 44px;
+    }
+    .pwd-eye-btn {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 1.05rem;
+      line-height: 1;
+      padding: 4px;
+      display: grid;
+      place-items: center;
+    }
+    .pwd-eye-btn:hover {
+      color: var(--accent);
+    }
 
     input, select, textarea {
       width: 100%;
@@ -777,7 +796,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     input:focus, select:focus, textarea:focus {
       background: var(--surface);
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+      box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.2);
     }
     textarea { min-height: 96px; resize: vertical; }
     input[type="radio"], input[type="checkbox"] { width: auto; box-shadow: none; }
@@ -808,7 +827,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       padding: 0 20px;
       border-radius: 999px;
       border: 1.5px solid rgba(255, 255, 255, 0.35);
-      background: linear-gradient(135deg, #2563eb 0%, #0d9488 100%);
+      background: linear-gradient(135deg, #0f766e 0%, #b45309 100%);
       color: #ffffff;
       font-weight: 900;
       font-size: 0.95rem;
@@ -816,13 +835,13 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       align-items: center;
       gap: 10px;
       cursor: pointer;
-      box-shadow: 0 14px 32px rgba(37, 99, 235, 0.38);
+      box-shadow: 0 14px 32px rgba(15, 118, 110, 0.45);
       z-index: 80;
       transition: transform 0.18s ease, box-shadow 0.2s ease;
     }
     .support-fab-btn:hover {
       transform: translateY(-2px) scale(1.03);
-      box-shadow: 0 18px 38px rgba(37, 99, 235, 0.48);
+      box-shadow: 0 18px 38px rgba(15, 118, 110, 0.56);
     }
     .support-fab-icon {
       width: 34px;
@@ -839,8 +858,8 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       height: 22px;
       padding: 0 6px;
       border-radius: 999px;
-      background: #fde047;
-      color: #451a03;
+      background: #facc15;
+      color: #422006;
       font-size: 0.76rem;
       font-weight: 900;
       display: inline-flex;
@@ -868,7 +887,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       display: flex;
     }
     .support-chat-header {
-      background: linear-gradient(125deg, #2563eb, #0d9488);
+      background: linear-gradient(120deg, #0f766e, #b45309);
       color: #ffffff;
       padding: 15px 18px;
       display: flex;
@@ -908,7 +927,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       box-shadow: var(--shadow-sm);
     }
     .chat-bubble-user {
-      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      background: linear-gradient(135deg, #0f766e, #115e59);
       color: #ffffff;
       padding: 11px 14px;
       border-radius: 15px 15px 4px 15px;
@@ -919,8 +938,8 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       box-shadow: var(--shadow-sm);
     }
     .chat-bubble-admin {
-      background: rgba(13, 148, 136, 0.14);
-      border: 1px solid rgba(13, 148, 136, 0.35);
+      background: rgba(180, 83, 9, 0.14);
+      border: 1px solid rgba(180, 83, 9, 0.35);
       color: var(--txt);
       padding: 11px 14px;
       border-radius: 15px 15px 15px 4px;
@@ -995,7 +1014,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       margin: 14px auto 0;
       padding: 14px 20px;
       border-radius: 16px;
-      background: linear-gradient(125deg, #2563eb, #0d9488);
+      background: linear-gradient(120deg, #0f766e, #b45309);
       color: #fff;
       box-shadow: var(--shadow-md);
       display: flex;
@@ -1056,16 +1075,16 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       flex-wrap: wrap;
     }
     .pill { display: inline-block; padding: 3px 11px; border-radius: 999px; font-size: 0.78rem; font-weight: 800; }
-    .pill-ok { background: rgba(37, 99, 235, 0.14); color: var(--accent); }
-    .pill-warn { background: rgba(13, 148, 136, 0.15); color: var(--accent-2); }
-    .pill-err { background: rgba(239, 68, 68, 0.14); color: var(--err); }
+    .pill-ok { background: rgba(15, 118, 110, 0.15); color: var(--accent); }
+    .pill-warn { background: rgba(180, 83, 9, 0.16); color: var(--accent-2); }
+    .pill-err { background: rgba(225, 29, 72, 0.15); color: var(--err); }
     .msg-err {
-      background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.35);
+      background: rgba(225, 29, 72, 0.1); border: 1px solid rgba(225, 29, 72, 0.35);
       color: var(--err); padding: 12px 16px; border-radius: 12px; font-weight: 800; margin-bottom: 14px;
     }
     .msg-ok {
-      background: rgba(13, 148, 136, 0.12); border: 1px solid rgba(13, 148, 136, 0.36);
-      color: var(--accent-2); padding: 12px 16px; border-radius: 12px; font-weight: 800; margin-bottom: 14px;
+      background: rgba(15, 118, 110, 0.12); border: 1px solid rgba(15, 118, 110, 0.36);
+      color: var(--accent); padding: 12px 16px; border-radius: 12px; font-weight: 800; margin-bottom: 14px;
     }
     .muted { color: var(--muted); }
 
@@ -1089,26 +1108,26 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       font-size: 0.9rem; margin-bottom: 4px; transition: background-color 0.18s ease, color 0.18s ease;
     }
     .nav-item-link:hover { background: var(--surface-soft); }
-    .nav-item-link.active { background: linear-gradient(125deg, #2563eb, #0d9488); color: #fff; }
+    .nav-item-link.active { background: linear-gradient(135deg, #0f766e, #115e59); color: #fff; }
     .sub-nav { padding-right: 14px; margin-bottom: 8px; }
     .sub-link {
       display: block; padding: 5px 12px; border-radius: 9px; color: var(--muted);
       text-decoration: none; font-weight: 700; font-size: 0.83rem; margin-bottom: 2px;
     }
-    .sub-link.active, .sub-link:hover { background: rgba(37, 99, 235, 0.12); color: var(--accent); }
+    .sub-link.active, .sub-link:hover { background: rgba(15, 118, 110, 0.14); color: var(--accent); }
     .dash-shell.collapsed .nav-label, .dash-shell.collapsed .sub-nav, .dash-shell.collapsed .drawer-title { display: none; }
 
     .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-bottom: 18px; }
     .kpi-card {
-      background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+      background: linear-gradient(135deg, #0f766e 0%, #115e59 100%);
       color: #fff; border-radius: 16px; padding: 18px;
       display: flex; justify-content: space-between; align-items: center;
       box-shadow: var(--shadow-md);
     }
-    .kpi-card.teal-kpi { background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%); }
-    .kpi-card.gold-kpi { background: linear-gradient(135deg, #4f46e5 0%, #2563eb 100%); }
+    .kpi-card.teal-kpi { background: linear-gradient(135deg, #b45309 0%, #78350f 100%); }
+    .kpi-card.gold-kpi { background: linear-gradient(135deg, #0d9488 0%, #042f2e 100%); }
     .kpi-num { font-size: 1.62rem; font-weight: 900; line-height: 1.1; }
-    .kpi-lbl { font-size: 0.86rem; font-weight: 700; opacity: 0.94; margin-top: 4px; }
+    .kpi-lbl { font-size: 0.86rem; font-weight: 700; opacity: 0.92; margin-top: 4px; }
     .kpi-icon-box {
       width: 46px; height: 46px; border-radius: 13px; background: rgba(255, 255, 255, 0.18);
       display: grid; place-items: center; font-size: 1.2rem; font-weight: 900;
@@ -1128,7 +1147,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .teacher-color-meter .bw-layer { filter: grayscale(100%) contrast(1.05); }
     .teacher-color-meter .color-reveal { position: absolute; inset: 0; overflow: hidden; transition: clip-path 0.45s ease; }
     .prog-bar-bg { height: 8px; border-radius: 999px; background: var(--surface-soft); overflow: hidden; margin: 10px 0; }
-    .prog-bar-fill { height: 100%; background: linear-gradient(90deg, #2563eb, #0d9488); border-radius: 999px; transition: width 0.4s ease; }
+    .prog-bar-fill { height: 100%; background: linear-gradient(90deg, #0f766e, #d97706); border-radius: 999px; transition: width 0.4s ease; }
 
     .course-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(265px, 1fr)); gap: 16px; }
     .course-card { overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; }
@@ -1143,7 +1162,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     }
     .course-banner {
       min-height: 156px; position: relative; overflow: hidden;
-      background: linear-gradient(135deg, #2563eb 0%, #0d9488 100%);
+      background: linear-gradient(135deg, #0f766e 0%, #b45309 100%);
       color: #fff; padding: 16px; display: flex; justify-content: space-between; align-items: flex-end; gap: 10px;
     }
     .course-banner img.book-thumb {
@@ -1157,7 +1176,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .landing-hero-card { padding: 26px; display: grid; grid-template-columns: 310px 1fr; gap: 26px; align-items: center; }
     @media (max-width: 860px) { .landing-hero-card { grid-template-columns: 1fr; } }
     .hero-teacher-frame {
-      background: linear-gradient(155deg, rgba(37, 99, 235, 0.12), rgba(13, 148, 136, 0.12));
+      background: linear-gradient(155deg, rgba(15, 118, 110, 0.14), rgba(180, 83, 9, 0.14));
       border-radius: 16px; padding: 12px; display: flex; justify-content: center; align-items: center;
       min-height: 340px; border: 1px solid var(--bdr);
     }
@@ -1173,18 +1192,18 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     }
     @media (max-width: 840px) { .split-auth { grid-template-columns: 1fr; } }
     .promo-pane {
-      background: linear-gradient(155deg, #2563eb 0%, #0d9488 100%);
+      background: linear-gradient(155deg, #0f766e 0%, #b45309 100%);
       color: #fff; border-radius: 18px; padding: 24px; box-shadow: var(--shadow-md);
       display: flex; flex-direction: column; justify-content: space-between; min-height: 440px;
     }
-    .promo-pane.gold-mode { background: linear-gradient(155deg, #0d9488 0%, #1e40af 100%); }
+    .promo-pane.gold-mode { background: linear-gradient(155deg, #92400e 0%, #0f766e 100%); }
     .promo-img {
       width: 215px; height: 265px; object-fit: contain; object-position: center top;
       background: rgba(255, 255, 255, 0.14);
       border-radius: 14px; border: 1.5px solid rgba(255, 255, 255, 0.45); margin: 14px auto 0; display: block;
     }
     .step-track { height: 6px; background: var(--surface-soft); border-radius: 999px; overflow: hidden; margin-bottom: 14px; }
-    .step-fill { height: 100%; background: linear-gradient(90deg, #2563eb, #0d9488); }
+    .step-fill { height: 100%; background: linear-gradient(90deg, #0f766e, #d97706); }
 
     .secure-player-box {
       position: relative; width: 100%; max-width: 860px; margin: 12px auto 0;
@@ -1277,18 +1296,16 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
         ${!isAdmin ? `
           <div class="notif-bell-wrap">
-            <button type="button" class="yellow-bell-btn" id="yellowNotifBellBtn" title="إشعارات الردود (الدعم الفني والدعم العلمي)">
+            <button type="button" class="yellow-bell-btn ${academicUnreadCount > 0 ? "has-alert" : ""}" id="yellowNotifBellBtn" title="إشعارات الردود">
               <span>🔔</span>
-              <span class="bell-badge-num hidden-badge" id="yellowBellBadge">0</span>
+              <span class="bell-badge-num ${academicUnreadCount > 0 ? "" : "hidden-badge"}" id="yellowBellBadge">${academicUnreadCount}</span>
             </button>
             <div class="notif-popover" id="yellowNotifPopover">
               <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--bdr); padding-bottom:8px;">
                 <strong style="font-size:0.92rem;">إشعارات الردود</strong>
-                <span class="pill pill-warn">دعم فني وعلمي</span>
+                <span class="pill pill-warn">الدعم الفني والعلمي</span>
               </div>
-              <div id="yellowNotifList">
-                <div class="muted" style="font-size:0.84rem; margin-top:10px;">لا توجد ردود جديدة غير مقروءة حالياً.</div>
-              </div>
+              <div id="yellowNotifList"></div>
             </div>
           </div>
         ` : ""}
@@ -1341,6 +1358,31 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
         const dark = document.body.classList.toggle("dark", toggleEl.checked);
         localStorage.setItem("nb_py_theme", dark ? "dark" : "light");
         if (labelEl) labelEl.textContent = dark ? "ليلي" : "نهار";
+      });
+    })();
+
+    (function initPasswordEyes() {
+      document.querySelectorAll("input[type='password']").forEach(function (inp) {
+        if (inp.closest(".pwd-input-wrap")) return;
+        const wrap = document.createElement("div");
+        wrap.className = "pwd-input-wrap";
+        inp.parentNode.insertBefore(wrap, inp);
+        wrap.appendChild(inp);
+
+        const eyeBtn = document.createElement("button");
+        eyeBtn.type = "button";
+        eyeBtn.className = "pwd-eye-btn";
+        eyeBtn.title = "إظهار / إخفاء كلمة السر";
+        eyeBtn.setAttribute("aria-label", "إظهار / إخفاء كلمة السر");
+        eyeBtn.textContent = "👁️";
+
+        eyeBtn.addEventListener("click", function () {
+          const isHidden = inp.type === "password";
+          inp.type = isHidden ? "text" : "password";
+          eyeBtn.textContent = isHidden ? "🙈" : "👁️";
+        });
+
+        wrap.appendChild(eyeBtn);
       });
     })();
 
@@ -1457,15 +1499,9 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       let visitorName = localStorage.getItem("jakh_sup_name") || ${safeJsonForScript(defaultChatName)} || "";
       let attachedSingleImage = "";
       let messages = [];
-
       let seenAdminCount = Number(localStorage.getItem("jakh_sup_seen_admin_cnt") || "0");
-      let seenAcademicKeys = [];
-      try {
-        seenAcademicKeys = JSON.parse(localStorage.getItem("jakh_acad_seen_keys") || "[]");
-        if (!Array.isArray(seenAcademicKeys)) seenAcademicKeys = [];
-      } catch {
-        seenAcademicKeys = [];
-      }
+      let dismissedAcademicKeys = JSON.parse(localStorage.getItem("jakh_acad_dismissed") || "[]");
+      if (!Array.isArray(dismissedAcademicKeys)) dismissedAcademicKeys = [];
 
       const serverAcademicItems = ${safeJsonForScript(academicUnreadItems)};
 
@@ -1477,25 +1513,12 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
           .replace(/"/g, "&quot;");
       }
 
-      function markSupportAsRead() {
-        const adminMsgs = messages.filter(m => m.sender === "admin");
-        seenAdminCount = adminMsgs.length;
-        localStorage.setItem("jakh_sup_seen_admin_cnt", String(seenAdminCount));
-      }
-
-      function markAcademicAsRead() {
-        const allKeys = serverAcademicItems.map(it => it.key);
-        seenAcademicKeys = Array.from(new Set(seenAcademicKeys.concat(allKeys)));
-        localStorage.setItem("jakh_acad_seen_keys", JSON.stringify(seenAcademicKeys));
-      }
-
-      function computeSupportUnread() {
+      function markSupportSeenIfNeeded() {
         const adminMsgs = messages.filter(m => m.sender === "admin");
         if (winEl && winEl.classList.contains("open")) {
-          markSupportAsRead();
-          return 0;
-        }
-        if (seenAdminCount > adminMsgs.length) {
+          seenAdminCount = adminMsgs.length;
+          localStorage.setItem("jakh_sup_seen_admin_cnt", String(seenAdminCount));
+        } else if (seenAdminCount > adminMsgs.length) {
           seenAdminCount = adminMsgs.length;
           localStorage.setItem("jakh_sup_seen_admin_cnt", String(seenAdminCount));
         }
@@ -1503,9 +1526,8 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       }
 
       function refreshAllBells() {
-        const supUnread = computeSupportUnread();
-        const seenSet = new Set(seenAcademicKeys);
-        const acadUnreadList = serverAcademicItems.filter(it => !seenSet.has(it.key));
+        const supUnread = markSupportSeenIfNeeded();
+        const acadUnreadList = serverAcademicItems.filter(it => !dismissedAcademicKeys.includes(it.key));
         const totalUnread = supUnread + acadUnreadList.length;
 
         if (chatBadge) {
@@ -1525,11 +1547,13 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
         if (bellList) {
           const cards = [];
           if (supUnread > 0) {
+            const latestAdminMsg = messages.filter(m => m.sender === "admin").slice(-1)[0];
             cards.push(
               '<div class="notif-item-card">' +
                 '<span class="pill pill-ok">الدعم الفني</span>' +
-                '<div style="font-weight:800; margin-top:4px;">رسالة جديدة من الأدمن (' + supUnread + ')</div>' +
-                '<button type="button" class="btn btn-blue btn-sm" style="margin-top:6px;" id="openChatFromBellBtn">فتح الشات وقراءة الرسالة</button>' +
+                '<div style="font-weight:800; margin-top:4px;">رسالة جديدة من الدعم الفني (' + supUnread + ')</div>' +
+                (latestAdminMsg?.text ? '<div class="muted" style="margin-top:2px;">' + escLocal(latestAdminMsg.text.slice(0, 75)) + '</div>' : '') +
+                '<button type="button" class="btn btn-blue btn-sm" style="margin-top:6px;" id="openChatFromBellBtn">فتح وقراءة الرسالة</button>' +
               '</div>'
             );
           }
@@ -1539,32 +1563,39 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
                 '<span class="pill pill-warn">' + escLocal(it.kind) + '</span>' +
                 '<div style="font-weight:800; margin-top:4px;">' + escLocal(it.title) + '</div>' +
                 '<div class="muted" style="margin-top:2px;">' + escLocal(it.preview) + '</div>' +
-                '<a href="' + escLocal(it.href) + '" style="display:inline-block; margin-top:6px; font-weight:800; font-size:0.8rem; color:var(--accent);">عرض الرد</a>' +
+                '<a href="' + escLocal(it.href) + '" data-acad-key="' + escLocal(it.key) + '" class="acad-open-link" style="display:inline-block; margin-top:6px; font-weight:800; font-size:0.8rem; color:var(--accent);">عرض الرد</a>' +
               '</div>'
             );
           });
           bellList.innerHTML = cards.length
             ? cards.join("")
-            : '<div class="muted" style="font-size:0.84rem; margin-top:10px;">لا توجد رسائل جديدة غير مقروءة.</div>';
+            : '<div class="muted" style="font-size:0.84rem; margin-top:10px;">لا توجد إشعارات جديدة حالياً.</div>';
 
           document.getElementById("openChatFromBellBtn")?.addEventListener("click", function () {
             bellPopover?.classList.remove("open");
             winEl?.classList.add("open");
-            markSupportAsRead();
+            const adminMsgs = messages.filter(m => m.sender === "admin");
+            seenAdminCount = adminMsgs.length;
+            localStorage.setItem("jakh_sup_seen_admin_cnt", String(seenAdminCount));
             renderChatMessages();
-            syncThread();
+          });
+
+          bellList.querySelectorAll(".acad-open-link").forEach(function (lnk) {
+            lnk.addEventListener("click", function () {
+              const k = lnk.getAttribute("data-acad-key");
+              if (k && !dismissedAcademicKeys.includes(k)) {
+                dismissedAcademicKeys.push(k);
+                localStorage.setItem("jakh_acad_dismissed", JSON.stringify(dismissedAcademicKeys));
+              }
+              refreshAllBells();
+            });
           });
         }
       }
 
       bellBtn?.addEventListener("click", function (e) {
         e.stopPropagation();
-        const willOpen = !bellPopover?.classList.contains("open");
-        bellPopover?.classList.toggle("open", willOpen);
-        if (willOpen) {
-          markAcademicAsRead();
-          refreshAllBells();
-        }
+        bellPopover?.classList.toggle("open");
       });
 
       document.addEventListener("click", function (e) {
@@ -1587,7 +1618,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
           if (m.sender === "admin") {
             parts.push(
               '<div class="chat-bubble-admin">' +
-                '<div style="font-size:0.74rem; opacity:0.8; margin-bottom:2px;">الأدمن • مستر محمد يوسف</div>' +
+                '<div style="font-size:0.74rem; opacity:0.8; margin-bottom:2px;">الدعم الفني • مستر محمد يوسف</div>' +
                 (m.text ? '<div>' + escLocal(m.text) + '</div>' : '') +
                 (m.image_url ? '<img class="chat-msg-img" src="' + escLocal(m.image_url) + '" alt="مرفق الدعم" />' : '') +
               '</div>'
@@ -1628,7 +1659,9 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
           }
           messages = Array.isArray(data.messages) ? data.messages : [];
           if (winEl && winEl.classList.contains("open")) {
-            markSupportAsRead();
+            const adminMsgs = messages.filter(m => m.sender === "admin");
+            seenAdminCount = adminMsgs.length;
+            localStorage.setItem("jakh_sup_seen_admin_cnt", String(seenAdminCount));
           }
           renderChatMessages();
         } catch {}
@@ -1639,7 +1672,9 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
         const willOpen = !winEl.classList.contains("open");
         winEl.classList.toggle("open", willOpen);
         if (willOpen) {
-          markSupportAsRead();
+          const adminMsgs = messages.filter(m => m.sender === "admin");
+          seenAdminCount = adminMsgs.length;
+          localStorage.setItem("jakh_sup_seen_admin_cnt", String(seenAdminCount));
         }
         renderChatMessages();
         if (willOpen) syncThread();
@@ -1863,7 +1898,7 @@ function renderStudentAuth(settings, authTab, step, draft, error, notice) {
     return `
     <div class="card" style="max-width:520px; margin:24px auto;">
       <h2 style="font-weight:900; margin-bottom:8px;">استعادة كلمة السر</h2>
-      <p class="muted" style="font-size:0.86rem; margin-bottom:14px;">أدخل رقم هاتف الطالب ورقم هاتف ولي الأمر لتعيين كلمة سر جديدة.</p>
+      <p class="muted" style="font-size:0.86rem; margin-bottom:14px;">أدخل رقم هاتف الطالب ورقم هاتف ولي الأمر (مختلفين) لتعيين كلمة سر جديدة.</p>
       ${error ? `<div class="msg-err">${esc(error)}</div>` : ""}
       ${notice ? `<div class="msg-ok">${esc(notice)}</div>` : ""}
       <form method="post" action="/student/reset-password" autocomplete="off">
@@ -1883,7 +1918,7 @@ function renderStudentAuth(settings, authTab, step, draft, error, notice) {
     <div class="promo-pane gold-mode">
       <div>
         <h2 style="font-size:1.32rem; font-weight:900;">طلب إنشاء حساب طالب جديد</h2>
-        <p style="margin-top:10px; font-size:0.92rem; opacity:0.95;">أدخل بياناتك بدقة وسيتم ربطك بمنهج صفك وشعبتك تلقائياً.</p>
+        <p style="margin-top:10px; font-size:0.92rem; opacity:0.95;">أدخل بياناتك بدقة ورقم ولي الأمر يجب أن يكون مختلفاً عن رقم الطالب.</p>
       </div>
       <img class="promo-img" src="${esc(settings.teacher_image)}" alt="الأستاذ محمد يوسف" onerror="this.style.display='none';" />
     </div>
@@ -1907,9 +1942,9 @@ function renderStudentAuth(settings, authTab, step, draft, error, notice) {
           <button type="submit" class="btn btn-blue" style="width:100%;">التالي</button>
         </form>
       ` : `
-        <form method="post" action="/student/register" id="studentRegisterStep2Form" autocomplete="off">
+        <form method="post" action="/student/register" id="registerStep2Form" autocomplete="off">
           <input type="hidden" name="full_name" value="${esc(fullName)}" />
-          <input type="hidden" name="phone" id="regStudentPhone" value="${esc(draft.phone)}" />
+          <input type="hidden" name="phone" value="${esc(draft.phone)}" />
           <div class="field"><label>الصف الدراسي *</label><select name="grade">${gradeOpts}</select></div>
           <div class="field"><label>الشعبة *</label><select name="track">${trackOpts}</select></div>
           <div class="field"><label>رقم هاتف ولي الأمر (يجب أن يختلف عن رقم الطالب) *</label><input name="parent_phone" id="regParentPhone" type="tel" required autocomplete="off" placeholder="01xxxxxxxxx" /></div>
@@ -1921,24 +1956,13 @@ function renderStudentAuth(settings, authTab, step, draft, error, notice) {
         </form>
         <script>
           (function () {
-            const regForm = document.getElementById("studentRegisterStep2Form");
-            const stPhoneEl = document.getElementById("regStudentPhone");
-            const prPhoneEl = document.getElementById("regParentPhone");
-            function norm(v) {
-              let s = String(v || "").trim().replace(/[^\\d+]/g, "");
-              if (s.startsWith("+20")) s = "0" + s.slice(3);
-              else if (s.startsWith("0020")) s = "0" + s.slice(4);
-              else if (s.startsWith("20") && s.length === 12) s = "0" + s.slice(2);
-              return s;
-            }
-            regForm?.addEventListener("submit", function (e) {
-              const p1 = norm(stPhoneEl?.value);
-              const p2 = norm(prPhoneEl?.value);
-              if (!p2) return;
-              if (p1 && p1 === p2) {
+            const stPhone = ${safeJsonForScript(String(draft.phone || "").trim())};
+            const f = document.getElementById("registerStep2Form");
+            const pEl = document.getElementById("regParentPhone");
+            f?.addEventListener("submit", function (e) {
+              if ((pEl?.value || "").trim() === stPhone) {
                 e.preventDefault();
-                alert("رقم هاتف الطالب يجب أن يكون مختلفاً عن رقم هاتف ولي الأمر.");
-                prPhoneEl?.focus();
+                alert("يجب أن يكون رقم هاتف ولي الأمر مختلفاً عن رقم هاتف الطالب.");
               }
             });
           })();
@@ -2314,7 +2338,7 @@ function renderStudentDash(settings, student, state) {
           : `
             <div style="font-weight:900; margin:10px 0 6px; color:var(--err);">الأسئلة التي أخطأت فيها وإجاباتها الصحيحة:</div>
             ${wrongItems.map((w, idx) => `
-              <div class="row" style="display:block; border-color:rgba(239,68,68,0.35);">
+              <div class="row" style="display:block; border-color:rgba(225,29,72,0.35);">
                 <div style="font-weight:800;">${idx + 1}. ${esc(w.question)}</div>
                 <div style="font-size:0.86rem; color:var(--err); margin-top:4px;">إجابتك: ${esc(w.student_answer || "لم تُجب")}</div>
                 <div style="font-size:0.86rem; color:var(--accent-2); font-weight:800; margin-top:2px;">الإجابة الصحيحة: ${esc(w.correct_answer || "")}</div>
@@ -3380,13 +3404,13 @@ export default {
 
     let student = null;
     if (stCookie && stCookie.phone) {
-      student = await fsGet(env, "students", normalizePhone(stCookie.phone)) || await fsGet(env, "students", stCookie.phone);
+      student = await fsGet(env, "students", stCookie.phone);
     }
 
     const allTickets = await fsList(env, "tickets");
     const academicUnreadItems = student
       ? allTickets
-          .filter(t => normalizePhone(t.student_phone || "") === normalizePhone(student.phone || "") && Boolean(String(t.reply || "").trim()))
+          .filter(t => String(t.student_phone || "") === String(student.phone || "") && Boolean(String(t.reply || "").trim()))
           .map(t => ({
             key: `t_${t.id}_${String(t.reply || "").length}`,
             kind: "دعم علمي",
@@ -3416,7 +3440,7 @@ export default {
       const body = await parseFormBody(req);
       const sid = String(body.session_id || "").trim();
       const visitorName = String(body.visitor_name || "").trim();
-      const studentPhone = normalizePhone(body.student_phone || "");
+      const studentPhone = String(body.student_phone || "").trim();
       const text = String(body.text || "").trim();
       const imageUrl = String(body.image_url || "").trim();
       const nameOnly = Boolean(body.register_name_only);
@@ -3512,10 +3536,10 @@ export default {
         fsList(env, "watched_lectures")
       ]);
 
-      const myTickets = allTickets.filter(t => normalizePhone(t.student_phone) === normalizePhone(student.phone));
-      const mySubmissions = submissions.filter(s => normalizePhone(s.student_phone) === normalizePhone(student.phone));
-      const myDrafts = drafts.filter(d => normalizePhone(d.student_phone) === normalizePhone(student.phone));
-      const myWatched = watched.filter(w => normalizePhone(w.student_phone) === normalizePhone(student.phone));
+      const myTickets = allTickets.filter(t => t.student_phone === student.phone);
+      const mySubmissions = submissions.filter(s => s.student_phone === student.phone);
+      const myDrafts = drafts.filter(d => d.student_phone === student.phone);
+      const myWatched = watched.filter(w => w.student_phone === student.phone);
 
       const dashHtml = renderStudentDash(settings, student, {
         section: url.searchParams.get("section") || "dashboard",
@@ -3540,9 +3564,9 @@ export default {
 
     if (path === "/student/login" && method === "POST") {
       const form = await parseFormBody(req);
-      const phone = normalizePhone(form.phone || "");
+      const phone = String(form.phone || "").trim();
       const password = String(form.password || "");
-      const st = await fsGet(env, "students", phone) || await fsGet(env, "students", String(form.phone || "").trim());
+      const st = await fsGet(env, "students", phone);
       if (!st || st.password_hash !== (await sha256(password))) {
         return redirectRes(`/student?tab=login&error=${encodeURIComponent("رقم الهاتف أو كلمة السر غير صحيحة")}`);
       }
@@ -3556,7 +3580,7 @@ export default {
       const form = await parseFormBody(req);
       const centerCode = String(form.center_code || "").trim();
       const name = String(form.name || "").trim();
-      const phone = normalizePhone(form.phone || "");
+      const phone = String(form.phone || "").trim();
       const grade = String(form.grade || GRADES[0]);
       const track = String(form.track || TRACKS[0]);
       const rawPass = String(form.password || "").trim();
@@ -3596,21 +3620,19 @@ export default {
     if (path === "/student/register" && method === "POST") {
       const form = await parseFormBody(req);
       const fullName = String(form.full_name || "").trim();
-      const phone = normalizePhone(form.phone || "");
-      const parentPhone = normalizePhone(form.parent_phone || "");
+      const phone = String(form.phone || "").trim();
+      const parentPhone = String(form.parent_phone || "").trim();
       const grade = String(form.grade || GRADES[0]);
       const track = String(form.track || TRACKS[0]);
       const governorate = String(form.governorate || "").trim();
       const password = String(form.password || "");
 
       if (!fullName || !phone || !parentPhone || !password) {
-        return redirectRes(`/student?tab=register&step=1&error=${encodeURIComponent("أكمل جميع البيانات المطلوبة بما فيها رقم الطالب ورقم ولي الأمر")}`);
+        return redirectRes(`/student?tab=register&step=1&error=${encodeURIComponent("أكمل جميع البيانات المطلوبة")}`);
       }
-
       if (phone === parentPhone) {
-        return redirectRes(`/student?tab=register&step=2&full_name=${encodeURIComponent(fullName)}&phone=${encodeURIComponent(phone)}&error=${encodeURIComponent("رقم هاتف الطالب يجب أن يكون مختلفاً عن رقم هاتف ولي الأمر")}`);
+        return redirectRes(`/student?tab=register&step=2&phone=${encodeURIComponent(phone)}&error=${encodeURIComponent("يجب أن يكون رقم هاتف ولي الأمر مختلفاً عن رقم هاتف الطالب")}`);
       }
-
       const existing = await fsGet(env, "students", phone);
       if (existing) {
         return redirectRes(`/student?tab=login&error=${encodeURIComponent("هذا الرقم مسجل بالفعل، سجل دخولك")}`);
@@ -3637,11 +3659,14 @@ export default {
 
     if (path === "/student/reset-password" && method === "POST") {
       const form = await parseFormBody(req);
-      const phone = normalizePhone(form.phone || "");
-      const parentPhone = normalizePhone(form.parent_phone || "");
+      const phone = String(form.phone || "").trim();
+      const parentPhone = String(form.parent_phone || "").trim();
       const newPassword = String(form.new_password || "");
+      if (phone && parentPhone && phone === parentPhone) {
+        return redirectRes(`/student?tab=forgot&error=${encodeURIComponent("يجب أن يكون رقم هاتف ولي الأمر مختلفاً عن رقم الطالب")}`);
+      }
       const st = await fsGet(env, "students", phone);
-      if (!st || (st.parent_phone && normalizePhone(st.parent_phone) !== parentPhone)) {
+      if (!st || (st.parent_phone && st.parent_phone !== parentPhone)) {
         return redirectRes(`/student?tab=forgot&error=${encodeURIComponent("تعذر التحقق من رقم الطالب أو ولي الأمر")}`);
       }
       await fsSet(env, "students", phone, { ...st, password_hash: await sha256(newPassword) });
@@ -3918,19 +3943,18 @@ export default {
 
     if (path === "/admin/grant-branches" && method === "POST") {
       const form = await parseFormBody(req);
-      const phone = normalizePhone(form.phone || "");
+      const phone = String(form.phone || "").trim();
       const selected = Array.isArray(form.branches) ? form.branches : (form.branches ? [form.branches] : []);
-      const st = await fsGet(env, "students", phone) || await fsGet(env, "students", String(form.phone || "").trim());
+      const st = await fsGet(env, "students", phone);
       if (!st) return redirectRes(`/admin?section=students&error=${encodeURIComponent("الطالب غير موجود")}`);
-      await fsSet(env, "students", st.phone, { ...st, branches: Array.from(new Set(selected)) });
+      await fsSet(env, "students", phone, { ...st, branches: Array.from(new Set(selected)) });
       return redirectRes(`/admin?section=students&notice=${encodeURIComponent("تم تحديث اشتراك الفروع للطالب")}`);
     }
 
     if (path === "/admin/delete-student" && method === "POST") {
       const form = await parseFormBody(req);
-      const phone = normalizePhone(form.phone || "");
+      const phone = String(form.phone || "").trim();
       if (phone) await fsDelete(env, "students", phone);
-      if (String(form.phone || "").trim()) await fsDelete(env, "students", String(form.phone || "").trim());
       return redirectRes(`/admin?section=students&notice=${encodeURIComponent("تم حذف الطالب بنجاح")}`);
     }
 
