@@ -291,7 +291,10 @@ function computeStudentMetrics(student, lectures, exams, submissions, watchedLis
 
 function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {}) {
   const showLandingAdminAvatar = Boolean(options.showLandingAdminAvatar);
+  const showSupportWidget = options.showSupportWidget !== false;
   const hasNotice = Boolean(settings.global_notice && String(settings.global_notice).trim());
+  const defaultChatName = student ? String(student.full_name || "") : "";
+  const defaultChatPhone = student ? String(student.phone || "") : "";
 
   return `<!DOCTYPE html>
 <html lang="ar" dir="rtl">
@@ -351,6 +354,21 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       -webkit-user-select: none;
       user-select: none;
       transition: background-color 0.28s ease, color 0.22s ease;
+    }
+
+    #screenBlackoutGuard {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: #000000;
+      z-index: 99999;
+    }
+    body.screen-blackout #screenBlackoutGuard {
+      display: block;
+    }
+    @media print {
+      body * { visibility: hidden !important; }
+      body { background: #000000 !important; }
     }
 
     #arabicBg { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
@@ -699,6 +717,170 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .floating-admin-avatar:hover { transform: scale(1.08); }
     .floating-admin-avatar img { width: 100%; height: 100%; object-fit: cover; object-position: center top; display: block; }
 
+    /* الدعم الفني العائم */
+    .support-fab-btn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      border: none;
+      background: linear-gradient(135deg, #2563eb, #0284c7);
+      color: #ffffff;
+      font-size: 1.55rem;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      box-shadow: 0 12px 28px rgba(37, 99, 235, 0.42);
+      z-index: 80;
+      transition: transform 0.18s ease, box-shadow 0.2s ease;
+    }
+    .support-fab-btn:hover {
+      transform: scale(1.07);
+      box-shadow: 0 16px 34px rgba(37, 99, 235, 0.52);
+    }
+    .support-chat-window {
+      display: none;
+      position: fixed;
+      bottom: 90px;
+      right: 20px;
+      width: min(390px, calc(100vw - 28px));
+      max-height: 540px;
+      background: var(--surface);
+      border: 1px solid var(--bdr);
+      border-radius: 20px;
+      box-shadow: var(--shadow-lg);
+      z-index: 85;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .support-chat-window.open {
+      display: flex;
+    }
+    .support-chat-header {
+      background: linear-gradient(120deg, #2563eb, #1e3a8a);
+      color: #ffffff;
+      padding: 14px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+    .support-chat-close {
+      background: rgba(255, 255, 255, 0.18);
+      border: none;
+      color: #ffffff;
+      width: 30px;
+      height: 30px;
+      border-radius: 9px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+    .support-chat-body {
+      padding: 14px;
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: var(--bg);
+    }
+    .chat-bubble-bot {
+      background: var(--surface);
+      border: 1px solid var(--bdr);
+      color: var(--txt);
+      padding: 10px 13px;
+      border-radius: 14px 14px 14px 4px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      max-width: 88%;
+      align-self: flex-start;
+      box-shadow: var(--shadow-sm);
+    }
+    .chat-bubble-user {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: #ffffff;
+      padding: 10px 13px;
+      border-radius: 14px 14px 4px 14px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      max-width: 88%;
+      align-self: flex-end;
+      box-shadow: var(--shadow-sm);
+    }
+    .chat-bubble-admin {
+      background: rgba(2, 132, 199, 0.14);
+      border: 1px solid rgba(2, 132, 199, 0.35);
+      color: var(--txt);
+      padding: 10px 13px;
+      border-radius: 14px 14px 14px 4px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      max-width: 88%;
+      align-self: flex-start;
+    }
+    .chat-msg-img {
+      max-width: 100%;
+      max-height: 170px;
+      border-radius: 10px;
+      margin-top: 6px;
+      display: block;
+      object-fit: contain;
+    }
+    .support-name-box {
+      padding: 12px 14px;
+      border-top: 1px solid var(--bdr);
+      background: var(--surface);
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .support-composer-wrap {
+      border-top: 1px solid var(--bdr);
+      background: var(--surface);
+      padding: 10px 12px;
+    }
+    .support-img-chip {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: var(--surface-soft);
+      border: 1px solid var(--bdr);
+      border-radius: 10px;
+      padding: 6px 10px;
+      margin-bottom: 8px;
+      font-size: 0.78rem;
+      font-weight: 800;
+    }
+    .support-img-chip.has-img {
+      display: flex;
+    }
+    .support-composer-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .plus-attach-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      border: 1px solid var(--accent);
+      background: var(--surface-soft);
+      color: var(--accent);
+      font-size: 1.35rem;
+      font-weight: 900;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .plus-attach-btn:hover {
+      background: var(--accent);
+      color: #ffffff;
+    }
+
     .inline-dua-banner {
       max-width: 1240px;
       margin: 14px auto 0;
@@ -926,12 +1108,48 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
   </style>
 </head>
 <body>
+  <div id="screenBlackoutGuard" aria-hidden="true"></div>
   <div id="arabicBg" aria-hidden="true"></div>
+
   ${showLandingAdminAvatar ? `
     <a class="floating-admin-avatar" href="/admin" title="دخول الأدمن" aria-label="Admin">
       <img src="${esc(settings.teacher_image)}" alt="أ. محمد يوسف" onerror="this.style.display='none';" />
     </a>
   ` : ""}
+
+  ${showSupportWidget ? `
+    <button type="button" class="support-fab-btn" id="supportFabBtn" title="الدعم الفني" aria-label="الدعم الفني">💬</button>
+    <div class="support-chat-window" id="supportChatWindow" role="dialog" aria-label="الدعم الفني">
+      <div class="support-chat-header">
+        <div>
+          <div style="font-weight:900; font-size:0.95rem;">الدعم الفني لمستر محمد يوسف</div>
+          <div style="font-size:0.74rem; opacity:0.92;">مساعد فني مباشر • ${PLATFORM_NAME}</div>
+        </div>
+        <button type="button" class="support-chat-close" id="supportCloseBtn">✕</button>
+      </div>
+
+      <div class="support-chat-body" id="supportChatBody"></div>
+
+      <div class="support-name-box" id="supportNameBox">
+        <input type="text" id="supportVisitorNameInput" placeholder="ضع اسمك هنا..." value="${esc(defaultChatName)}" style="flex:1; padding:8px 12px; font-size:0.86rem;" />
+        <button type="button" class="btn btn-blue btn-sm" id="supportSaveNameBtn">تأكيد الاسم</button>
+      </div>
+
+      <form class="support-composer-wrap" id="supportChatForm" style="display:none;">
+        <div class="support-img-chip" id="supportImgChip">
+          <span id="supportImgName">صورة مرفقة</span>
+          <button type="button" class="btn btn-red btn-sm" style="padding:3px 9px; font-size:0.75rem;" id="supportClearImgBtn">إزالة</button>
+        </div>
+        <div class="support-composer-row">
+          <button type="button" class="plus-attach-btn" id="supportPlusBtn" title="إرفاق صورة واحدة">+</button>
+          <input type="file" id="supportSingleImageFile" accept="image/*" style="display:none;" />
+          <input type="text" id="supportMsgInput" placeholder="اكتب رسالتك أو سؤالك..." style="flex:1; padding:9px 12px; font-size:0.86rem;" />
+          <button type="submit" class="btn btn-blue btn-sm" style="padding:9px 14px;">إرسال</button>
+        </div>
+      </form>
+    </div>
+  ` : ""}
+
   <div class="page-layer">
     <header class="topbar">
       <div class="brand-box">
@@ -972,6 +1190,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     ` : ""}
     ${bodyHtml}
   </div>
+
   <script>
     (function () {
       const toggleEl = document.getElementById("themeToggle");
@@ -988,6 +1207,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
         if (labelEl) labelEl.textContent = dark ? "ليلي" : "نهار";
       });
     })();
+
     (function setupDuaOnOpenOrRefresh() {
       const banner = document.getElementById("inlineDuaBanner");
       if (!banner) return;
@@ -1006,6 +1226,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
         });
       }
     })();
+
     (function renderAnimatedArabicLetters() {
       const container = document.getElementById("arabicBg");
       const letters = "أبجدهوزحطيكلمنسعفصقرشتثخذضظغى".split("");
@@ -1032,31 +1253,269 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
         container.appendChild(span);
       }
     })();
-    (function enforceAntiCaptureProtection() {
+
+    (function enforceAntiCaptureAndBlackout() {
+      let blackoutTimer = null;
+      function triggerBlackout(ms = 2200) {
+        document.body.classList.add("screen-blackout");
+        document.querySelectorAll("video").forEach((v) => { try { v.pause(); } catch {} });
+        clearTimeout(blackoutTimer);
+        blackoutTimer = setTimeout(function () {
+          if (document.hasFocus() && !document.hidden) {
+            document.body.classList.remove("screen-blackout");
+          }
+        }, ms);
+      }
+
       document.addEventListener("contextmenu", function (e) {
         e.preventDefault();
       });
       document.addEventListener("copy", function (e) {
         e.preventDefault();
       });
-      document.addEventListener("keydown", function (e) {
+
+      window.addEventListener("keydown", function (e) {
         const k = (e.key || "").toLowerCase();
-        if (
+        const isShotKey =
           e.key === "PrintScreen" ||
+          e.code === "PrintScreen" ||
           (e.ctrlKey && ["s", "u", "p", "c"].includes(k)) ||
           (e.metaKey && ["s", "p", "c", "g"].includes(k)) ||
           (e.ctrlKey && e.shiftKey && ["i", "j", "c", "s"].includes(k)) ||
-          (e.metaKey && e.shiftKey && ["3", "4", "5", "s"].includes(k))
-        ) {
+          (e.metaKey && e.shiftKey && ["3", "4", "5", "s"].includes(k));
+
+        if (isShotKey) {
           e.preventDefault();
-          document.querySelectorAll("video").forEach((v) => v.pause());
+          triggerBlackout(3500);
         }
-      });
+      }, true);
+
+      window.addEventListener("keyup", function (e) {
+        if (e.key === "PrintScreen" || e.code === "PrintScreen") {
+          triggerBlackout(3500);
+        }
+      }, true);
+
       document.addEventListener("visibilitychange", function () {
         if (document.hidden) {
-          document.querySelectorAll("video").forEach((v) => v.pause());
+          document.body.classList.add("screen-blackout");
+          document.querySelectorAll("video").forEach((v) => { try { v.pause(); } catch {} });
+        } else {
+          setTimeout(function () {
+            document.body.classList.remove("screen-blackout");
+          }, 300);
         }
       });
+
+      window.addEventListener("blur", function () {
+        document.body.classList.add("screen-blackout");
+      });
+
+      window.addEventListener("focus", function () {
+        setTimeout(function () {
+          document.body.classList.remove("screen-blackout");
+        }, 250);
+      });
+    })();
+
+    (function initSupportChatWidget() {
+      const fabBtn = document.getElementById("supportFabBtn");
+      const winEl = document.getElementById("supportChatWindow");
+      const closeBtn = document.getElementById("supportCloseBtn");
+      const bodyEl = document.getElementById("supportChatBody");
+      const nameBox = document.getElementById("supportNameBox");
+      const nameInput = document.getElementById("supportVisitorNameInput");
+      const saveNameBtn = document.getElementById("supportSaveNameBtn");
+      const formEl = document.getElementById("supportChatForm");
+      const plusBtn = document.getElementById("supportPlusBtn");
+      const fileInput = document.getElementById("supportSingleImageFile");
+      const imgChip = document.getElementById("supportImgChip");
+      const imgNameLbl = document.getElementById("supportImgName");
+      const clearImgBtn = document.getElementById("supportClearImgBtn");
+      const msgInput = document.getElementById("supportMsgInput");
+
+      if (!fabBtn || !winEl || !bodyEl) return;
+
+      let sessionId = localStorage.getItem("jakh_sup_sid") || "";
+      if (!sessionId) {
+        sessionId = "sup_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7);
+        localStorage.setItem("jakh_sup_sid", sessionId);
+      }
+
+      let visitorName = localStorage.getItem("jakh_sup_name") || ${safeJsonForScript(defaultChatName)} || "";
+      let attachedSingleImage = "";
+      let messages = [];
+
+      function escLocal(s) {
+        return String(s ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+
+      function renderChatMessages() {
+        const parts = [];
+        parts.push('<div class="chat-bubble-bot">أهلاً بك مع الدعم الفني لمستر محمد يوسف</div>');
+        if (!visitorName) {
+          parts.push('<div class="chat-bubble-bot">من فضلك ضع اسمك في الخانة بالأسفل لنبدأ.</div>');
+        } else {
+          parts.push('<div class="chat-bubble-bot">أهلاً بك يا ' + escLocal(visitorName) + '، ضع سؤالك</div>');
+        }
+
+        messages.forEach(function (m) {
+          if (m.sender === "admin") {
+            parts.push(
+              '<div class="chat-bubble-admin">' +
+                '<div style="font-size:0.74rem; opacity:0.8; margin-bottom:2px;">الدعم الفني • مستر محمد يوسف</div>' +
+                (m.text ? '<div>' + escLocal(m.text) + '</div>' : '') +
+                (m.image_url ? '<img class="chat-msg-img" src="' + escLocal(m.image_url) + '" alt="مرفق الدعم" />' : '') +
+              '</div>'
+            );
+          } else {
+            parts.push(
+              '<div class="chat-bubble-user">' +
+                (m.text ? '<div>' + escLocal(m.text) + '</div>' : '') +
+                (m.image_url ? '<img class="chat-msg-img" src="' + escLocal(m.image_url) + '" alt="صورة مرفقة" />' : '') +
+              '</div>'
+            );
+          }
+        });
+
+        bodyEl.innerHTML = parts.join("");
+        bodyEl.scrollTop = bodyEl.scrollHeight;
+
+        if (visitorName) {
+          nameBox.style.display = "none";
+          formEl.style.display = "block";
+        } else {
+          nameBox.style.display = "flex";
+          formEl.style.display = "none";
+        }
+      }
+
+      async function syncThread() {
+        try {
+          const res = await fetch("/api/support/thread?session_id=" + encodeURIComponent(sessionId));
+          if (!res.ok) return;
+          const data = await res.json();
+          if (data.visitor_name && !visitorName) {
+            visitorName = data.visitor_name;
+            localStorage.setItem("jakh_sup_name", visitorName);
+          }
+          messages = Array.isArray(data.messages) ? data.messages : [];
+          renderChatMessages();
+        } catch {}
+      }
+
+      fabBtn.addEventListener("click", function () {
+        const willOpen = !winEl.classList.contains("open");
+        winEl.classList.toggle("open", willOpen);
+        renderChatMessages();
+        if (willOpen) syncThread();
+      });
+
+      closeBtn?.addEventListener("click", function () {
+        winEl.classList.remove("open");
+      });
+
+      async function confirmVisitorName() {
+        const val = (nameInput?.value || "").trim();
+        if (!val) {
+          nameInput?.focus();
+          return;
+        }
+        visitorName = val;
+        localStorage.setItem("jakh_sup_name", visitorName);
+        renderChatMessages();
+        msgInput?.focus();
+        try {
+          await fetch("/api/support/send", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              session_id: sessionId,
+              visitor_name: visitorName,
+              student_phone: ${safeJsonForScript(defaultChatPhone)},
+              register_name_only: true
+            })
+          });
+        } catch {}
+      }
+
+      saveNameBtn?.addEventListener("click", confirmVisitorName);
+      nameInput?.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          confirmVisitorName();
+        }
+      });
+
+      plusBtn?.addEventListener("click", function () {
+        fileInput?.click();
+      });
+
+      fileInput?.addEventListener("change", function () {
+        const file = fileInput.files && fileInput.files[0];
+        if (!file) {
+          attachedSingleImage = "";
+          imgChip?.classList.remove("has-img");
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = function () {
+          attachedSingleImage = String(reader.result || "");
+          if (imgNameLbl) imgNameLbl.textContent = "صورة واحدة: " + file.name;
+          imgChip?.classList.add("has-img");
+        };
+        reader.readAsDataURL(file);
+        fileInput.value = "";
+      });
+
+      clearImgBtn?.addEventListener("click", function () {
+        attachedSingleImage = "";
+        imgChip?.classList.remove("has-img");
+      });
+
+      formEl?.addEventListener("submit", async function (e) {
+        e.preventDefault();
+        const textVal = (msgInput?.value || "").trim();
+        if (!textVal && !attachedSingleImage) return;
+        if (!visitorName) {
+          confirmVisitorName();
+          return;
+        }
+
+        const payload = {
+          session_id: sessionId,
+          visitor_name: visitorName,
+          student_phone: ${safeJsonForScript(defaultChatPhone)},
+          text: textVal,
+          image_url: attachedSingleImage
+        };
+
+        if (msgInput) msgInput.value = "";
+        attachedSingleImage = "";
+        imgChip?.classList.remove("has-img");
+
+        try {
+          const res = await fetch("/api/support/send", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          if (res.ok) {
+            const data = await res.json();
+            messages = Array.isArray(data.messages) ? data.messages : messages;
+            renderChatMessages();
+          }
+        } catch {}
+      });
+
+      renderChatMessages();
+      setInterval(function () {
+        if (winEl.classList.contains("open")) syncThread();
+      }, 6000);
     })();
   </script>
 </body>
@@ -1857,6 +2316,9 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
   const allSubmissions = data.submissions || [];
   const allWatched = data.watched || [];
   const allStudents = data.students || [];
+  const allSupportThreads = (data.supportThreads || []).slice().sort((a, b) =>
+    String(b.updated_at || "").localeCompare(String(a.updated_at || ""))
+  );
 
   const codesRows = (data.codes || []).slice(-25).reverse().map(c => `
     <div class="row">
@@ -1931,8 +2393,47 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
     </div>
   `).join("") || `<p class="muted">لا توجد أسئلة من الطلاب حالياً.</p>`;
 
+  const supportRows = allSupportThreads.map(th => {
+    const msgs = Array.isArray(th.messages) ? th.messages : [];
+    const msgsHtml = msgs.map(m => `
+      <div class="${m.sender === "admin" ? "chat-bubble-admin" : "chat-bubble-user"}" style="margin-top:6px;">
+        <div style="font-size:0.72rem; opacity:0.82;">${m.sender === "admin" ? "رد الأدمن" : esc(th.visitor_name || "مستخدم")}</div>
+        ${m.text ? `<div>${esc(m.text)}</div>` : ""}
+        ${m.image_url ? `<img class="chat-msg-img" src="${esc(m.image_url)}" alt="صورة مرفقة" />` : ""}
+      </div>
+    `).join("");
+
+    return `
+      <div class="card" style="margin-bottom:14px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:8px;">
+          <div>
+            <span class="pill pill-ok">${esc(th.visitor_name || "بدون اسم")}</span>
+            ${th.student_phone ? `<span class="muted" style="font-size:0.82rem; margin-right:6px;">هاتف: ${esc(th.student_phone)}</span>` : ""}
+          </div>
+          <span class="muted" style="font-size:0.78rem;">${esc((th.updated_at || "").slice(0, 16).replace("T", " "))}</span>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:10px;">
+          ${msgsHtml || `<div class="muted" style="font-size:0.85rem;">تم تسجيل الاسم ولم تُرسل رسالة بعد.</div>`}
+        </div>
+        <form method="post" action="/admin/support-reply" style="display:flex; gap:8px; flex-wrap:wrap;">
+          <input type="hidden" name="session_id" value="${esc(th.id)}" />
+          <input type="text" name="reply_text" required placeholder="اكتب رد الدعم الفني هنا..." style="flex:1; min-width:220px;" />
+          <button type="submit" class="btn btn-blue btn-sm">إرسال الرد</button>
+        </form>
+      </div>
+    `;
+  }).join("") || `<div class="card"><p class="muted">لا توجد محادثات دعم فني حتى الآن.</p></div>`;
+
   let sectionHtml = "";
-  if (activeSec === "codes") {
+  if (activeSec === "support") {
+    sectionHtml = `
+      <div style="margin-bottom:10px;">
+        <h3 style="font-weight:900;">الدعم الفني</h3>
+        <p class="muted" style="font-size:0.86rem;">رسائل وصور الدعم الفني الواردة من الشات المباشر والرد عليها.</p>
+      </div>
+      ${supportRows}
+    `;
+  } else if (activeSec === "codes") {
     sectionHtml = `
       <div class="card">
         <h3 style="font-weight:900; margin-bottom:10px;">توليد أكواد (سنتر لمرة واحدة / فروع)</h3>
@@ -2426,7 +2927,7 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
         <div class="kpi-card"><div><div class="kpi-num">${allStudents.length}</div><div class="kpi-lbl">طلاب المنصة</div></div><div class="kpi-icon-box">👨‍🎓</div></div>
         <div class="kpi-card teal-kpi"><div><div class="kpi-num">${allLectures.length}</div><div class="kpi-lbl">المحاضرات</div></div><div class="kpi-icon-box">🎥</div></div>
         <div class="kpi-card gold-kpi"><div><div class="kpi-num">${allExams.length}</div><div class="kpi-lbl">الواجبات والاختبارات</div></div><div class="kpi-icon-box">📝</div></div>
-        <div class="kpi-card teal-kpi"><div><div class="kpi-num">${allSubmissions.length}</div><div class="kpi-lbl">النتائج المسلمة</div></div><div class="kpi-icon-box">📊</div></div>
+        <div class="kpi-card teal-kpi"><div><div class="kpi-num">${allSupportThreads.length}</div><div class="kpi-lbl">دعم فني</div></div><div class="kpi-icon-box">💬</div></div>
       </div>
 
       ${sectionHtml}
@@ -2443,6 +2944,7 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
       <a class="nav-item-link ${activeSec === "codes" ? "active" : ""}" href="/admin?section=codes"><span>🔑</span><span class="nav-label">توليد أكواد</span></a>
       <a class="nav-item-link ${activeSec === "exams" ? "active" : ""}" href="/admin?section=exams"><span>📝</span><span class="nav-label">الواجبات والاختبارات</span></a>
       <a class="nav-item-link ${activeSec === "tickets" ? "active" : ""}" href="/admin?section=tickets"><span>❓</span><span class="nav-label">أسئلة الطلاب</span></a>
+      <a class="nav-item-link ${activeSec === "support" ? "active" : ""}" href="/admin?section=support"><span>💬</span><span class="nav-label">دعم فني</span></a>
       <a class="nav-item-link ${activeSec === "settings" ? "active" : ""}" href="/admin?section=settings"><span>⚙️</span><span class="nav-label">الإعدادات والإشعار</span></a>
     </aside>
   </div>`;
@@ -2502,6 +3004,70 @@ export default {
       student = await fsGet(env, "students", stCookie.phone);
     }
 
+    if (path === "/api/support/thread" && method === "GET") {
+      const sid = String(url.searchParams.get("session_id") || "").trim();
+      if (!sid) {
+        return new Response(JSON.stringify({ visitor_name: "", messages: [] }), {
+          headers: { "Content-Type": "application/json; charset=utf-8" }
+        });
+      }
+      const doc = await fsGet(env, "support_chats", sid);
+      return new Response(JSON.stringify({
+        visitor_name: doc?.visitor_name || "",
+        messages: Array.isArray(doc?.messages) ? doc.messages : []
+      }), {
+        headers: { "Content-Type": "application/json; charset=utf-8" }
+      });
+    }
+
+    if (path === "/api/support/send" && method === "POST") {
+      const body = await parseFormBody(req);
+      const sid = String(body.session_id || "").trim();
+      const visitorName = String(body.visitor_name || "").trim();
+      const studentPhone = String(body.student_phone || "").trim();
+      const text = String(body.text || "").trim();
+      const imageUrl = String(body.image_url || "").trim();
+      const nameOnly = Boolean(body.register_name_only);
+
+      if (!sid) {
+        return new Response(JSON.stringify({ ok: false }), { status: 400 });
+      }
+
+      const existing = (await fsGet(env, "support_chats", sid)) || {
+        visitor_name: visitorName || "زائر",
+        student_phone: studentPhone,
+        messages: [],
+        updated_at: new Date().toISOString()
+      };
+
+      const msgs = Array.isArray(existing.messages) ? [...existing.messages] : [];
+      if (!nameOnly && (text || imageUrl)) {
+        msgs.push({
+          sender: "user",
+          text,
+          image_url: imageUrl,
+          at: new Date().toISOString()
+        });
+      }
+
+      const updatedDoc = {
+        visitor_name: visitorName || existing.visitor_name || "زائر",
+        student_phone: studentPhone || existing.student_phone || "",
+        messages: msgs,
+        updated_at: new Date().toISOString()
+      };
+
+      await fsSet(env, "support_chats", sid, updatedDoc);
+
+      return new Response(JSON.stringify({
+        ok: true,
+        visitor_name: updatedDoc.visitor_name,
+        messages: updatedDoc.messages
+      }), {
+        headers: { "Content-Type": "application/json; charset=utf-8" }
+      });
+    }
+
     if (path === "/logout") {
       return redirectRes("/student?tab=login", {
         "Set-Cookie": `${clearCookieHeader("nb_st")}, ${clearCookieHeader("nb_adm")}`
@@ -2509,7 +3075,7 @@ export default {
     }
 
     if (path === "/" && method === "GET") {
-      return htmlRes(renderLayout("الرئيسية", settings, student, isAdmin, renderLanding(settings), { showLandingAdminAvatar: true }));
+      return htmlRes(renderLayout("الرئيسية", settings, student, isAdmin, renderLanding(settings), { showLandingAdminAvatar: true, showSupportWidget: true }));
     }
 
     if (path === "/student" && method === "GET") {
@@ -2525,7 +3091,7 @@ export default {
       const notice = url.searchParams.get("notice") || "";
 
       if (!student) {
-        return htmlRes(renderLayout("بوابة الطالب", settings, null, isAdmin, renderStudentAuth(settings, tab, step, draft, error, notice)));
+        return htmlRes(renderLayout("بوابة الطالب", settings, null, isAdmin, renderStudentAuth(settings, tab, step, draft, error, notice), { showSupportWidget: true }));
       }
 
       const lectureIdParam = url.searchParams.get("lecture") || "";
@@ -2565,7 +3131,7 @@ export default {
         error,
         notice
       });
-      return htmlRes(renderLayout("لوحة الطالب", settings, student, isAdmin, dashHtml));
+      return htmlRes(renderLayout("لوحة الطالب", settings, student, isAdmin, dashHtml, { showSupportWidget: true }));
     }
 
     if (path === "/student/login" && method === "POST") {
@@ -2784,18 +3350,19 @@ export default {
       const rankingGrade = url.searchParams.get("rank_grade") || GRADES[0];
       let data = {};
       if (isAdmin) {
-        const [codes, lectures, exams, students, tickets, submissions, watched] = await Promise.all([
+        const [codes, lectures, exams, students, tickets, submissions, watched, supportThreads] = await Promise.all([
           fsList(env, "codes"),
           fsList(env, "lectures"),
           fsList(env, "exams"),
           fsList(env, "students"),
           fsList(env, "tickets"),
           fsList(env, "submissions"),
-          fsList(env, "watched_lectures")
+          fsList(env, "watched_lectures"),
+          fsList(env, "support_chats")
         ]);
-        data = { codes, lectures, exams, students, tickets, submissions, watched, preselectLectureId, rankingGrade };
+        data = { codes, lectures, exams, students, tickets, submissions, watched, supportThreads, preselectLectureId, rankingGrade };
       }
-      return htmlRes(renderLayout("لوحة الأدمن", settings, student, isAdmin, renderAdminPage(settings, isAdmin, data, section, error, notice), { showLandingAdminAvatar: false }));
+      return htmlRes(renderLayout("لوحة الأدمن", settings, student, isAdmin, renderAdminPage(settings, isAdmin, data, section, error, notice), { showLandingAdminAvatar: false, showSupportWidget: false }));
     }
 
     if (path === "/admin/login" && method === "POST") {
@@ -2814,6 +3381,30 @@ export default {
 
     if (!isAdmin) {
       return redirectRes("/admin");
+    }
+
+    if (path === "/admin/support-reply" && method === "POST") {
+      const form = await parseFormBody(req);
+      const sid = String(form.session_id || "").trim();
+      const replyText = String(form.reply_text || "").trim();
+      if (sid && replyText) {
+        const doc = await fsGet(env, "support_chats", sid);
+        if (doc) {
+          const msgs = Array.isArray(doc.messages) ? [...doc.messages] : [];
+          msgs.push({
+            sender: "admin",
+            text: replyText,
+            image_url: "",
+            at: new Date().toISOString()
+          });
+          await fsSet(env, "support_chats", sid, {
+            ...doc,
+            messages: msgs,
+            updated_at: new Date().toISOString()
+          });
+        }
+      }
+      return redirectRes(`/admin?section=support&notice=${encodeURIComponent("تم إرسال رد الدعم الفني")}`);
     }
 
     if (path === "/admin/generate-codes" && method === "POST") {
