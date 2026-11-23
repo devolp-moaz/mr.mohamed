@@ -292,6 +292,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>${esc(title)} | نور البيان — أ. محمد يوسف</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" />
+  <link rel="shortcut icon" href="${esc(settings.teacher_image)}" />
   <style>
     :root {
       --bg: #f6f8fb;
@@ -375,7 +376,6 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       box-shadow: 0 6px 16px rgba(29, 78, 216, 0.24);
     }
 
-    /* زرار ليل ونهار ناعم وأنيق */
     .mode-switch {
       position: relative;
       display: inline-flex;
@@ -420,7 +420,6 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     }
     .mode-text { font-size: 0.82rem; font-weight: 800; color: var(--txt); }
 
-    /* أزرار فخمة نظيفة ومريحة */
     .btn {
       display: inline-flex;
       align-items: center;
@@ -471,7 +470,6 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .btn-out:hover { border-color: var(--accent); background: var(--surface-soft); }
     .btn-sm { padding: 7px 13px; font-size: 0.82rem; border-radius: 10px; }
 
-    /* كروت أنيقة وهادئة */
     .card, .right-drawer, .landing-hero-card, .course-card, .blue-week-banner, .blue-lesson-strip, .student-detail-box, .q-builder-card {
       background: var(--surface);
       border: 1px solid var(--bdr);
@@ -488,7 +486,6 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .field { margin-bottom: 14px; }
     label { display: block; font-weight: 800; margin-bottom: 6px; font-size: 0.88rem; color: var(--txt); }
 
-    /* خانات إدخال نظيفة ومرتبة */
     input, select, textarea {
       width: 100%;
       padding: 11px 15px;
@@ -767,14 +764,11 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .step-fill { height: 100%; background: linear-gradient(90deg, var(--accent-2), var(--accent)); }
 
     .secure-player-box {
-      position: relative; width: 100%; max-width: 780px; margin: 14px auto 0;
+      position: relative; width: 100%; max-width: 860px; margin: 14px auto 0;
       border-radius: 16px; overflow: hidden; background: #000;
       border: 1px solid var(--bdr); user-select: none; box-shadow: var(--shadow-md);
-      transition: max-width 0.25s ease;
     }
-    .secure-player-box.ratio-16-9 { max-width: 100%; aspect-ratio: 16 / 9; }
-    .secure-player-box video, .secure-player-box iframe { width: 100%; height: 100%; min-height: 360px; display: block; border: none; }
-    .secure-player-box.ratio-16-9 video, .secure-player-box.ratio-16-9 iframe { min-height: 0; height: 100%; }
+    .secure-player-box video, .secure-player-box iframe { width: 100%; min-height: 380px; display: block; border: none; }
     .watermark-layer { position: absolute; inset: 0; pointer-events: none; z-index: 5; overflow: hidden; }
     .watermark-tag {
       position: absolute; color: rgba(255, 255, 255, 0.34); font-size: 0.84rem;
@@ -785,10 +779,6 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       0% { top: 14%; right: 8%; }
       50% { top: 46%; right: 32%; }
       100% { top: 72%; right: 12%; }
-    }
-    body.privacy-blur .page-layer {
-      filter: blur(22px) brightness(0.35);
-      transition: filter 0.1s ease;
     }
     .ticket-img-thumb { max-width: 260px; max-height: 220px; object-fit: contain; border-radius: 10px; border: 1px solid var(--bdr); margin-top: 8px; display: block; }
     .branch-toggle-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin: 10px 0; }
@@ -911,20 +901,11 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       }
     })();
     (function enforceAntiCaptureProtection() {
-      function triggerShield() {
-        document.body.classList.add("privacy-blur");
-        document.querySelectorAll("video").forEach((v) => v.pause());
-        setTimeout(() => {
-          if (!document.hidden) document.body.classList.remove("privacy-blur");
-        }, 3200);
-      }
       document.addEventListener("contextmenu", function (e) {
         e.preventDefault();
-        triggerShield();
       });
       document.addEventListener("copy", function (e) {
         e.preventDefault();
-        triggerShield();
       });
       document.addEventListener("keydown", function (e) {
         const k = (e.key || "").toLowerCase();
@@ -936,27 +917,13 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
           (e.metaKey && e.shiftKey && ["3", "4", "5", "s"].includes(k))
         ) {
           e.preventDefault();
-          triggerShield();
-        }
-      });
-      window.addEventListener("keyup", function (e) {
-        if (e.key === "PrintScreen") {
-          triggerShield();
+          document.querySelectorAll("video").forEach((v) => v.pause());
         }
       });
       document.addEventListener("visibilitychange", function () {
         if (document.hidden) {
-          document.body.classList.add("privacy-blur");
           document.querySelectorAll("video").forEach((v) => v.pause());
-        } else {
-          setTimeout(() => document.body.classList.remove("privacy-blur"), 400);
         }
-      });
-      window.addEventListener("blur", function () {
-        document.body.classList.add("privacy-blur");
-      });
-      window.addEventListener("focus", function () {
-        setTimeout(() => document.body.classList.remove("privacy-blur"), 350);
       });
     })();
   </script>
@@ -1238,30 +1205,15 @@ function renderStudentDash(settings, student, state) {
                 <span class="pill pill-ok">${esc(lec.branch)}</span>
                 <h3 style="font-weight:900; margin-top:6px;">${esc(lec.title)}</h3>
               </div>
-              <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                <button type="button" class="blue-action-btn" id="expandVideo169Btn">تكبير الفيديو 16:9</button>
-                <button type="button" class="btn btn-out btn-sm" id="shrinkVideoBtn">تصغير لطبيعته</button>
-                <a class="btn btn-out btn-sm" href="/student?section=branch&branch=${encodeURIComponent(lec.branch)}">رجوع للفرع</a>
-              </div>
+              <a class="btn btn-out btn-sm" href="/student?section=branch&branch=${encodeURIComponent(lec.branch)}">رجوع للفرع</a>
             </div>
-            <div class="secure-player-box" id="lecturePlayerBox">
+            <div class="secure-player-box">
               <div class="watermark-layer">
                 <span class="watermark-tag" style="top:18%; right:10%;">${esc(wmText)}</span>
                 <span class="watermark-tag" style="top:54%; right:35%; animation-delay:-4s;">${esc(wmText)}</span>
               </div>
               ${playerHtml}
             </div>
-            <script>
-              (function () {
-                const box = document.getElementById("lecturePlayerBox");
-                document.getElementById("expandVideo169Btn")?.addEventListener("click", function () {
-                  box?.classList.add("ratio-16-9");
-                });
-                document.getElementById("shrinkVideoBtn")?.addEventListener("click", function () {
-                  box?.classList.remove("ratio-16-9");
-                });
-              })();
-            </script>
             ${lec.video_url && /^https?:\/\//i.test(lec.video_url) && !ytId
               ? `<div style="margin-top:10px;"><a class="btn btn-teal btn-sm" href="${esc(lec.video_url)}" target="_blank" rel="noopener">فتح الفيديو في نافذة المشغل الخارجية</a></div>`
               : ""
