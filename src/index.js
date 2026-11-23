@@ -222,6 +222,13 @@ function esc(s) {
     .replaceAll('"', "&quot;");
 }
 
+function safeJsonForScript(obj) {
+  return JSON.stringify(obj)
+    .replaceAll("<", "\\u003c")
+    .replaceAll(">", "\\u003e")
+    .replaceAll("&", "\\u0026");
+}
+
 function extractYoutubeId(url) {
   if (!url) return "";
   const m = String(url).trim().match(/(?:v=|\/embed\/|\/shorts\/|youtu\.be\/)([A-Za-z0-9_-]{11})/);
@@ -238,9 +245,9 @@ function sortLectures(list) {
 }
 
 function computeStudentMetrics(student, lectures, exams, submissions, watchedList) {
-  const stPhone = student.phone;
-  const stSubs = (submissions || []).filter(s => s.student_phone === stPhone);
-  const stWatched = (watchedList || []).filter(w => w.student_phone === stPhone);
+  const stPhone = String(student.phone || "");
+  const stSubs = (submissions || []).filter(s => String(s.student_phone || "") === stPhone);
+  const stWatched = (watchedList || []).filter(w => String(w.student_phone || "") === stPhone);
   const watchedSet = new Set(stWatched.map(w => String(w.lecture_id)));
   const solvedExamSet = new Set(stSubs.map(s => String(s.exam_id)));
 
@@ -283,7 +290,7 @@ function computeStudentMetrics(student, lectures, exams, submissions, watchedLis
 }
 
 function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {}) {
-  const hideBottomAdminAvatar = Boolean(options.hideBottomAdminAvatar);
+  const showLandingAdminAvatar = Boolean(options.showLandingAdminAvatar);
   const hasNotice = Boolean(settings.global_notice && String(settings.global_notice).trim());
 
   return `<!DOCTYPE html>
@@ -297,35 +304,35 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" />
   <style>
     :root {
-      --bg: #f4f7f5;
+      --bg: #f2f6fc;
       --surface: #ffffff;
-      --surface-soft: #eef3f0;
+      --surface-soft: #e9eff8;
       --txt: #0f172a;
-      --muted: #5f6d7e;
-      --accent: #4d7c0f;
-      --accent-dark: #2c4712;
-      --accent-2: #0f766e;
-      --gold: #ca8a04;
+      --muted: #55657d;
+      --accent: #1d4ed8;
+      --accent-dark: #1e3a8a;
+      --accent-2: #0284c7;
+      --gold: #0369a1;
       --err: #be123c;
-      --bdr: #dce5df;
-      --glyph: rgba(77, 124, 15, 0.08);
+      --bdr: #d2deee;
+      --glyph: rgba(29, 78, 216, 0.08);
       --shadow-sm: 0 2px 10px rgba(15, 23, 42, 0.05);
       --shadow-md: 0 12px 28px rgba(15, 23, 42, 0.08);
-      --shadow-lg: 0 20px 44px rgba(15, 23, 42, 0.13);
+      --shadow-lg: 0 20px 44px rgba(15, 23, 42, 0.14);
     }
     body.dark {
-      --bg: #070b07;
-      --surface: #0f170d;
-      --surface-soft: #162213;
-      --txt: #f3f7f2;
-      --muted: #9eb09a;
-      --accent: #84cc16;
-      --accent-dark: #5c8d14;
-      --accent-2: #2dd4bf;
-      --gold: #eab308;
+      --bg: #060b16;
+      --surface: #0d1629;
+      --surface-soft: #13203b;
+      --txt: #f1f5f9;
+      --muted: #94a3b8;
+      --accent: #3b82f6;
+      --accent-dark: #1d4ed8;
+      --accent-2: #38bdf8;
+      --gold: #60a5fa;
       --err: #fb7185;
-      --bdr: rgba(163, 230, 53, 0.16);
-      --glyph: rgba(132, 204, 22, 0.1);
+      --bdr: rgba(59, 130, 246, 0.2);
+      --glyph: rgba(59, 130, 246, 0.1);
       --shadow-sm: 0 2px 12px rgba(0, 0, 0, 0.35);
       --shadow-md: 0 14px 32px rgba(0, 0, 0, 0.52);
       --shadow-lg: 0 22px 48px rgba(0, 0, 0, 0.72);
@@ -333,8 +340,8 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; }
     body {
       background:
-        radial-gradient(circle at 12% 8%, rgba(132, 204, 22, 0.09), transparent 42%),
-        radial-gradient(circle at 88% 85%, rgba(202, 138, 4, 0.08), transparent 45%),
+        radial-gradient(circle at 12% 8%, rgba(59, 130, 246, 0.1), transparent 42%),
+        radial-gradient(circle at 88% 85%, rgba(14, 165, 233, 0.08), transparent 45%),
         var(--bg);
       color: var(--txt);
       min-height: 100vh;
@@ -378,9 +385,9 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .brand-box { display: flex; align-items: center; gap: 12px; }
     .brand-logo-badge {
       width: 46px; height: 46px; border-radius: 14px;
-      background: linear-gradient(135deg, #65a30d, #15803d);
+      background: linear-gradient(135deg, #2563eb, #0284c7);
       color: #fff; font-weight: 900; display: grid; place-items: center; font-size: 1.05rem;
-      box-shadow: 0 8px 20px rgba(77, 124, 15, 0.28);
+      box-shadow: 0 8px 20px rgba(37, 99, 235, 0.28);
       border: 1px solid rgba(255, 255, 255, 0.25);
     }
 
@@ -446,23 +453,23 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .btn:active { transform: translateY(0) scale(0.985); }
 
     .btn-blue {
-      background: linear-gradient(135deg, #65a30d, #3f6212);
+      background: linear-gradient(135deg, #2563eb, #1e40af);
       color: #fff;
-      box-shadow: 0 6px 18px rgba(77, 124, 15, 0.28);
+      box-shadow: 0 6px 18px rgba(37, 99, 235, 0.28);
     }
-    .btn-blue:hover { box-shadow: 0 10px 24px rgba(77, 124, 15, 0.38); }
+    .btn-blue:hover { box-shadow: 0 10px 24px rgba(37, 99, 235, 0.38); }
 
     .btn-teal {
-      background: linear-gradient(135deg, #0d9488, #115e59);
+      background: linear-gradient(135deg, #0284c7, #0369a1);
       color: #fff;
-      box-shadow: 0 6px 18px rgba(13, 148, 136, 0.26);
+      box-shadow: 0 6px 18px rgba(2, 132, 199, 0.26);
     }
-    .btn-teal:hover { box-shadow: 0 10px 24px rgba(13, 148, 136, 0.36); }
+    .btn-teal:hover { box-shadow: 0 10px 24px rgba(2, 132, 199, 0.36); }
 
     .btn-gold {
-      background: linear-gradient(135deg, #eab308, #a16207);
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
       color: #fff;
-      box-shadow: 0 6px 18px rgba(202, 138, 4, 0.26);
+      box-shadow: 0 6px 18px rgba(59, 130, 246, 0.26);
     }
     .btn-red {
       background: linear-gradient(135deg, #e11d48, #be123c);
@@ -491,9 +498,8 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       box-shadow: var(--shadow-lg);
     }
 
-    /* أسلوب الأكورديون الفخم لعرض المحاضرات والأقسام للطلاب */
     .jakh-week-banner {
-      background: linear-gradient(120deg, #65a30d 0%, #3f6212 100%);
+      background: linear-gradient(120deg, #2563eb 0%, #1e3a8a 100%);
       color: #fff;
       padding: 20px 24px;
       border-radius: 18px;
@@ -523,7 +529,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       transition: border-color 0.22s ease, box-shadow 0.22s ease, transform 0.18s ease;
     }
     .lec-accordion-item.is-open {
-      border-color: #7da13c;
+      border-color: #3b82f6;
       box-shadow: var(--shadow-md);
     }
     .lec-accordion-header {
@@ -541,7 +547,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       transition: background-color 0.22s ease, color 0.22s ease;
     }
     .lec-accordion-item.is-open .lec-accordion-header {
-      background: linear-gradient(120deg, #749b36 0%, #567622 100%);
+      background: linear-gradient(120deg, #2563eb 0%, #1d4ed8 100%);
       color: #ffffff;
     }
     .lec-header-left {
@@ -554,13 +560,13 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       width: 34px;
       height: 34px;
       border-radius: 50%;
-      background: #84cc16;
-      color: #0b1307;
+      background: #38bdf8;
+      color: #061224;
       display: grid;
       place-items: center;
       font-weight: 900;
       font-size: 0.9rem;
-      box-shadow: 0 4px 12px rgba(132, 204, 22, 0.35);
+      box-shadow: 0 4px 12px rgba(56, 189, 248, 0.35);
       transition: transform 0.25s ease;
     }
     .lec-accordion-item:not(.is-open) .lec-chevron-circle {
@@ -644,10 +650,10 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .jakh-action-btn {
       display: inline-flex; align-items: center; justify-content: center; gap: 6px;
       padding: 8px 16px; border-radius: 11px;
-      background: linear-gradient(135deg, #65a30d, #3f6212);
+      background: linear-gradient(135deg, #2563eb, #1e40af);
       color: #fff; font-weight: 800; font-size: 0.85rem;
       text-decoration: none; border: none; cursor: pointer;
-      box-shadow: 0 5px 14px rgba(77, 124, 15, 0.28);
+      box-shadow: 0 5px 14px rgba(37, 99, 235, 0.28);
       transition: transform 0.15s ease, opacity 0.15s ease;
     }
     .jakh-action-btn:hover { transform: translateY(-1px); opacity: 0.96; }
@@ -670,7 +676,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     input:focus, select:focus, textarea:focus {
       background: var(--surface);
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(132, 204, 22, 0.2);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
     }
     textarea { min-height: 96px; resize: vertical; }
     input[type="radio"], input[type="checkbox"] { width: auto; box-shadow: none; }
@@ -679,8 +685,8 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       position: fixed;
       bottom: 18px;
       left: 18px;
-      width: 44px;
-      height: 44px;
+      width: 46px;
+      height: 46px;
       border-radius: 50%;
       overflow: hidden;
       border: 2px solid var(--accent);
@@ -698,7 +704,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       margin: 14px auto 0;
       padding: 14px 20px;
       border-radius: 16px;
-      background: linear-gradient(120deg, #65a30d, #0f766e);
+      background: linear-gradient(120deg, #2563eb, #0284c7);
       color: #fff;
       box-shadow: var(--shadow-md);
       display: flex;
@@ -759,15 +765,15 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       flex-wrap: wrap;
     }
     .pill { display: inline-block; padding: 3px 11px; border-radius: 999px; font-size: 0.78rem; font-weight: 800; }
-    .pill-ok { background: rgba(101, 163, 13, 0.16); color: var(--accent); }
-    .pill-warn { background: rgba(202, 138, 4, 0.16); color: var(--gold); }
+    .pill-ok { background: rgba(37, 99, 235, 0.15); color: var(--accent); }
+    .pill-warn { background: rgba(2, 132, 199, 0.16); color: var(--accent-2); }
     .pill-err { background: rgba(225, 29, 72, 0.15); color: var(--err); }
     .msg-err {
       background: rgba(225, 29, 72, 0.1); border: 1px solid rgba(225, 29, 72, 0.35);
       color: var(--err); padding: 12px 16px; border-radius: 12px; font-weight: 800; margin-bottom: 14px;
     }
     .msg-ok {
-      background: rgba(101, 163, 13, 0.12); border: 1px solid rgba(101, 163, 13, 0.36);
+      background: rgba(37, 99, 235, 0.12); border: 1px solid rgba(37, 99, 235, 0.36);
       color: var(--accent); padding: 12px 16px; border-radius: 12px; font-weight: 800; margin-bottom: 14px;
     }
     .muted { color: var(--muted); }
@@ -792,24 +798,24 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       font-size: 0.9rem; margin-bottom: 4px; transition: background-color 0.18s ease, color 0.18s ease;
     }
     .nav-item-link:hover { background: var(--surface-soft); }
-    .nav-item-link.active { background: linear-gradient(135deg, #65a30d, #3f6212); color: #fff; }
+    .nav-item-link.active { background: linear-gradient(135deg, #2563eb, #1e40af); color: #fff; }
     .sub-nav { padding-right: 14px; margin-bottom: 8px; }
     .sub-link {
       display: block; padding: 5px 12px; border-radius: 9px; color: var(--muted);
       text-decoration: none; font-weight: 700; font-size: 0.83rem; margin-bottom: 2px;
     }
-    .sub-link.active, .sub-link:hover { background: rgba(101, 163, 13, 0.14); color: var(--accent); }
+    .sub-link.active, .sub-link:hover { background: rgba(37, 99, 235, 0.14); color: var(--accent); }
     .dash-shell.collapsed .nav-label, .dash-shell.collapsed .sub-nav, .dash-shell.collapsed .drawer-title { display: none; }
 
     .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-bottom: 18px; }
     .kpi-card {
-      background: linear-gradient(135deg, #65a30d 0%, #2c4712 100%);
+      background: linear-gradient(135deg, #2563eb 0%, #1e3a8a 100%);
       color: #fff; border-radius: 16px; padding: 18px;
       display: flex; justify-content: space-between; align-items: center;
       box-shadow: var(--shadow-md);
     }
-    .kpi-card.teal-kpi { background: linear-gradient(135deg, #0d9488 0%, #115e59 100%); }
-    .kpi-card.gold-kpi { background: linear-gradient(135deg, #ca8a04 0%, #854d0e 100%); }
+    .kpi-card.teal-kpi { background: linear-gradient(135deg, #0284c7 0%, #075985 100%); }
+    .kpi-card.gold-kpi { background: linear-gradient(135deg, #1d4ed8 0%, #172554 100%); }
     .kpi-num { font-size: 1.62rem; font-weight: 900; line-height: 1.1; }
     .kpi-lbl { font-size: 0.86rem; font-weight: 700; opacity: 0.92; margin-top: 4px; }
     .kpi-icon-box {
@@ -831,7 +837,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .teacher-color-meter .bw-layer { filter: grayscale(100%) contrast(1.05); }
     .teacher-color-meter .color-reveal { position: absolute; inset: 0; overflow: hidden; transition: clip-path 0.45s ease; }
     .prog-bar-bg { height: 8px; border-radius: 999px; background: var(--surface-soft); overflow: hidden; margin: 10px 0; }
-    .prog-bar-fill { height: 100%; background: linear-gradient(90deg, #84cc16, #0d9488); border-radius: 999px; transition: width 0.4s ease; }
+    .prog-bar-fill { height: 100%; background: linear-gradient(90deg, #3b82f6, #0284c7); border-radius: 999px; transition: width 0.4s ease; }
 
     .course-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(265px, 1fr)); gap: 16px; }
     .course-card { overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; }
@@ -846,7 +852,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     }
     .course-banner {
       min-height: 156px; position: relative; overflow: hidden;
-      background: linear-gradient(135deg, #65a30d 0%, #0f766e 100%);
+      background: linear-gradient(135deg, #2563eb 0%, #0284c7 100%);
       color: #fff; padding: 16px; display: flex; justify-content: space-between; align-items: flex-end; gap: 10px;
     }
     .course-banner img.book-thumb {
@@ -860,7 +866,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .landing-hero-card { padding: 26px; display: grid; grid-template-columns: 310px 1fr; gap: 26px; align-items: center; }
     @media (max-width: 860px) { .landing-hero-card { grid-template-columns: 1fr; } }
     .hero-teacher-frame {
-      background: linear-gradient(155deg, rgba(101, 163, 13, 0.14), rgba(13, 148, 136, 0.14));
+      background: linear-gradient(155deg, rgba(37, 99, 235, 0.14), rgba(2, 132, 199, 0.14));
       border-radius: 16px; padding: 12px; display: flex; justify-content: center; align-items: center;
       min-height: 340px; border: 1px solid var(--bdr);
     }
@@ -868,15 +874,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       width: 100%; max-height: 340px; object-fit: contain; object-position: center top;
       border-radius: 12px; display: block;
     }
-    .landing-start-section { max-width: 1120px; margin: 22px auto 16px; padding: 0 16px; }
-    .landing-bottom-admin { max-width: 1120px; margin: 32px auto 46px; padding: 0 16px; display: flex; justify-content: center; }
-    .bottom-admin-img-btn {
-      width: 44px; height: 44px; border-radius: 50%; overflow: hidden;
-      border: 2px solid var(--accent); box-shadow: var(--shadow-md);
-      display: block; transition: transform 0.2s ease;
-    }
-    .bottom-admin-img-btn:hover { transform: scale(1.08); }
-    .bottom-admin-img-btn img { width: 100%; height: 100%; object-fit: cover; object-position: center top; display: block; }
+    .landing-start-section { max-width: 1120px; margin: 22px auto 36px; padding: 0 16px; }
 
     .split-auth {
       max-width: 1060px; margin: 22px auto; padding: 0 16px;
@@ -884,18 +882,18 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     }
     @media (max-width: 840px) { .split-auth { grid-template-columns: 1fr; } }
     .promo-pane {
-      background: linear-gradient(155deg, #65a30d 0%, #0f766e 100%);
+      background: linear-gradient(155deg, #2563eb 0%, #0284c7 100%);
       color: #fff; border-radius: 18px; padding: 24px; box-shadow: var(--shadow-md);
       display: flex; flex-direction: column; justify-content: space-between; min-height: 440px;
     }
-    .promo-pane.gold-mode { background: linear-gradient(155deg, #ca8a04 0%, #3f6212 100%); }
+    .promo-pane.gold-mode { background: linear-gradient(155deg, #1d4ed8 0%, #1e3a8a 100%); }
     .promo-img {
       width: 215px; height: 265px; object-fit: contain; object-position: center top;
       background: rgba(255, 255, 255, 0.14);
       border-radius: 14px; border: 1.5px solid rgba(255, 255, 255, 0.45); margin: 14px auto 0; display: block;
     }
     .step-track { height: 6px; background: var(--surface-soft); border-radius: 999px; overflow: hidden; margin-bottom: 14px; }
-    .step-fill { height: 100%; background: linear-gradient(90deg, #84cc16, #0d9488); }
+    .step-fill { height: 100%; background: linear-gradient(90deg, #3b82f6, #0284c7); }
 
     .secure-player-box {
       position: relative; width: 100%; max-width: 860px; margin: 12px auto 0;
@@ -929,9 +927,9 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
 </head>
 <body>
   <div id="arabicBg" aria-hidden="true"></div>
-  ${!hideBottomAdminAvatar ? `
-    <a class="floating-admin-avatar" href="/admin" aria-label="Admin">
-      <img src="${esc(settings.teacher_image)}" alt="" onerror="this.style.display='none';" />
+  ${showLandingAdminAvatar ? `
+    <a class="floating-admin-avatar" href="/admin" title="دخول الأدمن" aria-label="Admin">
+      <img src="${esc(settings.teacher_image)}" alt="أ. محمد يوسف" onerror="this.style.display='none';" />
     </a>
   ` : ""}
   <div class="page-layer">
@@ -1094,12 +1092,6 @@ function renderLanding(settings) {
       <a class="btn btn-blue" style="flex:1; min-width:170px;" href="/student?tab=register&step=1">إنشاء حساب جديد</a>
     </div>
   </div>
-</div>
-
-<div class="landing-bottom-admin">
-  <a class="bottom-admin-img-btn" href="/admin" aria-label="Admin">
-    <img src="${esc(settings.teacher_image)}" alt="" onerror="this.style.display='none';" />
-  </a>
 </div>`;
 }
 
@@ -1383,7 +1375,6 @@ function renderStudentDash(settings, student, state) {
                     <div class="msg-err" style="margin-bottom:0;">هذا الدرس مغلق حالياً. يجب حل وتسليم واجب الدرس السابق أولاً لفتح هذا الدرس.</div>
                   ` : `
                     <div class="sub-topic-list">
-                      <!-- 1. الكتاب -->
                       <div class="sub-topic-card">
                         <button type="button" class="sub-topic-head">
                           <span>الكتاب</span>
@@ -1400,7 +1391,6 @@ function renderStudentDash(settings, student, state) {
                         </div>
                       </div>
 
-                      <!-- 2. الشرح -->
                       <div class="sub-topic-card ${isInitiallyOpen ? "sub-open" : ""}">
                         <button type="button" class="sub-topic-head">
                           <span>الشرح</span>
@@ -1425,7 +1415,6 @@ function renderStudentDash(settings, student, state) {
                         </div>
                       </div>
 
-                      <!-- 3. المذاكرة -->
                       <div class="sub-topic-card">
                         <button type="button" class="sub-topic-head">
                           <span>المذاكرة</span>
@@ -1445,7 +1434,6 @@ function renderStudentDash(settings, student, state) {
                         </div>
                       </div>
 
-                      <!-- 4. حل المقالي -->
                       <div class="sub-topic-card">
                         <button type="button" class="sub-topic-head">
                           <span>حل المقالي</span>
@@ -1459,7 +1447,6 @@ function renderStudentDash(settings, student, state) {
                         </div>
                       </div>
 
-                      <!-- 5. حل الكتب -->
                       <div class="sub-topic-card">
                         <button type="button" class="sub-topic-head">
                           <span>حل الكتب</span>
@@ -2191,15 +2178,15 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
       metrics: computeStudentMetrics(st, allLectures, allExams, allSubmissions, allWatched)
     }));
 
-    const studentItemsJson = JSON.stringify(enrichedStudents.map(item => ({
-      full_name: item.student.full_name || "",
-      phone: item.student.phone || "",
-      parent_phone: item.student.parent_phone || "-",
-      governorate: item.student.governorate || "-",
-      grade: item.student.grade || "",
-      track: item.student.track || "",
-      password_hash: item.student.password_hash || "",
-      branches: item.student.branches || [],
+    const studentItemsPayload = enrichedStudents.map(item => ({
+      full_name: String(item.student.full_name || ""),
+      phone: String(item.student.phone || ""),
+      parent_phone: String(item.student.parent_phone || "-"),
+      governorate: String(item.student.governorate || "-"),
+      grade: String(item.student.grade || ""),
+      track: String(item.student.track || ""),
+      password_hash: String(item.student.password_hash || ""),
+      branches: Array.isArray(item.student.branches) ? item.student.branches.map(String) : [],
       watchedCount: item.metrics.watchedCount,
       pendingLectures: item.metrics.pendingLectures,
       solvedExamsCount: item.metrics.solvedExamsCount,
@@ -2208,13 +2195,13 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
       performanceScore: item.metrics.performanceScore,
       performanceLabel: item.metrics.performanceLabel,
       submissions: (item.metrics.submissions || []).map(s => ({
-        exam_title: s.exam_title || "اختبار",
-        branch: s.branch || "عام",
-        score: s.score,
-        total: s.total,
-        pct: s.pct ?? Math.round((Number(s.score || 0) / Math.max(1, Number(s.total || 1))) * 100)
+        exam_title: String(s.exam_title || "اختبار"),
+        branch: String(s.branch || "عام"),
+        score: Number(s.score || 0),
+        total: Number(s.total || 1),
+        pct: Number(s.pct ?? Math.round((Number(s.score || 0) / Math.max(1, Number(s.total || 1))) * 100))
       }))
-    })));
+    }));
 
     sectionHtml = `
       <div class="card">
@@ -2222,7 +2209,7 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
         <div class="grid2" style="margin-bottom:12px;">
           <div class="field" style="margin:0;">
             <label>بحث بالاسم أو رقم الهاتف</label>
-            <input type="text" id="studentSearchInput" placeholder="اكتب اسم الطالب..." />
+            <input type="text" id="studentSearchInput" placeholder="اكتب اسم الطالب أو رقمه..." autocomplete="off" />
           </div>
           <div class="field" style="margin:0;">
             <label>اختر الصف</label>
@@ -2240,18 +2227,35 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
 
       <script>
         (function () {
-          const allItems = ${studentItemsJson};
+          const allItems = ${safeJsonForScript(studentItemsPayload)};
+          const allBranches = ${safeJsonForScript(BRANCHES)};
           const searchEl = document.getElementById("studentSearchInput");
           const gradeEl = document.getElementById("studentGradeFilter");
           const listContainer = document.getElementById("studentsListContainer");
           const profileBox = document.getElementById("selectedStudentProfile");
 
+          function normalizeText(str) {
+            return String(str || "")
+              .replace(/[٠-٩]/g, d => String(d.charCodeAt(0) - 1632))
+              .replace(/[۰-۹]/g, d => String(d.charCodeAt(0) - 1776))
+              .replace(/[إأآا]/g, "ا")
+              .replace(/ى/g, "ي")
+              .replace(/ة/g, "ه")
+              .replace(/\s+/g, " ")
+              .trim()
+              .toLowerCase();
+          }
+
           function escHtml(v) {
-            return String(v ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+            return String(v ?? "")
+              .replace(/&/g, "&amp;")
+              .replace(/</g, "&lt;")
+              .replace(/>/g, "&gt;")
+              .replace(/"/g, "&quot;");
           }
 
           function openStudentProfile(phone) {
-            const st = allItems.find(x => x.phone === phone);
+            const st = allItems.find(x => String(x.phone) === String(phone));
             if (!st) return;
             const subsHtml = st.submissions.length
               ? st.submissions.map(sub =>
@@ -2265,6 +2269,11 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
             const branchesHtml = st.branches.length
               ? st.branches.map(b => '<span class="pill pill-ok" style="margin-left:4px;">' + escHtml(b) + '</span>').join("")
               : '<span class="pill pill-warn">لا يوجد فروع مفعلة</span>';
+
+            const branchChecksHtml = allBranches.map(function (br) {
+              const checked = st.branches.indexOf(br) !== -1 ? "checked" : "";
+              return '<label class="branch-check-pill"><input type="checkbox" name="branches" value="' + escHtml(br) + '" ' + checked + ' /><span>' + escHtml(br) + '</span></label>';
+            }).join("");
 
             profileBox.style.display = "block";
             profileBox.innerHTML =
@@ -2291,12 +2300,7 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
                 '<div style="font-weight:800; margin-bottom:6px;">الفروع المفعلة: ' + branchesHtml + '</div>' +
                 '<form method="post" action="/admin/grant-branches" style="margin-top:8px;">' +
                   '<input type="hidden" name="phone" value="' + escHtml(st.phone) + '" />' +
-                  '<div class="branch-toggle-grid">' +
-                    ${JSON.stringify(BRANCHES)}.map(function (br) {
-                      const checked = st.branches.indexOf(br) !== -1 ? "checked" : "";
-                      return '<label class="branch-check-pill"><input type="checkbox" name="branches" value="' + escHtml(br) + '" ' + checked + ' /><span>' + escHtml(br) + '</span></label>';
-                    }).join("") +
-                  '</div>' +
+                  '<div class="branch-toggle-grid">' + branchChecksHtml + '</div>' +
                   '<button type="submit" class="btn btn-teal btn-sm">تفعيل اشتراك الفروع المحددة</button>' +
                 '</form>' +
               '</div>' +
@@ -2309,12 +2313,15 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
           }
 
           function renderFiltered() {
-            const q = (searchEl?.value || "").trim().toLowerCase();
-            const g = gradeEl?.value || "";
+            const q = normalizeText(searchEl?.value || "");
+            const g = normalizeText(gradeEl?.value || "");
             const filtered = allItems.filter(item => {
-              const matchName = !q || item.full_name.toLowerCase().includes(q) || item.phone.toLowerCase().includes(q);
-              const matchGrade = !g || item.grade === g;
-              return matchName && matchGrade;
+              const nameNorm = normalizeText(item.full_name);
+              const phoneNorm = normalizeText(item.phone);
+              const gradeNorm = normalizeText(item.grade);
+              const matchQuery = !q || nameNorm.includes(q) || phoneNorm.includes(q);
+              const matchGrade = !g || gradeNorm === g || gradeNorm.includes(g);
+              return matchQuery && matchGrade;
             });
 
             if (!filtered.length) {
@@ -2340,6 +2347,7 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
           }
 
           searchEl?.addEventListener("input", renderFiltered);
+          searchEl?.addEventListener("keyup", renderFiltered);
           gradeEl?.addEventListener("change", renderFiltered);
           renderFiltered();
         })();
@@ -2501,7 +2509,7 @@ export default {
     }
 
     if (path === "/" && method === "GET") {
-      return htmlRes(renderLayout("الرئيسية", settings, student, isAdmin, renderLanding(settings), { hideBottomAdminAvatar: true }));
+      return htmlRes(renderLayout("الرئيسية", settings, student, isAdmin, renderLanding(settings), { showLandingAdminAvatar: true }));
     }
 
     if (path === "/student" && method === "GET") {
@@ -2787,7 +2795,7 @@ export default {
         ]);
         data = { codes, lectures, exams, students, tickets, submissions, watched, preselectLectureId, rankingGrade };
       }
-      return htmlRes(renderLayout("لوحة الأدمن", settings, student, isAdmin, renderAdminPage(settings, isAdmin, data, section, error, notice), { hideBottomAdminAvatar: true }));
+      return htmlRes(renderLayout("لوحة الأدمن", settings, student, isAdmin, renderAdminPage(settings, isAdmin, data, section, error, notice), { showLandingAdminAvatar: false }));
     }
 
     if (path === "/admin/login" && method === "POST") {
