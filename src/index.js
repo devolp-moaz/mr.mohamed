@@ -36,7 +36,7 @@ const EGYPT_GOVERNORATES = [
 const TEACHER_MAIN_PHOTO = "https://www.mohammedyoussef2027.com/public/heroPhotos/teacher-photo.png";
 const DEFAULT_ADMIN_EMAIL = "mohmed@mr.com";
 const DEFAULT_ADMIN_PASS = "admin123456";
-const PLATFORM_NAME = "أنت جخ مع محمد يوسف";
+const PLATFORM_NAME = "نور البيان";
 const COURSE_PRICE_EGP = 500;
 
 async function sha256(val) {
@@ -307,6 +307,112 @@ function computeStudentMetrics(student, lectures, exams, submissions, watchedLis
   };
 }
 
+function renderAboutStandalonePage(settings) {
+  return `
+  <div class="card" style="max-width:960px; margin:26px auto; padding:28px;">
+    <div style="display:grid; grid-template-columns:250px 1fr; gap:24px; align-items:center;">
+      <div style="background:var(--surface-soft); border:1px solid var(--bdr); border-radius:16px; padding:12px; text-align:center;">
+        <img src="${esc(settings.teacher_image)}" alt="الأستاذ محمد يوسف" style="width:100%; max-height:290px; object-fit:contain; object-position:center top; border-radius:12px;" onerror="this.style.display='none';" />
+        <div style="font-weight:900; margin-top:10px; color:var(--accent);">الأستاذ محمد يوسف</div>
+        <div class="muted" style="font-size:0.82rem; font-weight:700;">معلم أول اللغة العربية</div>
+      </div>
+
+      <div>
+        <span class="pill pill-ok">${PLATFORM_NAME}</span>
+        <h1 style="font-size:1.75rem; font-weight:900; margin-top:8px; color:var(--accent);">من نحن — الأستاذ محمد يوسف وفريق العمل</h1>
+        <p style="margin-top:10px; line-height:1.9; font-size:0.96rem;">
+          تأسست منصة <strong>${PLATFORM_NAME}</strong> بإشراف <strong>الأستاذ محمد يوسف</strong>، معلم أول اللغة العربية بخبرة تمتد إلى <strong>30 عاماً</strong> في تدريس وتأسيس طلاب المرحلة الثانوية الأزهرية (الأول، الثاني، والثالث الثانوي — علمي وأدبي).
+        </p>
+        <p style="margin-top:10px; line-height:1.9; font-size:0.95rem;">
+          يعتمد نظام الشرح على ربط القاعدة بالتطبيق العملي المستمر عبر فروع اللغة العربية السبعة: <strong>النحو، الصرف، البلاغة، الأدب، النصوص، المطالعة، والإنشاء</strong>، مع متابعة أداء كل طالب وتدرج فتح الدروس بعد حل الواجبات.
+        </p>
+      </div>
+    </div>
+
+    <hr style="border:none; border-top:1px solid var(--bdr); margin:24px 0;" />
+
+    <div class="grid2">
+      <div class="row" style="display:block; margin-top:0;">
+        <h3 style="font-weight:900; color:var(--accent); margin-bottom:8px;">تيم الدعم العلمي</h3>
+        <p class="muted" style="font-size:0.9rem; line-height:1.8;">
+          فريق متخصص للإجابة على استفسارات الطلاب وأسئلتهم في النحو والصرف والبلاغة والنصوص والمطالعة والإنشاء والأدب، ومراجعة الصور والأسئلة المرسلة من داخل بوابة الطالب والرد عليها بدقة.
+        </p>
+      </div>
+      <div class="row" style="display:block; margin-top:0;">
+        <h3 style="font-weight:900; color:var(--accent); margin-bottom:8px;">فريق الدعم الفني والتشغيل</h3>
+        <p class="muted" style="font-size:0.9rem; line-height:1.8;">
+          متابعة حسابات الطلاب، أكواد التفعيل والسنتر، تشغيل المحاضرات، وحل أي مشكلة تقنية أو استفسار فوري عبر الشات المباشر على مدار اليوم.
+        </p>
+      </div>
+    </div>
+
+    <div style="margin-top:22px; display:flex; gap:10px; flex-wrap:wrap;">
+      <a class="btn btn-blue" href="/">العودة للرئيسية</a>
+      <a class="btn btn-out" href="/student">دخول بوابة الطالب</a>
+      <a class="btn btn-out" href="/privacy" target="_blank" rel="noopener">سياسة الخصوصية (تبويب جديد)</a>
+    </div>
+  </div>`;
+}
+
+function renderPrivacyStandalonePage() {
+  const privacyTypes = [
+    {
+      enTitle: "Data Privacy",
+      arTitle: "خصوصية البيانات",
+      desc: "نحمي كافة البيانات المدخلة في المنصة ونقصر استخدامها على إدارة الحسابات، متابعة المستوى الدراسي، وتفعيل الكورسات والواجبات."
+    },
+    {
+      enTitle: "Personal Information Privacy",
+      arTitle: "خصوصية المعلومات الشخصية",
+      desc: "الاسم الكامل، رقم هاتف الطالب، رقم هاتف ولي الأمر، الصف، الشعبة، والمحافظة تُحفظ بسرية ولا تُعرض أو تُباع لأي جهة خارجية."
+    },
+    {
+      enTitle: "Educational & Assessment Privacy",
+      arTitle: "خصوصية السجل التعليمي والدرجات",
+      desc: "درجات الواجبات والامتحانات، نسبة الإنجاز، والأسئلة المرسلة لتيم الدعم العلمي مخصصة للطالب والإدارة لمتابعة التحصيل الدراسي."
+    },
+    {
+      enTitle: "Intellectual Property & Video Content Privacy",
+      arTitle: "خصوصية المحتوى التعليمي والملكية الفكرية",
+      desc: "جميع المحاضرات والشروحات والملفات محفوظة لمنصة نور البيان والأستاذ محمد يوسف، ويُمنع تصوير الشاشة أو إعادة نشر المحتوى."
+    },
+    {
+      enTitle: "Account & Session Security Privacy",
+      arTitle: "خصوصية أمان الحساب والجلسات",
+      desc: "تُشفّر كلمات المرور وتُدار جلسات الدخول بأمان لحماية حساب الطالب من الوصول غير المصرح به."
+    },
+    {
+      enTitle: "Local Storage & Cookies Privacy",
+      arTitle: "خصوصية التخزين المحلي وملفات تعريف الارتباط",
+      desc: "نستخدم التخزين المحلي لحفظ تفضيلات العرض (الوضع النهاري أو الليلي) وحالة الجلسة لتحسين سرعة الاستخدام."
+    }
+  ];
+
+  return `
+  <div class="card" style="max-width:960px; margin:26px auto; padding:28px;">
+    <span class="pill pill-ok">Privacy Policy • ${PLATFORM_NAME}</span>
+    <h1 style="font-size:1.75rem; font-weight:900; margin-top:8px; color:var(--accent);">سياسة الخصوصية — Privacy Categories</h1>
+    <p class="muted" style="margin-top:8px; font-size:0.94rem;">
+      توضح هذه الصفحة مختلف أنواع الخصوصية المعتمدة في منصة <strong>${PLATFORM_NAME}</strong> لحماية بيانات الطلاب وأولياء الأمور والمحتوى التعليمي.
+    </p>
+
+    <div class="grid2" style="margin-top:18px;">
+      ${privacyTypes.map(item => `
+        <div class="row" style="display:block; margin-top:0;">
+          <div style="font-weight:900; font-size:1.02rem; color:var(--accent); direction:ltr; text-align:left;">${esc(item.enTitle)}</div>
+          <div style="font-weight:800; font-size:0.92rem; margin-top:2px;">${esc(item.arTitle)}</div>
+          <p class="muted" style="font-size:0.88rem; margin-top:6px; line-height:1.8;">${esc(item.desc)}</p>
+        </div>
+      `).join("")}
+    </div>
+
+    <div style="margin-top:22px; display:flex; gap:10px; flex-wrap:wrap;">
+      <a class="btn btn-blue" href="/">العودة للرئيسية</a>
+      <a class="btn btn-out" href="/about">من نحن</a>
+    </div>
+  </div>`;
+}
+
 function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {}) {
   const showLandingAdminAvatar = Boolean(options.showLandingAdminAvatar);
   const showSupportWidget = options.showSupportWidget !== false;
@@ -331,44 +437,46 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" />
   <style>
     :root {
-      --bg: #eff6ff;
+      --bg: #f8fafc;
       --surface: #ffffff;
-      --surface-soft: #dbeafe;
-      --txt: #0c2244;
-      --muted: #3b5987;
-      --accent: #1d4ed8;
-      --accent-dark: #1e3a8a;
+      --surface-soft: #eef2ff;
+      --txt: #0f172a;
+      --muted: #475569;
+      --accent: #1e3a8a;
+      --accent-dark: #172554;
       --accent-2: #2563eb;
-      --sky: #0284c7;
+      --gold: #b45309;
+      --gold-soft: #d97706;
       --err: #dc2626;
-      --bdr: #bfdbfe;
-      --glyph: rgba(29, 78, 216, 0.08);
-      --shadow-sm: 0 2px 10px rgba(12, 34, 68, 0.07);
-      --shadow-md: 0 12px 28px rgba(12, 34, 68, 0.1);
-      --shadow-lg: 0 20px 44px rgba(12, 34, 68, 0.16);
+      --bdr: #cbd5e1;
+      --glyph: rgba(30, 58, 138, 0.11);
+      --shadow-sm: 0 2px 10px rgba(15, 23, 42, 0.06);
+      --shadow-md: 0 12px 28px rgba(15, 23, 42, 0.09);
+      --shadow-lg: 0 20px 44px rgba(15, 23, 42, 0.14);
     }
     body.dark {
-      --bg: #050f24;
-      --surface: #0b1b3a;
-      --surface-soft: #122954;
-      --txt: #eff6ff;
-      --muted: #93c5fd;
-      --accent: #3b82f6;
-      --accent-dark: #1d4ed8;
-      --accent-2: #60a5fa;
-      --sky: #38bdf8;
+      --bg: #040d21;
+      --surface: #0a1936;
+      --surface-soft: #11264f;
+      --txt: #f8fafc;
+      --muted: #cbd5e1;
+      --accent: #f59e0b;
+      --accent-dark: #d97706;
+      --accent-2: #fbbf24;
+      --gold: #fbbf24;
+      --gold-soft: #f59e0b;
       --err: #f87171;
-      --bdr: rgba(59, 130, 246, 0.28);
-      --glyph: rgba(96, 165, 250, 0.1);
-      --shadow-sm: 0 2px 12px rgba(0, 0, 0, 0.4);
-      --shadow-md: 0 14px 32px rgba(0, 0, 0, 0.58);
-      --shadow-lg: 0 22px 48px rgba(0, 0, 0, 0.78);
+      --bdr: rgba(245, 158, 11, 0.28);
+      --glyph: rgba(251, 191, 36, 0.13);
+      --shadow-sm: 0 2px 12px rgba(2, 6, 23, 0.45);
+      --shadow-md: 0 14px 32px rgba(2, 6, 23, 0.62);
+      --shadow-lg: 0 22px 48px rgba(2, 6, 23, 0.82);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; }
     body {
       background:
-        radial-gradient(circle at 12% 8%, rgba(59, 130, 246, 0.14), transparent 44%),
-        radial-gradient(circle at 88% 85%, rgba(29, 78, 216, 0.12), transparent 46%),
+        radial-gradient(circle at 12% 8%, rgba(245, 158, 11, 0.09), transparent 44%),
+        radial-gradient(circle at 88% 85%, rgba(30, 58, 138, 0.1), transparent 46%),
         var(--bg);
       color: var(--txt);
       min-height: 100vh;
@@ -397,19 +505,23 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
 
     #arabicBg { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
     .ar-glyph {
-      position: absolute; font-weight: 800; color: var(--glyph); user-select: none;
+      position: absolute;
+      font-weight: 900;
+      color: var(--glyph);
+      user-select: none;
       will-change: transform;
-      animation: letterDrift var(--dur, 7s) ease-in-out var(--delay, 0s) infinite alternate;
+      animation: letterRoam var(--dur, 3.2s) ease-in-out var(--delay, 0s) infinite alternate;
     }
-    @keyframes letterDrift {
-      0% { transform: translate(0px, 0px) rotate(-6deg); }
-      100% { transform: translate(var(--dx, 24px), var(--dy, -26px)) rotate(7deg); }
+    @keyframes letterRoam {
+      0% { transform: translate(0px, 0px) rotate(-10deg) scale(1); }
+      50% { transform: translate(calc(var(--dx, 70px) * 0.65), calc(var(--dy, -65px) * 0.7)) rotate(8deg) scale(1.06); }
+      100% { transform: translate(var(--dx, 95px), var(--dy, -85px)) rotate(14deg) scale(0.96); }
     }
 
     .page-layer { position: relative; z-index: 1; }
 
     .topbar {
-      background: color-mix(in srgb, var(--surface) 90%, transparent);
+      background: color-mix(in srgb, var(--surface) 92%, transparent);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
       border-bottom: 1px solid var(--bdr);
@@ -427,10 +539,10 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .brand-box { display: flex; align-items: center; gap: 12px; }
     .brand-logo-badge {
       width: 46px; height: 46px; border-radius: 14px;
-      background: linear-gradient(135deg, #2563eb, #1e3a8a);
-      color: #fff; font-weight: 900; display: grid; place-items: center; font-size: 1.05rem;
-      box-shadow: 0 8px 20px rgba(29, 78, 216, 0.32);
-      border: 1px solid rgba(255, 255, 255, 0.25);
+      background: linear-gradient(135deg, #1e3a8a, #0f172a);
+      color: #fbbf24; font-weight: 900; display: grid; place-items: center; font-size: 1.02rem;
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.25);
+      border: 1px solid rgba(251, 191, 36, 0.45);
     }
 
     .notif-bell-wrap {
@@ -443,15 +555,15 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       width: 42px;
       height: 42px;
       border-radius: 12px;
-      border: 1px solid rgba(59, 130, 246, 0.65);
-      background: linear-gradient(135deg, #2563eb, #1e40af);
-      color: #ffffff;
+      border: 1px solid rgba(245, 158, 11, 0.55);
+      background: linear-gradient(135deg, #1e3a8a, #0a1936);
+      color: #fbbf24;
       font-size: 1.15rem;
       font-weight: 900;
       display: grid;
       place-items: center;
       cursor: pointer;
-      box-shadow: 0 6px 16px rgba(37, 99, 235, 0.34);
+      box-shadow: 0 6px 16px rgba(10, 25, 54, 0.28);
       transition: transform 0.16s ease;
     }
     .blue-bell-btn:hover { transform: translateY(-1px) scale(1.04); }
@@ -459,8 +571,8 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       animation: bellPulse 1.4s infinite ease-in-out;
     }
     @keyframes bellPulse {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.65); }
-      50% { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0); }
+      0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.65); }
+      50% { box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); }
     }
     .bell-badge-num {
       position: absolute;
@@ -470,7 +582,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       height: 20px;
       padding: 0 5px;
       border-radius: 999px;
-      background: #0284c7;
+      background: #d97706;
       color: #ffffff;
       font-size: 0.72rem;
       font-weight: 900;
@@ -526,7 +638,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       width: 48px;
       height: 26px;
       border-radius: 999px;
-      background: #93c5fd;
+      background: #cbd5e1;
       transition: background-color 0.25s ease;
       display: inline-block;
     }
@@ -543,7 +655,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
     }
     .mode-switch input:checked + .mode-track {
-      background: var(--accent);
+      background: #d97706;
     }
     .mode-switch input:checked + .mode-track::after {
       transform: translateX(22px);
@@ -568,23 +680,25 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .btn:active { transform: translateY(0) scale(0.985); }
 
     .btn-blue {
-      background: linear-gradient(135deg, #2563eb, #1e3a8a);
-      color: #fff;
-      box-shadow: 0 6px 18px rgba(37, 99, 235, 0.32);
+      background: linear-gradient(135deg, #1e3a8a, #0a1936);
+      color: #fbbf24;
+      border: 1px solid rgba(251, 191, 36, 0.35);
+      box-shadow: 0 6px 18px rgba(10, 25, 54, 0.25);
     }
-    .btn-blue:hover { box-shadow: 0 10px 24px rgba(37, 99, 235, 0.42); }
+    .btn-blue:hover { box-shadow: 0 10px 24px rgba(10, 25, 54, 0.38); }
 
     .btn-teal {
-      background: linear-gradient(135deg, #0284c7, #1d4ed8);
-      color: #fff;
-      box-shadow: 0 6px 18px rgba(2, 132, 199, 0.3);
+      background: linear-gradient(135deg, #0f172a, #1e3a8a);
+      color: #fde68a;
+      border: 1px solid rgba(245, 158, 11, 0.45);
+      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.24);
     }
-    .btn-teal:hover { box-shadow: 0 10px 24px rgba(2, 132, 199, 0.4); }
+    .btn-teal:hover { box-shadow: 0 10px 24px rgba(15, 23, 42, 0.36); }
 
     .btn-gold {
-      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-      color: #fff;
-      box-shadow: 0 6px 18px rgba(59, 130, 246, 0.28);
+      background: linear-gradient(135deg, #f59e0b, #b45309);
+      color: #ffffff;
+      box-shadow: 0 6px 18px rgba(217, 119, 6, 0.28);
     }
     .btn-red {
       background: linear-gradient(135deg, #ef4444, #dc2626);
@@ -614,7 +728,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     }
 
     .jakh-week-banner {
-      background: linear-gradient(120deg, #2563eb 0%, #1e3a8a 100%);
+      background: linear-gradient(120deg, #0a1936 0%, #1e3a8a 100%);
       color: #fff;
       padding: 20px 24px;
       border-radius: 18px;
@@ -625,14 +739,14 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       gap: 14px;
       flex-wrap: wrap;
       box-shadow: var(--shadow-md);
-      border: 1px solid rgba(255, 255, 255, 0.18);
+      border: 1px solid rgba(251, 191, 36, 0.35);
     }
     .you-here-pill {
       display: inline-flex; align-items: center; justify-content: center;
       padding: 5px 14px; border-radius: 999px;
-      border: 1px solid rgba(255, 255, 255, 0.55);
-      background: rgba(255, 255, 255, 0.16);
-      color: #fff; font-weight: 800; font-size: 0.84rem; white-space: nowrap;
+      border: 1px solid rgba(251, 191, 36, 0.65);
+      background: rgba(245, 158, 11, 0.18);
+      color: #fbbf24; font-weight: 800; font-size: 0.84rem; white-space: nowrap;
     }
     .lecture-accordion-list { display: flex; flex-direction: column; gap: 12px; }
     .lec-accordion-item {
@@ -662,7 +776,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       transition: background-color 0.22s ease, color 0.22s ease;
     }
     .lec-accordion-item.is-open .lec-accordion-header {
-      background: linear-gradient(120deg, #2563eb 0%, #1e3a8a 100%);
+      background: linear-gradient(120deg, #0a1936 0%, #1e3a8a 100%);
       color: #ffffff;
     }
     .lec-header-left {
@@ -675,13 +789,13 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       width: 34px;
       height: 34px;
       border-radius: 50%;
-      background: #60a5fa;
+      background: #f59e0b;
       color: #091a38;
       display: grid;
       place-items: center;
       font-weight: 900;
       font-size: 0.9rem;
-      box-shadow: 0 4px 12px rgba(96, 165, 250, 0.35);
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35);
       transition: transform 0.25s ease;
     }
     .lec-accordion-item:not(.is-open) .lec-chevron-circle {
@@ -765,10 +879,10 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .jakh-action-btn {
       display: inline-flex; align-items: center; justify-content: center; gap: 6px;
       padding: 8px 16px; border-radius: 11px;
-      background: linear-gradient(135deg, #2563eb, #1e3a8a);
-      color: #fff; font-weight: 800; font-size: 0.85rem;
-      text-decoration: none; border: none; cursor: pointer;
-      box-shadow: 0 5px 14px rgba(37, 99, 235, 0.32);
+      background: linear-gradient(135deg, #1e3a8a, #0a1936);
+      color: #fbbf24; font-weight: 800; font-size: 0.85rem;
+      text-decoration: none; border: 1px solid rgba(251, 191, 36, 0.35); cursor: pointer;
+      box-shadow: 0 5px 14px rgba(10, 25, 54, 0.28);
       transition: transform 0.15s ease, opacity 0.15s ease;
     }
     .jakh-action-btn:hover { transform: translateY(-1px); opacity: 0.96; }
@@ -818,7 +932,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     input:focus, select:focus, textarea:focus {
       background: var(--surface);
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.22);
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
     }
     textarea { min-height: 96px; resize: vertical; }
     input[type="radio"], input[type="checkbox"] { width: auto; box-shadow: none; }
@@ -848,28 +962,28 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       height: 58px;
       padding: 0 20px;
       border-radius: 999px;
-      border: 1.5px solid rgba(255, 255, 255, 0.35);
-      background: linear-gradient(135deg, #2563eb 0%, #1e3a8a 100%);
-      color: #ffffff;
+      border: 1.5px solid rgba(251, 191, 36, 0.5);
+      background: linear-gradient(135deg, #0a1936 0%, #1e3a8a 100%);
+      color: #fbbf24;
       font-weight: 900;
       font-size: 0.95rem;
       display: inline-flex;
       align-items: center;
       gap: 10px;
       cursor: pointer;
-      box-shadow: 0 14px 32px rgba(29, 78, 216, 0.45);
+      box-shadow: 0 14px 32px rgba(10, 25, 54, 0.42);
       z-index: 80;
       transition: transform 0.18s ease, box-shadow 0.2s ease;
     }
     .support-fab-btn:hover {
       transform: translateY(-2px) scale(1.03);
-      box-shadow: 0 18px 38px rgba(29, 78, 216, 0.56);
+      box-shadow: 0 18px 38px rgba(10, 25, 54, 0.54);
     }
     .support-fab-icon {
       width: 34px;
       height: 34px;
       border-radius: 50%;
-      background: rgba(255, 255, 255, 0.2);
+      background: rgba(251, 191, 36, 0.18);
       display: grid;
       place-items: center;
       font-size: 1.15rem;
@@ -880,8 +994,8 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       height: 22px;
       padding: 0 6px;
       border-radius: 999px;
-      background: #0ea5e9;
-      color: #ffffff;
+      background: #f59e0b;
+      color: #091a38;
       font-size: 0.76rem;
       font-weight: 900;
       display: inline-flex;
@@ -909,7 +1023,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       display: flex;
     }
     .support-chat-header {
-      background: linear-gradient(120deg, #2563eb, #1e3a8a);
+      background: linear-gradient(120deg, #0a1936, #1e3a8a);
       color: #ffffff;
       padding: 15px 18px;
       display: flex;
@@ -949,7 +1063,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       box-shadow: var(--shadow-sm);
     }
     .chat-bubble-user {
-      background: linear-gradient(135deg, #2563eb, #1e3a8a);
+      background: linear-gradient(135deg, #1e3a8a, #0a1936);
       color: #ffffff;
       padding: 11px 14px;
       border-radius: 15px 15px 4px 15px;
@@ -960,8 +1074,8 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       box-shadow: var(--shadow-sm);
     }
     .chat-bubble-admin {
-      background: rgba(37, 99, 235, 0.14);
-      border: 1px solid rgba(37, 99, 235, 0.36);
+      background: rgba(245, 158, 11, 0.14);
+      border: 1px solid rgba(245, 158, 11, 0.36);
       color: var(--txt);
       padding: 11px 14px;
       border-radius: 15px 15px 15px 4px;
@@ -1036,7 +1150,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       margin: 14px auto 0;
       padding: 14px 20px;
       border-radius: 16px;
-      background: linear-gradient(120deg, #2563eb, #1e3a8a);
+      background: linear-gradient(120deg, #0a1936, #1e3a8a);
       color: #fff;
       box-shadow: var(--shadow-md);
       display: flex;
@@ -1057,7 +1171,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       width: 52px; height: 64px; border-radius: 12px;
       object-fit: contain; object-position: center top;
       background: rgba(255, 255, 255, 0.16);
-      border: 1.5px solid rgba(255, 255, 255, 0.65); flex-shrink: 0;
+      border: 1.5px solid rgba(251, 191, 36, 0.65); flex-shrink: 0;
     }
     .inline-dua-text { font-weight: 900; font-size: 1.05rem; }
     .inline-dua-sub { font-size: 0.8rem; opacity: 0.92; }
@@ -1071,8 +1185,8 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .glow-notice-box {
       background: var(--surface);
       color: var(--txt);
-      border: 1px solid var(--accent);
-      border-right: 4px solid var(--accent);
+      border: 1px solid var(--gold-soft);
+      border-right: 4px solid var(--gold-soft);
       border-radius: 14px;
       padding: 12px 18px;
       font-weight: 800;
@@ -1097,17 +1211,20 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       flex-wrap: wrap;
     }
     .pill { display: inline-block; padding: 3px 11px; border-radius: 999px; font-size: 0.78rem; font-weight: 800; }
-    .pill-ok { background: rgba(29, 78, 216, 0.14); color: var(--accent); }
-    .pill-warn { background: rgba(2, 132, 199, 0.16); color: var(--sky); }
+    .pill-ok { background: rgba(30, 58, 138, 0.14); color: var(--accent); }
+    body.dark .pill-ok { background: rgba(245, 158, 11, 0.16); color: #fbbf24; }
+    .pill-warn { background: rgba(217, 119, 6, 0.16); color: var(--gold); }
+    body.dark .pill-warn { color: #fcd34d; }
     .pill-err { background: rgba(220, 38, 38, 0.15); color: var(--err); }
     .msg-err {
       background: rgba(220, 38, 38, 0.1); border: 1px solid rgba(220, 38, 38, 0.35);
       color: var(--err); padding: 12px 16px; border-radius: 12px; font-weight: 800; margin-bottom: 14px;
     }
     .msg-ok {
-      background: rgba(29, 78, 216, 0.12); border: 1px solid rgba(29, 78, 216, 0.36);
+      background: rgba(30, 58, 138, 0.12); border: 1px solid rgba(30, 58, 138, 0.35);
       color: var(--accent); padding: 12px 16px; border-radius: 12px; font-weight: 800; margin-bottom: 14px;
     }
+    body.dark .msg-ok { background: rgba(245, 158, 11, 0.14); border-color: rgba(245, 158, 11, 0.35); color: #fbbf24; }
     .muted { color: var(--muted); }
 
     .dash-shell {
@@ -1130,28 +1247,29 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       font-size: 0.9rem; margin-bottom: 4px; transition: background-color 0.18s ease, color 0.18s ease;
     }
     .nav-item-link:hover { background: var(--surface-soft); }
-    .nav-item-link.active { background: linear-gradient(135deg, #2563eb, #1e3a8a); color: #fff; }
+    .nav-item-link.active { background: linear-gradient(135deg, #0a1936, #1e3a8a); color: #fbbf24; }
     .sub-nav { padding-right: 14px; margin-bottom: 8px; }
     .sub-link {
       display: block; padding: 5px 12px; border-radius: 9px; color: var(--muted);
       text-decoration: none; font-weight: 700; font-size: 0.83rem; margin-bottom: 2px;
     }
-    .sub-link.active, .sub-link:hover { background: rgba(29, 78, 216, 0.14); color: var(--accent); }
+    .sub-link.active, .sub-link:hover { background: var(--surface-soft); color: var(--accent); }
     .dash-shell.collapsed .nav-label, .dash-shell.collapsed .sub-nav, .dash-shell.collapsed .drawer-title { display: none; }
 
     .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-bottom: 18px; }
     .kpi-card {
-      background: linear-gradient(135deg, #2563eb 0%, #1e3a8a 100%);
+      background: linear-gradient(135deg, #0a1936 0%, #1e3a8a 100%);
       color: #fff; border-radius: 16px; padding: 18px;
       display: flex; justify-content: space-between; align-items: center;
       box-shadow: var(--shadow-md);
+      border: 1px solid rgba(251, 191, 36, 0.25);
     }
-    .kpi-card.teal-kpi { background: linear-gradient(135deg, #0284c7 0%, #1e3a8a 100%); }
-    .kpi-card.gold-kpi { background: linear-gradient(135deg, #3b82f6 0%, #172554 100%); }
-    .kpi-num { font-size: 1.62rem; font-weight: 900; line-height: 1.1; }
-    .kpi-lbl { font-size: 0.86rem; font-weight: 700; opacity: 0.92; margin-top: 4px; }
+    .kpi-card.teal-kpi { background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%); }
+    .kpi-card.gold-kpi { background: linear-gradient(135deg, #1e3a8a 0%, #0a1936 100%); }
+    .kpi-num { font-size: 1.62rem; font-weight: 900; line-height: 1.1; color: #fbbf24; }
+    .kpi-lbl { font-size: 0.86rem; font-weight: 700; opacity: 0.94; margin-top: 4px; }
     .kpi-icon-box {
-      width: 46px; height: 46px; border-radius: 13px; background: rgba(255, 255, 255, 0.18);
+      width: 46px; height: 46px; border-radius: 13px; background: rgba(251, 191, 36, 0.16);
       display: grid; place-items: center; font-size: 1.2rem; font-weight: 900;
     }
 
@@ -1169,27 +1287,27 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .teacher-color-meter .bw-layer { filter: grayscale(100%) contrast(1.05); }
     .teacher-color-meter .color-reveal { position: absolute; inset: 0; overflow: hidden; transition: clip-path 0.45s ease; }
     .prog-bar-bg { height: 8px; border-radius: 999px; background: var(--surface-soft); overflow: hidden; margin: 10px 0; }
-    .prog-bar-fill { height: 100%; background: linear-gradient(90deg, #38bdf8, #1d4ed8); border-radius: 999px; transition: width 0.4s ease; }
+    .prog-bar-fill { height: 100%; background: linear-gradient(90deg, #1e3a8a, #f59e0b); border-radius: 999px; transition: width 0.4s ease; }
 
     .course-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(265px, 1fr)); gap: 16px; }
     .course-card { overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; }
     .branch-book-card {
       display: flex; align-items: center; gap: 10px;
-      background: rgba(255, 255, 255, 0.14); border: 1px solid rgba(255, 255, 255, 0.25);
+      background: rgba(255, 255, 255, 0.14); border: 1px solid rgba(251, 191, 36, 0.35);
       padding: 7px 11px; border-radius: 12px;
     }
     .branch-book-card img {
       width: 52px; height: 66px; object-fit: contain; object-position: center top;
-      background: rgba(15, 23, 42, 0.3); border-radius: 8px; border: 1.5px solid #fff;
+      background: rgba(15, 23, 42, 0.3); border-radius: 8px; border: 1.5px solid #fbbf24;
     }
     .course-banner {
       min-height: 156px; position: relative; overflow: hidden;
-      background: linear-gradient(135deg, #2563eb 0%, #1e3a8a 100%);
+      background: linear-gradient(135deg, #0a1936 0%, #1e3a8a 100%);
       color: #fff; padding: 16px; display: flex; justify-content: space-between; align-items: flex-end; gap: 10px;
     }
     .course-banner img.book-thumb {
       width: 72px; height: 94px; object-fit: contain; object-position: center top;
-      background: rgba(15, 23, 42, 0.3); border-radius: 10px; border: 1.5px solid rgba(255, 255, 255, 0.75); flex-shrink: 0;
+      background: rgba(15, 23, 42, 0.3); border-radius: 10px; border: 1.5px solid rgba(251, 191, 36, 0.75); flex-shrink: 0;
     }
     .course-body { padding: 16px; }
     .course-title { font-weight: 900; font-size: 1rem; margin-bottom: 6px; }
@@ -1198,7 +1316,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .landing-hero-card { padding: 26px; display: grid; grid-template-columns: 310px 1fr; gap: 26px; align-items: center; }
     @media (max-width: 860px) { .landing-hero-card { grid-template-columns: 1fr; } }
     .hero-teacher-frame {
-      background: linear-gradient(155deg, rgba(37, 99, 235, 0.14), rgba(29, 78, 216, 0.18));
+      background: linear-gradient(155deg, rgba(30, 58, 138, 0.12), rgba(245, 158, 11, 0.12));
       border-radius: 16px; padding: 12px; display: flex; justify-content: center; align-items: center;
       min-height: 340px; border: 1px solid var(--bdr);
     }
@@ -1214,18 +1332,19 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     }
     @media (max-width: 840px) { .split-auth { grid-template-columns: 1fr; } }
     .promo-pane {
-      background: linear-gradient(155deg, #2563eb 0%, #1e3a8a 100%);
+      background: linear-gradient(155deg, #0a1936 0%, #1e3a8a 100%);
       color: #fff; border-radius: 18px; padding: 24px; box-shadow: var(--shadow-md);
       display: flex; flex-direction: column; justify-content: space-between; min-height: 440px;
+      border: 1px solid rgba(251, 191, 36, 0.25);
     }
-    .promo-pane.gold-mode { background: linear-gradient(155deg, #0284c7 0%, #1e3a8a 100%); }
+    .promo-pane.gold-mode { background: linear-gradient(155deg, #0f172a 0%, #1e3a8a 100%); }
     .promo-img {
       width: 215px; height: 265px; object-fit: contain; object-position: center top;
-      background: rgba(255, 255, 255, 0.14);
-      border-radius: 14px; border: 1.5px solid rgba(255, 255, 255, 0.45); margin: 14px auto 0; display: block;
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 14px; border: 1.5px solid rgba(251, 191, 36, 0.5); margin: 14px auto 0; display: block;
     }
     .step-track { height: 6px; background: var(--surface-soft); border-radius: 999px; overflow: hidden; margin-bottom: 14px; }
-    .step-fill { height: 100%; background: linear-gradient(90deg, #38bdf8, #1d4ed8); }
+    .step-fill { height: 100%; background: linear-gradient(90deg, #1e3a8a, #f59e0b); }
 
     .secure-player-box {
       position: relative; width: 100%; max-width: 860px; margin: 12px auto 0;
@@ -1264,81 +1383,112 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     }
 
     .site-footer {
-      max-width: 1240px;
-      margin: 34px auto 0;
-      padding: 24px 16px 32px;
+      width: 100%;
+      margin-top: 40px;
+      background: #050d1e;
+      color: #f8fafc;
+      border-top: 2px solid #f59e0b;
+      padding: 34px 24px 24px;
     }
-    .footer-card {
-      background: var(--surface);
-      border: 1px solid var(--bdr);
-      border-radius: 20px;
-      padding: 20px 24px;
-      box-shadow: var(--shadow-md);
+    .footer-inner {
+      max-width: 1180px;
+      margin: 0 auto;
     }
-    .footer-top-row {
-      display: flex;
-      justify-content: space-between;
+    .footer-columns {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1.1fr;
+      gap: 28px;
       align-items: center;
-      gap: 14px;
-      flex-wrap: wrap;
-      padding-bottom: 16px;
-      border-bottom: 1px solid var(--bdr);
     }
-    .footer-links-group {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
+    @media (max-width: 780px) {
+      .footer-columns { grid-template-columns: 1fr; text-align: center; }
     }
-    .footer-social-group {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-    .social-chip-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 7px 13px;
-      border-radius: 11px;
-      background: var(--surface-soft);
-      border: 1px solid var(--bdr);
-      color: var(--accent);
-      font-weight: 800;
-      font-size: 0.84rem;
-      text-decoration: none;
-      transition: transform 0.16s ease, background-color 0.2s ease;
-    }
-    .social-chip-link:hover {
-      transform: translateY(-1.5px);
-      background: var(--accent);
+    .footer-col-title {
+      font-weight: 900;
+      font-size: 1.04rem;
+      margin-bottom: 12px;
       color: #ffffff;
     }
-    .social-chip-link.disabled-link {
-      opacity: 0.55;
-      pointer-events: none;
-      color: var(--muted);
+    .footer-social-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
     }
-    .footer-info-panel {
-      display: none;
-      margin-top: 16px;
-      padding: 16px 18px;
-      border-radius: 15px;
-      background: var(--surface-soft);
-      border: 1px solid var(--bdr);
+    @media (max-width: 780px) {
+      .footer-social-list { align-items: center; }
     }
-    .footer-info-panel.open {
-      display: block;
-    }
-    .footer-copyright {
-      text-align: center;
-      margin-top: 16px;
-      padding-top: 14px;
-      border-top: 1px solid var(--bdr);
-      font-size: 0.88rem;
+    .social-row-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: #f8fafc;
+      text-decoration: none;
       font-weight: 800;
-      color: var(--muted);
+      font-size: 0.94rem;
+      transition: transform 0.16s ease, color 0.16s ease;
+    }
+    .social-row-link:hover {
+      transform: translateX(-3px);
+      color: #fbbf24;
+    }
+    .social-row-link.disabled-link {
+      opacity: 0.45;
+      pointer-events: none;
+    }
+    .social-sq-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      display: inline-grid;
+      place-items: center;
+      font-weight: 900;
+      font-size: 0.85rem;
+      color: #ffffff;
+      flex-shrink: 0;
+    }
+    .icon-fb { background: #1877f2; }
+    .icon-tt { background: #111827; border: 1px solid #fbbf24; color: #fbbf24; }
+    .icon-yt { background: #ef4444; }
+
+    .footer-nav-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .footer-page-link {
+      color: #f8fafc;
+      text-decoration: none;
+      font-weight: 800;
+      font-size: 1rem;
+      transition: color 0.16s ease;
+    }
+    .footer-page-link:hover { color: #fbbf24; }
+
+    .footer-brand-box {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
+    }
+    @media (max-width: 780px) {
+      .footer-brand-box { align-items: center; }
+    }
+    .footer-brand-emblem {
+      font-size: 2rem;
+      font-weight: 900;
+      color: #fbbf24;
+      letter-spacing: 0.5px;
+    }
+    .footer-copyright-line {
+      font-size: 0.9rem;
+      font-weight: 800;
+      color: #fbbf24;
+    }
+    .footer-dev-line {
+      font-size: 0.86rem;
+      font-weight: 800;
+      color: #f59e0b;
+      direction: ltr;
     }
   </style>
 </head>
@@ -1393,9 +1543,9 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
   <div class="page-layer">
     <header class="topbar">
       <div class="brand-box">
-        <div class="brand-logo-badge">جخ</div>
+        <div class="brand-logo-badge">${PLATFORM_NAME}</div>
         <div>
-          <div style="font-weight:900; font-size:1.08rem; color:var(--accent);">${PLATFORM_NAME}</div>
+          <div style="font-weight:900; font-size:1.08rem; color:var(--accent);">${PLATFORM_NAME} — مع محمد يوسف</div>
           <div class="muted" style="font-size:0.78rem; font-weight:700;">اللغة العربية للثانوية الأزهرية (خبرة 30 عاماً)</div>
         </div>
       </div>
@@ -1451,76 +1601,42 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     ${bodyHtml}
 
     <footer class="site-footer">
-      <div class="footer-card">
-        <div class="footer-top-row">
-          <div class="footer-links-group">
-            <button type="button" class="btn btn-blue btn-sm" id="footerAboutBtn">من نحن</button>
-            <button type="button" class="btn btn-out btn-sm" id="footerPrivacyBtn">سياسة الخصوصية</button>
+      <div class="footer-inner">
+        <div class="footer-columns">
+          <div>
+            <div class="footer-col-title">السوشيال ميديا</div>
+            <div class="footer-social-list">
+              <a class="social-row-link ${fbHref ? "" : "disabled-link"}" ${fbHref ? `href="${esc(fbHref)}" target="_blank" rel="noopener"` : `href="javascript:void(0)"`}>
+                <span class="social-sq-icon icon-fb">f</span>
+                <span>فيسبوك</span>
+              </a>
+              <a class="social-row-link ${ttHref ? "" : "disabled-link"}" ${ttHref ? `href="${esc(ttHref)}" target="_blank" rel="noopener"` : `href="javascript:void(0)"`}>
+                <span class="social-sq-icon icon-tt">♪</span>
+                <span>تيك توك</span>
+              </a>
+              <a class="social-row-link ${ytHref ? "" : "disabled-link"}" ${ytHref ? `href="${esc(ytHref)}" target="_blank" rel="noopener"` : `href="javascript:void(0)"`}>
+                <span class="social-sq-icon icon-yt">▶</span>
+                <span>يوتيوب</span>
+              </a>
+            </div>
           </div>
 
-          <div class="footer-social-group">
-            <a class="social-chip-link ${ytHref ? "" : "disabled-link"}" ${ytHref ? `href="${esc(ytHref)}" target="_blank" rel="noopener"` : `href="javascript:void(0)"`}>▶ يوتيوب</a>
-            <a class="social-chip-link ${ttHref ? "" : "disabled-link"}" ${ttHref ? `href="${esc(ttHref)}" target="_blank" rel="noopener"` : `href="javascript:void(0)"`}>♪ تيك توك</a>
-            <a class="social-chip-link ${fbHref ? "" : "disabled-link"}" ${fbHref ? `href="${esc(fbHref)}" target="_blank" rel="noopener"` : `href="javascript:void(0)"`}>f فيسبوك</a>
+          <div class="footer-nav-stack">
+            <a class="footer-page-link" href="/about">من نحن</a>
+            <a class="footer-page-link" href="/privacy" target="_blank" rel="noopener">سياسة الخصوصية</a>
           </div>
-        </div>
 
-        <div class="footer-info-panel" id="footerAboutPanel">
-          <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:8px;">
-            <h3 style="font-weight:900; color:var(--accent);">من نحن — الأستاذ محمد يوسف</h3>
-            <button type="button" class="btn btn-out btn-sm" id="closeAboutPanelBtn">إغلاق</button>
+          <div class="footer-brand-box">
+            <div class="footer-brand-emblem">${PLATFORM_NAME}</div>
+            <div class="footer-copyright-line">جميع الحقوق محفوظة © 2026</div>
+            <div class="footer-dev-line">&lt;Developed by="MOAZ"</div>
           </div>
-          <p style="font-size:0.9rem; line-height:1.85;">
-            منصة <strong>${PLATFORM_NAME}</strong> يقودها <strong>الأستاذ محمد يوسف</strong>، معلم أول اللغة العربية بخبرة تمتد إلى <strong>30 عاماً</strong> في تدريس مناهج الثانوية الأزهرية (الأول، الثاني، والثالث الثانوي — علمي وأدبي).
-            تقدم المنصة شرحاً منظماً لفروع اللغة العربية السبعة (النحو، الصرف، البلاغة، الأدب، النصوص، المطالعة، الإنشاء)، مع نظام واجبات وامتحانات، ومتابعة دقيقة لأداء الطالب، وتيم دعم علمي ودعم فني مباشر.
-          </p>
-        </div>
-
-        <div class="footer-info-panel" id="footerPrivacyPanel">
-          <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:8px;">
-            <h3 style="font-weight:900; color:var(--accent);">سياسة الخصوصية</h3>
-            <button type="button" class="btn btn-out btn-sm" id="closePrivacyPanelBtn">إغلاق</button>
-          </div>
-          <p style="font-size:0.9rem; line-height:1.85;">
-            نحن في <strong>${PLATFORM_NAME}</strong> نحترم خصوصية بيانات الطلاب وأولياء الأمور بالكامل. تُستخدم بيانات التسجيل (الاسم، رقم الهاتف، رقم ولي الأمر، الصف، الشعبة، والمحافظة) لأغراض إدارة الحسابات، متابعة المستوى الدراسي، وتفعيل الكورسات فقط، ولا يتم بيعها أو مشاركتها مع أي طرف خارجي. كما يُمنع منعاً باتاً تصوير المحاضرات أو إعادة نشر محتوى المنصة خارج الحساب الشخصي للطالب.
-          </p>
-        </div>
-
-        <div class="footer-copyright">
-          جميع الحقوق محفوظة © 2026 — ${PLATFORM_NAME}
         </div>
       </div>
     </footer>
   </div>
 
   <script>
-    (function initFooterPanels() {
-      const aboutBtn = document.getElementById("footerAboutBtn");
-      const privacyBtn = document.getElementById("footerPrivacyBtn");
-      const aboutPanel = document.getElementById("footerAboutPanel");
-      const privacyPanel = document.getElementById("footerPrivacyPanel");
-
-      aboutBtn?.addEventListener("click", function () {
-        const willOpen = !aboutPanel?.classList.contains("open");
-        privacyPanel?.classList.remove("open");
-        aboutPanel?.classList.toggle("open", willOpen);
-      });
-
-      privacyBtn?.addEventListener("click", function () {
-        const willOpen = !privacyPanel?.classList.contains("open");
-        aboutPanel?.classList.remove("open");
-        privacyPanel?.classList.toggle("open", willOpen);
-      });
-
-      document.getElementById("closeAboutPanelBtn")?.addEventListener("click", function () {
-        aboutPanel?.classList.remove("open");
-      });
-
-      document.getElementById("closePrivacyPanelBtn")?.addEventListener("click", function () {
-        privacyPanel?.classList.remove("open");
-      });
-    })();
-
     (function () {
       const toggleEl = document.getElementById("themeToggle");
       const labelEl = document.getElementById("themeLabelText");
@@ -1581,24 +1697,23 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       }
     })();
 
-    (function renderAnimatedArabicLetters() {
+    (function renderFastRoamingArabicLetters() {
       const container = document.getElementById("arabicBg");
+      if (!container) return;
       const letters = "أبجدهوزحطيكلمنسعفصقرشتثخذضظغى".split("");
-      const sides = ["right", "left"];
-      for (let i = 0; i < 36; i++) {
+      for (let i = 0; i < 42; i++) {
         const span = document.createElement("span");
         span.className = "ar-glyph";
         span.textContent = letters[i % letters.length];
-        const side = sides[i % 2];
-        const horiz = 2 + ((i * 19) % 22);
-        const vert = 4 + ((i * 13) % 88);
-        const size = 28 + ((i * 7) % 28);
-        const dur = 5.5 + ((i * 2) % 4) * 1.1;
-        const delay = -((i * 1.1) % 6);
-        const dx = (i % 2 === 0 ? 1 : -1) * (22 + (i % 20));
-        const dy = (i % 3 === 0 ? -1 : 1) * (24 + (i % 22));
-        span.style[side] = horiz + "%";
-        span.style.top = vert + "%";
+        const leftPct = (i * 17) % 92;
+        const topPct = (i * 23) % 90;
+        const size = 26 + ((i * 7) % 26);
+        const dur = 1.9 + ((i * 3) % 5) * 0.45;
+        const delay = -((i * 0.6) % 3);
+        const dx = (i % 2 === 0 ? 1 : -1) * (65 + (i % 55));
+        const dy = (i % 3 === 0 ? -1 : 1) * (60 + (i % 50));
+        span.style.left = leftPct + "%";
+        span.style.top = topPct + "%";
         span.style.fontSize = size + "px";
         span.style.setProperty("--dur", dur + "s");
         span.style.setProperty("--delay", delay + "s");
@@ -2026,8 +2141,8 @@ function renderLanding(settings) {
     </div>
     <div>
       <span class="pill pill-ok">معلم أول لغة عربية</span>
-      <h1 style="font-size:1.85rem; font-weight:900; margin-top:10px; color:var(--accent);">${PLATFORM_NAME}</h1>
-      <div style="font-size:1.08rem; font-weight:800; color:var(--accent-2); margin-top:6px;">
+      <h1 style="font-size:1.85rem; font-weight:900; margin-top:10px; color:var(--accent);">${PLATFORM_NAME} مع محمد يوسف</h1>
+      <div style="font-size:1.08rem; font-weight:800; color:var(--gold); margin-top:6px;">
         30 سنة خبرة تدريس في اللغة العربية للثانوية الأزهرية
       </div>
       <p class="muted" style="margin-top:12px; font-size:0.96rem; line-height:1.8;">
@@ -2146,7 +2261,7 @@ function renderStudentAuth(settings, authTab, step, draft, error, notice) {
       <img class="promo-img" src="${esc(settings.teacher_image)}" alt="الأستاذ محمد يوسف" onerror="this.style.display='none';" />
     </div>
     <div class="card" style="margin-bottom:0;">
-      <div style="display:flex; justify-content:space-between; font-size:0.84rem; font-weight:800; color:var(--accent-2);">
+      <div style="display:flex; justify-content:space-between; font-size:0.84rem; font-weight:800; color:var(--gold);">
         <span>الخطوة ${isStep2 ? "الثانية" : "الأولى"}</span>
         <span>${isStep2 ? "70%" : "35%"}</span>
       </div>
@@ -2262,7 +2377,7 @@ function renderStudentDash(settings, student, state) {
         <div>
           <div class="course-banner">
             <div>
-              <span class="pill" style="background:rgba(255,255,255,0.22); color:#fff;">${isUnlocked ? (isCenterStudent ? "مفعل سنتر ✓" : "مفعل ✓") : "مغلق 🔒"}</span>
+              <span class="pill" style="background:rgba(251,191,36,0.22); color:#fbbf24;">${isUnlocked ? (isCenterStudent ? "مفعل سنتر ✓" : "مفعل ✓") : "مغلق 🔒"}</span>
               <div style="font-size:1.22rem; font-weight:900; margin-top:6px;">${esc(br)}</div>
               <div style="font-size:0.8rem; opacity:0.92;">${brLectures.length} محاضرة متاحة • ${COURSE_PRICE_EGP} ج</div>
             </div>
@@ -2565,7 +2680,7 @@ function renderStudentDash(settings, student, state) {
               <div class="row" style="display:block; border-color:rgba(220,38,38,0.35);">
                 <div style="font-weight:800;">${idx + 1}. ${esc(w.question)}</div>
                 <div style="font-size:0.86rem; color:var(--err); margin-top:4px;">إجابتك: ${esc(w.student_answer || "لم تُجب")}</div>
-                <div style="font-size:0.86rem; color:var(--sky); font-weight:800; margin-top:2px;">الإجابة الصحيحة: ${esc(w.correct_answer || "")}</div>
+                <div style="font-size:0.86rem; color:var(--gold); font-weight:800; margin-top:2px;">الإجابة الصحيحة: ${esc(w.correct_answer || "")}</div>
               </div>
             `).join("")}
           `
@@ -2711,7 +2826,7 @@ function renderStudentDash(settings, student, state) {
             </div>
             <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
               <span>قيمة الخصم:</span>
-              <strong id="summaryDiscountAmt" style="color:var(--sky);">0 ج</strong>
+              <strong id="summaryDiscountAmt" style="color:var(--gold);">0 ج</strong>
             </div>
             <div style="display:flex; justify-content:space-between; border-top:1px solid var(--bdr); padding-top:8px; font-size:1.05rem;">
               <span>المطلوب دفعه:</span>
@@ -2949,13 +3064,16 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
   const codesRows = (data.codes || []).slice(-25).reverse().map(c => `
     <div class="row">
       <div>
-        <strong>${esc(c.code)}</strong> — <span class="pill pill-ok">${esc(c.type === "center" ? "كود سنتر (لمرة واحدة)" : "كود فرع: " + (c.branch || ""))}</span>
+        <strong class="copyable-code-val">${esc(c.code)}</strong> — <span class="pill pill-ok">${esc(c.type === "center" ? "كود سنتر (لمرة واحدة)" : "كود فرع: " + (c.branch || ""))}</span>
         <span class="pill ${c.used ? "pill-warn" : "pill-ok"}" style="margin-right:6px;">${c.used ? "مستخدم (" + esc(c.used_by || "") + ")" : "متاح"}</span>
       </div>
-      <form method="post" action="/admin/delete-code" style="margin:0;">
-        <input type="hidden" name="code_id" value="${esc(c.id)}" />
-        <button type="submit" class="btn btn-red btn-sm">حذف الكود</button>
-      </form>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button type="button" class="btn btn-out btn-sm copy-code-btn" data-code="${esc(c.code)}">نسخ الكود</button>
+        <form method="post" action="/admin/delete-code" style="margin:0;">
+          <input type="hidden" name="code_id" value="${esc(c.id)}" />
+          <button type="submit" class="btn btn-red btn-sm">حذف الكود</button>
+        </form>
+      </div>
     </div>
   `).join("") || `<p class="muted">لا توجد أكواد مولدة بعد.</p>`;
 
@@ -2965,10 +3083,13 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
         <strong>${esc(d.code)}</strong> — <span class="pill pill-warn">خصم ${esc(d.amount)} ج</span>
         <span class="pill ${d.used ? "pill-err" : "pill-ok"}" style="margin-right:6px;">${d.used ? "مُستخدم (لمرة واحدة)" : "متاح للاستخدام مرة واحدة"}</span>
       </div>
-      <form method="post" action="/admin/delete-discount" style="margin:0;">
-        <input type="hidden" name="discount_id" value="${esc(d.id)}" />
-        <button type="submit" class="btn btn-red btn-sm">حذف كود الخصم</button>
-      </form>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button type="button" class="btn btn-out btn-sm copy-code-btn" data-code="${esc(d.code)}">نسخ الكود</button>
+        <form method="post" action="/admin/delete-discount" style="margin:0;">
+          <input type="hidden" name="discount_id" value="${esc(d.id)}" />
+          <button type="submit" class="btn btn-red btn-sm">حذف كود الخصم</button>
+        </form>
+      </div>
     </div>
   `).join("") || `<p class="muted">لا توجد أكواد خصم مُنشأة حالياً.</p>`;
 
@@ -3104,7 +3225,7 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
         <form method="post" action="/admin/create-discount" class="grid3">
           <div class="field">
             <label>كود الخصم (اختياري كتابته أو يُولّد تلقائياً)</label>
-            <input name="discount_code" type="text" placeholder="مثال: JAKH100" />
+            <input name="discount_code" type="text" placeholder="مثال: NOUR100" />
           </div>
           <div class="field">
             <label>قيمة الخصم بالجنيه *</label>
@@ -3116,6 +3237,30 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
         </form>
         <div style="margin-top:12px;">${discountsRows}</div>
       </div>
+
+      <script>
+        (function () {
+          document.querySelectorAll(".copy-code-btn").forEach(function (btn) {
+            btn.addEventListener("click", function () {
+              const codeStr = btn.getAttribute("data-code") || "";
+              if (!codeStr) return;
+              if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(codeStr).catch(function () {});
+              } else {
+                const tmp = document.createElement("textarea");
+                tmp.value = codeStr;
+                document.body.appendChild(tmp);
+                tmp.select();
+                document.execCommand("copy");
+                tmp.remove();
+              }
+              const oldTxt = btn.textContent;
+              btn.textContent = "تم النسخ ✓";
+              setTimeout(function () { btn.textContent = oldTxt; }, 1400);
+            });
+          });
+        })();
+      </script>
     `;
   } else if (activeSec === "lectures") {
     sectionHtml = `
@@ -3517,7 +3662,16 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
               : '<div class="muted" style="font-size:0.85rem; margin-top:6px;">لم يحل أي امتحان بعد.</div>';
 
             const branchesHtml = st.branches.length
-              ? st.branches.map(b => '<span class="pill pill-ok" style="margin-left:4px;">' + escHtml(b) + '</span>').join("")
+              ? st.branches.map(b =>
+                  '<span class="pill pill-ok" style="margin-left:6px; display:inline-flex; align-items:center; gap:6px;">' +
+                    '<span>' + escHtml(b) + '</span>' +
+                    '<form method="post" action="/admin/revoke-branch" style="display:inline; margin:0;">' +
+                      '<input type="hidden" name="phone" value="' + escHtml(st.phone) + '" />' +
+                      '<input type="hidden" name="branch" value="' + escHtml(b) + '" />' +
+                      '<button type="submit" style="border:none; background:rgba(220,38,38,0.85); color:#fff; border-radius:999px; padding:1px 7px; font-size:0.72rem; font-weight:800; cursor:pointer;">إلغاء التفعيل</button>' +
+                    '</form>' +
+                  '</span>'
+                ).join("")
               : '<span class="pill pill-warn">لا يوجد فروع مفعلة</span>';
 
             const branchChecksHtml = allBranches.map(function (br) {
@@ -3547,7 +3701,8 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
               '<div class="row"><span>متراكم كام محاضرة</span><strong>متراكم عليه: ' + escHtml(st.pendingLectures) + ' محاضرة (شاهد: ' + escHtml(st.watchedCount) + ')</strong></div>' +
               '<div class="row"><span>جايب كام في الامتحانات</span><strong>متوسط: ' + escHtml(st.avgPct) + '% • حل: ' + escHtml(st.solvedExamsCount) + ' • متراكم: ' + escHtml(st.pendingExams) + '</strong></div>' +
               '<div class="row" style="display:block;">' +
-                '<div style="font-weight:800; margin-bottom:6px;">الفروع المفعلة: ' + branchesHtml + '</div>' +
+                '<div style="font-weight:800; margin-bottom:8px;">الفروع المفعلة وإلغاء تفعيل أي فرع:</div>' +
+                '<div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;">' + branchesHtml + '</div>' +
                 '<form method="post" action="/admin/grant-branches" style="margin-top:8px;">' +
                   '<input type="hidden" name="phone" value="' + escHtml(st.phone) + '" />' +
                   '<div class="branch-toggle-grid">' + branchChecksHtml + '</div>' +
@@ -3719,9 +3874,9 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
             <div class="field"><label>رقم واتساب استقبال طلبات الأكواد (قابل للتغيير من الأدمن)</label><input name="admin_whatsapp" type="text" value="${esc(settings.admin_whatsapp)}" required /></div>
           </div>
           <div class="grid3">
-            <div class="field"><label>رابط قناة يوتيوب</label><input name="youtube_url" type="text" value="${esc(settings.youtube_url)}" placeholder="https://youtube.com/@..." /></div>
-            <div class="field"><label>رابط حساب تيك توك</label><input name="tiktok_url" type="text" value="${esc(settings.tiktok_url)}" placeholder="https://tiktok.com/@..." /></div>
-            <div class="field"><label>رابط صفحة فيسبوك</label><input name="facebook_url" type="text" value="${esc(settings.facebook_url)}" placeholder="https://facebook.com/..." /></div>
+            <div class="field"><label>رابط فيسبوك</label><input name="facebook_url" type="text" value="${esc(settings.facebook_url)}" placeholder="https://facebook.com/..." /></div>
+            <div class="field"><label>رابط تيك توك</label><input name="tiktok_url" type="text" value="${esc(settings.tiktok_url)}" placeholder="https://tiktok.com/@..." /></div>
+            <div class="field"><label>رابط يوتيوب</label><input name="youtube_url" type="text" value="${esc(settings.youtube_url)}" placeholder="https://youtube.com/@..." /></div>
           </div>
           <div class="field"><label>رابط صورة الأستاذ (اختياري)</label><input name="teacher_image" type="text" value="${esc(settings.teacher_image)}" /></div>
           <div class="field"><label>رسالة إشعار التنبيه الشفاف المتوهج (اتركه فارغاً لعدم ظهوره)</label><input name="global_notice" type="text" value="${esc(settings.global_notice)}" placeholder="اكتب رسالة التنبيه هنا..." /></div>
@@ -3941,6 +4096,24 @@ export default {
       return redirectRes("/student?tab=login", {
         "Set-Cookie": `${clearCookieHeader("nb_st")}, ${clearCookieHeader("nb_adm")}`
       });
+    }
+
+    if (path === "/about" && method === "GET") {
+      return htmlRes(renderLayout("من نحن", settings, student, isAdmin, renderAboutStandalonePage(settings), {
+        showLandingAdminAvatar: false,
+        showSupportWidget: true,
+        academicUnreadCount: academicUnreadItems.length,
+        academicUnreadItems
+      }));
+    }
+
+    if (path === "/privacy" && method === "GET") {
+      return htmlRes(renderLayout("سياسة الخصوصية", settings, student, isAdmin, renderPrivacyStandalonePage(), {
+        showLandingAdminAvatar: false,
+        showSupportWidget: true,
+        academicUnreadCount: academicUnreadItems.length,
+        academicUnreadItems
+      }));
     }
 
     if (path === "/" && method === "GET") {
@@ -4435,6 +4608,21 @@ export default {
       if (!st) return redirectRes(`/admin?section=students&error=${encodeURIComponent("الطالب غير موجود")}`);
       await fsSet(env, "students", phone, { ...st, branches: Array.from(new Set(selected)) });
       return redirectRes(`/admin?section=students&notice=${encodeURIComponent("تم تحديث اشتراك الفروع للطالب")}`);
+    }
+
+    if (path === "/admin/revoke-branch" && method === "POST") {
+      const form = await parseFormBody(req);
+      const phone = String(form.phone || "").trim();
+      const branchToRemove = String(form.branch || "").trim();
+      const st = await fsGet(env, "students", phone);
+      if (!st) return redirectRes(`/admin?section=students&error=${encodeURIComponent("الطالب غير موجود")}`);
+      const nextBranches = (Array.isArray(st.branches) ? st.branches : []).filter(b => String(b) !== branchToRemove);
+      await fsSet(env, "students", phone, {
+        ...st,
+        branches: nextBranches,
+        is_center_student: nextBranches.length === BRANCHES.length ? Boolean(st.is_center_student) : false
+      });
+      return redirectRes(`/admin?section=students&notice=${encodeURIComponent(`تم إلغاء تفعيل فرع (${branchToRemove}) للطالب`)}`);
     }
 
     if (path === "/admin/delete-student" && method === "POST") {
