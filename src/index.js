@@ -434,52 +434,43 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
   <title>${esc(title)} | ${PLATFORM_NAME}</title>
   <link rel="icon" type="image/png" href="${esc(settings.teacher_image)}" />
   <link rel="shortcut icon" href="${esc(settings.teacher_image)}" />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Aref+Ruqaa:wght@700&display=swap" />
   <style>
     :root {
-      --bg: #eef2ee;
+      --bg: #eef4fc;
       --surface: #ffffff;
-      --surface-soft: #e6ece6;
-      --txt: #071326;
-      --muted: #3d4e42;
-      --accent: #091d3e;
-      --accent-dark: #050f24;
-      --accent-2: #556b2f;
-      --olive: #556b2f;
-      --olive-dark: #3f5221;
-      --olive-light: #748c42;
+      --surface-soft: #e3eefa;
+      --txt: #0c1f3d;
+      --muted: #47628a;
+      --accent: #1565c0;
+      --accent-dark: #0d47a1;
+      --accent-2: #1e88e5;
       --err: #dc2626;
-      --bdr: rgba(85, 107, 47, 0.32);
-      --glyph: rgba(85, 107, 47, 0.12);
-      --shadow-sm: 0 4px 14px rgba(6, 17, 38, 0.08);
-      --shadow-md: 0 14px 32px rgba(6, 17, 38, 0.12);
-      --shadow-lg: 0 22px 48px rgba(6, 17, 38, 0.18);
+      --bdr: rgba(21, 101, 192, 0.22);
+      --thuluth-color: rgba(21, 101, 192, 0.085);
+      --shadow-sm: 0 4px 14px rgba(13, 71, 161, 0.08);
+      --shadow-md: 0 14px 32px rgba(13, 71, 161, 0.12);
+      --shadow-lg: 0 22px 48px rgba(13, 71, 161, 0.18);
     }
     body.dark {
-      --bg: #040c1b;
-      --surface: #091834;
-      --surface-soft: #102449;
-      --txt: #f4f7f2;
-      --muted: #c2cec0;
-      --accent: #8fa953;
-      --accent-dark: #556b2f;
-      --accent-2: #a4be66;
-      --olive: #7b9444;
-      --olive-dark: #4f6327;
-      --olive-light: #a4be66;
+      --bg: #07142b;
+      --surface: #0d2247;
+      --surface-soft: #133163;
+      --txt: #eef4fc;
+      --muted: #b4c8e8;
+      --accent: #64b5f6;
+      --accent-dark: #1976d2;
+      --accent-2: #42a5f5;
       --err: #f87171;
-      --bdr: rgba(143, 169, 83, 0.34);
-      --glyph: rgba(143, 169, 83, 0.13);
-      --shadow-sm: 0 4px 14px rgba(2, 6, 16, 0.5);
-      --shadow-md: 0 16px 36px rgba(2, 6, 16, 0.68);
-      --shadow-lg: 0 24px 52px rgba(2, 6, 16, 0.85);
+      --bdr: rgba(100, 181, 246, 0.25);
+      --thuluth-color: rgba(100, 181, 246, 0.09);
+      --shadow-sm: 0 4px 14px rgba(3, 10, 24, 0.5);
+      --shadow-md: 0 16px 36px rgba(3, 10, 24, 0.65);
+      --shadow-lg: 0 24px 52px rgba(3, 10, 24, 0.85);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; }
     body {
-      background:
-        radial-gradient(circle at 12% 8%, rgba(85, 107, 47, 0.14), transparent 44%),
-        radial-gradient(circle at 88% 85%, rgba(9, 29, 62, 0.15), transparent 48%),
-        var(--bg);
+      background: var(--bg);
       color: var(--txt);
       min-height: 100vh;
       line-height: 1.72;
@@ -503,19 +494,31 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
       body { background: #000000 !important; }
     }
 
-    #arabicBg { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
-    .ar-glyph {
-      position: absolute;
-      font-weight: 900;
-      color: var(--glyph);
-      user-select: none;
-      will-change: transform;
-      animation: letterRoam var(--dur, 2.8s) ease-in-out var(--delay, 0s) infinite alternate;
+    #thuluthBg {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      align-items: center;
+      justify-items: center;
+      padding: 36px 20px;
+      gap: 48px;
+      overflow: hidden;
     }
-    @keyframes letterRoam {
-      0% { transform: translate(0px, 0px) rotate(-10deg) scale(1); }
-      50% { transform: translate(calc(var(--dx, 75px) * 0.7), calc(var(--dy, -70px) * 0.72)) rotate(8deg) scale(1.06); }
-      100% { transform: translate(var(--dx, 105px), var(--dy, -95px)) rotate(14deg) scale(0.96); }
+    .thuluth-phrase {
+      font-family: 'Aref Ruqaa', 'Cairo', serif;
+      font-size: clamp(2.1rem, 4.4vw, 3.6rem);
+      font-weight: 700;
+      color: var(--thuluth-color);
+      transform: rotate(-14deg);
+      user-select: none;
+      white-space: nowrap;
+      line-height: 1.3;
+    }
+    @media (max-width: 760px) {
+      #thuluthBg { grid-template-columns: repeat(2, 1fr); gap: 36px; }
     }
 
     .page-layer { position: relative; z-index: 1; }
@@ -539,10 +542,9 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
     .brand-box { display: flex; align-items: center; gap: 13px; }
     .brand-logo-badge {
       width: 48px; height: 48px; border-radius: 16px;
-      background: linear-gradient(135deg, #061126 0%, #556b2f 100%);
-      color: #f4f7f2; font-weight: 900; display: grid; place-items: center; font-size: 1.02rem;
-      box-shadow: 0 8px 20px rgba(6, 17, 38, 0.28);
-      border: 1.5px solid rgba(143, 169, 83, 0.55);
+      background: linear-gradient(135deg, var(--accent-dark), var(--accent-2));
+      color: #fff; font-weight: 900; display: grid; place-items: center; font-size: 1.02rem;
+      box-shadow: 0 8px 20px rgba(21, 101, 192, 0.28);
     }
 
     .notif-bell-wrap {
@@ -555,22 +557,22 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
       width: 44px;
       height: 44px;
       border-radius: 14px;
-      border: 1.5px solid rgba(143, 169, 83, 0.6);
-      background: linear-gradient(135deg, #061126, #3f5221);
-      color: #e4f0cc;
+      border: 1.5px solid var(--accent-2);
+      background: linear-gradient(135deg, var(--accent-dark), var(--accent-2));
+      color: #ffffff;
       font-size: 1.15rem;
       font-weight: 900;
       display: grid;
       place-items: center;
       cursor: pointer;
-      box-shadow: 0 6px 18px rgba(6, 17, 38, 0.28);
+      box-shadow: 0 6px 18px rgba(21, 101, 192, 0.28);
       transition: transform 0.16s ease;
     }
     .blue-bell-btn:hover { transform: translateY(-1px) scale(1.04); }
     .blue-bell-btn.has-alert { animation: bellPulse 1.4s infinite ease-in-out; }
     @keyframes bellPulse {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(85, 107, 47, 0.7); }
-      50% { box-shadow: 0 0 0 9px rgba(85, 107, 47, 0); }
+      0%, 100% { box-shadow: 0 0 0 0 rgba(30, 136, 229, 0.65); }
+      50% { box-shadow: 0 0 0 9px rgba(30, 136, 229, 0); }
     }
     .bell-badge-num {
       position: absolute;
@@ -580,7 +582,7 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
       height: 21px;
       padding: 0 5px;
       border-radius: 999px;
-      background: #556b2f;
+      background: #ef4444;
       color: #ffffff;
       font-size: 0.72rem;
       font-weight: 900;
@@ -629,14 +631,14 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
       user-select: none;
       transition: border-color 0.2s ease, background-color 0.2s ease;
     }
-    .mode-switch:hover { border-color: var(--olive); }
+    .mode-switch:hover { border-color: var(--accent); }
     .mode-switch input { position: absolute; opacity: 0; width: 0; height: 0; }
     .mode-track {
       position: relative;
       width: 48px;
       height: 26px;
       border-radius: 999px;
-      background: #9aa896;
+      background: #9bb4d8;
       transition: background-color 0.25s ease;
       display: inline-block;
     }
@@ -649,10 +651,10 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
       height: 20px;
       border-radius: 50%;
       background: #ffffff;
-      box-shadow: 0 2px 6px rgba(6, 17, 38, 0.25);
+      box-shadow: 0 2px 6px rgba(13, 71, 161, 0.25);
       transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
     }
-    .mode-switch input:checked + .mode-track { background: #556b2f; }
+    .mode-switch input:checked + .mode-track { background: #1565c0; }
     .mode-switch input:checked + .mode-track::after { transform: translateX(22px); }
     .mode-text { font-size: 0.82rem; font-weight: 800; color: var(--txt); }
 
@@ -674,30 +676,28 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
     .btn:active { transform: translateY(0) scale(0.985); }
 
     .btn-blue {
-      background: linear-gradient(135deg, #061126 0%, #102a56 58%, #3f5221 100%);
-      color: #f4f7f2;
-      border: 1px solid rgba(143, 169, 83, 0.45);
-      box-shadow: 0 7px 20px rgba(6, 17, 38, 0.28);
+      background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%);
+      color: #fff;
+      box-shadow: 0 7px 20px rgba(21, 101, 192, 0.28);
     }
-    .btn-blue:hover { box-shadow: 0 11px 26px rgba(6, 17, 38, 0.4); }
+    .btn-blue:hover { box-shadow: 0 11px 26px rgba(21, 101, 192, 0.4); }
 
     .btn-teal {
-      background: linear-gradient(135deg, #3f5221 0%, #556b2f 60%, #091d3e 100%);
-      color: #ffffff;
-      border: 1px solid rgba(143, 169, 83, 0.5);
-      box-shadow: 0 7px 20px rgba(63, 82, 33, 0.28);
+      background: linear-gradient(135deg, #1565c0 0%, #2196f3 100%);
+      color: #fff;
+      box-shadow: 0 7px 20px rgba(25, 118, 210, 0.28);
     }
-    .btn-teal:hover { box-shadow: 0 11px 26px rgba(63, 82, 33, 0.4); }
+    .btn-teal:hover { box-shadow: 0 11px 26px rgba(25, 118, 210, 0.4); }
 
     .btn-gold {
-      background: linear-gradient(135deg, #556b2f, #3f5221);
+      background: linear-gradient(135deg, #1e88e5, #0d47a1);
       color: #ffffff;
-      box-shadow: 0 6px 18px rgba(85, 107, 47, 0.3);
+      box-shadow: 0 6px 18px rgba(30, 136, 229, 0.28);
     }
     .btn-red {
-      background: linear-gradient(135deg, #dc2626, #991b1b);
+      background: linear-gradient(135deg, #ef4444, #dc2626);
       color: #fff;
-      box-shadow: 0 6px 16px rgba(220, 38, 38, 0.24);
+      box-shadow: 0 6px 16px rgba(239, 68, 68, 0.24);
     }
     .btn-out {
       background: var(--surface);
@@ -705,7 +705,7 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
       border-color: var(--bdr);
       box-shadow: var(--shadow-sm);
     }
-    .btn-out:hover { border-color: var(--olive); background: var(--surface-soft); }
+    .btn-out:hover { border-color: var(--accent); background: var(--surface-soft); }
     .btn-sm { padding: 7px 14px; font-size: 0.82rem; border-radius: 11px; }
 
     .card, .right-drawer, .landing-hero-card, .course-card, .student-detail-box, .q-builder-card {
@@ -719,11 +719,11 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
     .course-card:hover, .landing-hero-card:hover {
       transform: translateY(-4px);
       box-shadow: var(--shadow-lg);
-      border-color: var(--olive);
+      border-color: var(--accent);
     }
 
     .jakh-week-banner {
-      background: linear-gradient(125deg, #061126 0%, #0e2752 55%, #3f5221 100%);
+      background: linear-gradient(125deg, #0d47a1 0%, #1976d2 100%);
       color: #fff;
       padding: 22px 26px;
       border-radius: 22px;
@@ -734,14 +734,13 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
       gap: 14px;
       flex-wrap: wrap;
       box-shadow: var(--shadow-md);
-      border: 1.5px solid rgba(143, 169, 83, 0.45);
     }
     .you-here-pill {
       display: inline-flex; align-items: center; justify-content: center;
       padding: 6px 15px; border-radius: 999px;
-      border: 1px solid rgba(143, 169, 83, 0.75);
-      background: rgba(85, 107, 47, 0.32);
-      color: #e4f0cc; font-weight: 800; font-size: 0.84rem; white-space: nowrap;
+      border: 1px solid rgba(255, 255, 255, 0.72);
+      background: rgba(255, 255, 255, 0.16);
+      color: #ffffff; font-weight: 800; font-size: 0.84rem; white-space: nowrap;
     }
     .lecture-accordion-list { display: flex; flex-direction: column; gap: 13px; }
     .lec-accordion-item {
@@ -753,7 +752,7 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
       transition: border-color 0.22s ease, box-shadow 0.22s ease, transform 0.18s ease;
     }
     .lec-accordion-item.is-open {
-      border-color: var(--olive);
+      border-color: var(--accent);
       box-shadow: var(--shadow-md);
     }
     .lec-accordion-header {
@@ -771,7 +770,7 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
       transition: background-color 0.22s ease, color 0.22s ease;
     }
     .lec-accordion-item.is-open .lec-accordion-header {
-      background: linear-gradient(125deg, #061126 0%, #0e2752 60%, #3f5221 100%);
+      background: linear-gradient(125deg, #0d47a1 0%, #1976d2 100%);
       color: #ffffff;
     }
     .lec-header-left {
@@ -784,13 +783,13 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
       width: 36px;
       height: 36px;
       border-radius: 50%;
-      background: #556b2f;
+      background: #1e88e5;
       color: #ffffff;
       display: grid;
       place-items: center;
       font-weight: 900;
       font-size: 0.9rem;
-      box-shadow: 0 4px 12px rgba(85, 107, 47, 0.4);
+      box-shadow: 0 4px 12px rgba(30, 136, 229, 0.35);
       transition: transform 0.25s ease;
     }
     .lec-accordion-item:not(.is-open) .lec-chevron-circle { transform: rotate(180deg); }
@@ -821,7 +820,7 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
       overflow: hidden;
       transition: border-color 0.2s ease;
     }
-    .sub-topic-card.sub-open { border-color: var(--olive); }
+    .sub-topic-card.sub-open { border-color: var(--accent); }
     .sub-topic-head {
       width: 100%;
       background: transparent;
@@ -855,10 +854,10 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
     .jakh-action-btn {
       display: inline-flex; align-items: center; justify-content: center; gap: 6px;
       padding: 9px 17px; border-radius: 12px;
-      background: linear-gradient(135deg, #061126, #3f5221);
-      color: #e4f0cc; font-weight: 800; font-size: 0.85rem;
-      text-decoration: none; border: 1px solid rgba(143, 169, 83, 0.45); cursor: pointer;
-      box-shadow: 0 5px 14px rgba(6, 17, 38, 0.28);
+      background: linear-gradient(135deg, #0d47a1, #1976d2);
+      color: #ffffff; font-weight: 800; font-size: 0.85rem;
+      text-decoration: none; border: none; cursor: pointer;
+      box-shadow: 0 5px 14px rgba(13, 71, 161, 0.28);
       transition: transform 0.15s ease, opacity 0.15s ease;
     }
     .jakh-action-btn:hover { transform: translateY(-1px); opacity: 0.96; }
@@ -883,7 +882,7 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
       display: grid;
       place-items: center;
     }
-    .pwd-eye-btn:hover { color: var(--olive); }
+    .pwd-eye-btn:hover { color: var(--accent); }
 
     input, select, textarea {
       width: 100%;
@@ -899,8 +898,8 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
     }
     input:focus, select:focus, textarea:focus {
       background: var(--surface);
-      border-color: var(--olive);
-      box-shadow: 0 0 0 3px rgba(85, 107, 47, 0.22);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(21, 101, 192, 0.16);
     }
     textarea { min-height: 96px; resize: vertical; }
     input[type="radio"], input[type="checkbox"] { width: auto; box-shadow: none; }
@@ -932,7 +931,7 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
       height: 50px;
       border-radius: 50%;
       overflow: hidden;
-      border: 2.5px solid var(--olive);
+      border: 2.5px solid var(--accent);
       box-shadow: var(--shadow-md);
       background: var(--surface);
       cursor: pointer;
@@ -950,28 +949,28 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
       height: 58px;
       padding: 0 22px;
       border-radius: 999px;
-      border: 1.5px solid rgba(143, 169, 83, 0.6);
-      background: linear-gradient(135deg, #061126 0%, #0e2752 55%, #3f5221 100%);
-      color: #f4f7f2;
+      border: none;
+      background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%);
+      color: #ffffff;
       font-weight: 900;
       font-size: 0.95rem;
       display: inline-flex;
       align-items: center;
       gap: 10px;
       cursor: pointer;
-      box-shadow: 0 14px 32px rgba(6, 17, 38, 0.45);
+      box-shadow: 0 14px 32px rgba(13, 71, 161, 0.4);
       z-index: 80;
       transition: transform 0.18s ease, box-shadow 0.2s ease;
     }
     .support-fab-btn:hover {
       transform: translateY(-2px) scale(1.03);
-      box-shadow: 0 18px 38px rgba(6, 17, 38, 0.56);
+      box-shadow: 0 18px 38px rgba(13, 71, 161, 0.52);
     }
     .support-fab-icon {
       width: 35px;
       height: 35px;
       border-radius: 50%;
-      background: rgba(143, 169, 83, 0.24);
+      background: rgba(255, 255, 255, 0.2);
       display: grid;
       place-items: center;
       font-size: 1.15rem;
@@ -982,7 +981,7 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
       height: 22px;
       padding: 0 6px;
       border-radius: 999px;
-      background: #556b2f;
+      background: #ef4444;
       color: #ffffff;
       font-size: 0.76rem;
       font-weight: 900;
@@ -1009,7 +1008,7 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
     }
     .support-chat-window.open { display: flex; }
     .support-chat-header {
-      background: linear-gradient(125deg, #061126, #0e2752 60%, #3f5221);
+      background: linear-gradient(125deg, #0d47a1, #1976d2);
       color: #ffffff;
       padding: 15px 18px;
       display: flex;
@@ -1049,7 +1048,7 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
       box-shadow: var(--shadow-sm);
     }
     .chat-bubble-user {
-      background: linear-gradient(135deg, #061126, #0e2752);
+      background: linear-gradient(135deg, #1565c0, #1976d2);
       color: #ffffff;
       padding: 11px 14px;
       border-radius: 16px 16px 4px 16px;
@@ -1060,8 +1059,8 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
       box-shadow: var(--shadow-sm);
     }
     .chat-bubble-admin {
-      background: rgba(85, 107, 47, 0.16);
-      border: 1px solid rgba(85, 107, 47, 0.42);
+      background: rgba(21, 101, 192, 0.14);
+      border: 1px solid rgba(21, 101, 192, 0.35);
       color: var(--txt);
       padding: 11px 14px;
       border-radius: 16px 16px 16px 4px;
@@ -1110,9 +1109,9 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
       width: 42px;
       height: 42px;
       border-radius: 12px;
-      border: 1.5px solid var(--olive);
+      border: 1.5px solid var(--accent);
       background: var(--surface-soft);
-      color: var(--olive);
+      color: var(--accent);
       font-size: 1.4rem;
       font-weight: 900;
       display: grid;
@@ -1120,14 +1119,14 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
       cursor: pointer;
       flex-shrink: 0;
     }
-    .plus-attach-btn:hover { background: var(--olive); color: #ffffff; }
+    .plus-attach-btn:hover { background: var(--accent); color: #ffffff; }
 
     .inline-dua-banner {
       max-width: 1240px;
       margin: 14px auto 0;
       padding: 15px 22px;
       border-radius: 20px;
-      background: linear-gradient(125deg, #061126, #0e2752 60%, #3f5221);
+      background: linear-gradient(125deg, #0d47a1, #1976d2);
       color: #fff;
       box-shadow: var(--shadow-md);
       display: flex;
@@ -1139,7 +1138,6 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
       max-height: 150px;
       opacity: 1;
       overflow: hidden;
-      border: 1px solid rgba(143, 169, 83, 0.45);
     }
     .inline-dua-banner.dua-done {
       max-height: 0; opacity: 0; margin-top: 0; padding-top: 0; padding-bottom: 0; pointer-events: none;
@@ -1149,7 +1147,7 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
       width: 52px; height: 64px; border-radius: 13px;
       object-fit: contain; object-position: center top;
       background: rgba(255, 255, 255, 0.16);
-      border: 1.5px solid rgba(143, 169, 83, 0.7); flex-shrink: 0;
+      border: 1.5px solid rgba(255, 255, 255, 0.7); flex-shrink: 0;
     }
     .inline-dua-text { font-weight: 900; font-size: 1.05rem; }
     .inline-dua-sub { font-size: 0.8rem; opacity: 0.92; }
@@ -1163,8 +1161,8 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
     .glow-notice-box {
       background: var(--surface);
       color: var(--txt);
-      border: 1.5px solid var(--olive);
-      border-right: 5px solid var(--olive);
+      border: 1.5px solid var(--accent);
+      border-right: 5px solid var(--accent);
       border-radius: 16px;
       padding: 13px 18px;
       font-weight: 800;
@@ -1189,20 +1187,17 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
       flex-wrap: wrap;
     }
     .pill { display: inline-block; padding: 4px 12px; border-radius: 999px; font-size: 0.78rem; font-weight: 800; }
-    .pill-ok { background: rgba(85, 107, 47, 0.18); color: var(--olive-dark); }
-    body.dark .pill-ok { background: rgba(143, 169, 83, 0.22); color: #d6e8b1; }
-    .pill-warn { background: rgba(9, 29, 62, 0.14); color: var(--accent); }
-    body.dark .pill-warn { background: rgba(143, 169, 83, 0.18); color: #e4f0cc; }
-    .pill-err { background: rgba(220, 38, 38, 0.15); color: var(--err); }
+    .pill-ok { background: rgba(21, 101, 192, 0.14); color: var(--accent); }
+    .pill-warn { background: rgba(30, 136, 229, 0.16); color: var(--accent-2); }
+    .pill-err { background: rgba(239, 68, 68, 0.14); color: var(--err); }
     .msg-err {
-      background: rgba(220, 38, 38, 0.1); border: 1px solid rgba(220, 38, 38, 0.35);
+      background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.35);
       color: var(--err); padding: 12px 16px; border-radius: 14px; font-weight: 800; margin-bottom: 14px;
     }
     .msg-ok {
-      background: rgba(85, 107, 47, 0.15); border: 1px solid rgba(85, 107, 47, 0.4);
-      color: var(--olive-dark); padding: 12px 16px; border-radius: 14px; font-weight: 800; margin-bottom: 14px;
+      background: rgba(21, 101, 192, 0.12); border: 1px solid rgba(21, 101, 192, 0.35);
+      color: var(--accent); padding: 12px 16px; border-radius: 14px; font-weight: 800; margin-bottom: 14px;
     }
-    body.dark .msg-ok { background: rgba(143, 169, 83, 0.18); border-color: rgba(143, 169, 83, 0.4); color: #e4f0cc; }
     .muted { color: var(--muted); }
 
     .dash-shell {
@@ -1226,31 +1221,30 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
     }
     .nav-item-link:hover { background: var(--surface-soft); }
     .nav-item-link.active {
-      background: linear-gradient(135deg, #061126 0%, #0e2752 60%, #3f5221 100%);
-      color: #f4f7f2;
+      background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%);
+      color: #fff;
     }
     .sub-nav { padding-right: 14px; margin-bottom: 8px; }
     .sub-link {
       display: block; padding: 6px 12px; border-radius: 10px; color: var(--muted);
       text-decoration: none; font-weight: 700; font-size: 0.83rem; margin-bottom: 2px;
     }
-    .sub-link.active, .sub-link:hover { background: var(--surface-soft); color: var(--olive); }
+    .sub-link.active, .sub-link:hover { background: var(--surface-soft); color: var(--accent); }
     .dash-shell.collapsed .nav-label, .dash-shell.collapsed .sub-nav, .dash-shell.collapsed .drawer-title { display: none; }
 
     .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-bottom: 18px; }
     .kpi-card {
-      background: linear-gradient(135deg, #061126 0%, #0e2752 60%, #3f5221 100%);
+      background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%);
       color: #fff; border-radius: 20px; padding: 19px;
       display: flex; justify-content: space-between; align-items: center;
       box-shadow: var(--shadow-md);
-      border: 1.5px solid rgba(143, 169, 83, 0.38);
     }
-    .kpi-card.teal-kpi { background: linear-gradient(135deg, #3f5221 0%, #0e2752 100%); }
-    .kpi-card.gold-kpi { background: linear-gradient(135deg, #091d3e 0%, #4f6327 100%); }
-    .kpi-num { font-size: 1.65rem; font-weight: 900; line-height: 1.1; color: #e4f0cc; }
+    .kpi-card.teal-kpi { background: linear-gradient(135deg, #1565c0 0%, #1e88e5 100%); }
+    .kpi-card.gold-kpi { background: linear-gradient(135deg, #0b3c8a 0%, #2196f3 100%); }
+    .kpi-num { font-size: 1.65rem; font-weight: 900; line-height: 1.1; }
     .kpi-lbl { font-size: 0.86rem; font-weight: 700; opacity: 0.94; margin-top: 4px; }
     .kpi-icon-box {
-      width: 48px; height: 48px; border-radius: 15px; background: rgba(143, 169, 83, 0.22);
+      width: 48px; height: 48px; border-radius: 15px; background: rgba(255, 255, 255, 0.2);
       display: grid; place-items: center; font-size: 1.25rem; font-weight: 900;
     }
 
@@ -1268,27 +1262,27 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
     .teacher-color-meter .bw-layer { filter: grayscale(100%) contrast(1.05); }
     .teacher-color-meter .color-reveal { position: absolute; inset: 0; overflow: hidden; transition: clip-path 0.45s ease; }
     .prog-bar-bg { height: 9px; border-radius: 999px; background: var(--surface-soft); overflow: hidden; margin: 10px 0; }
-    .prog-bar-fill { height: 100%; background: linear-gradient(90deg, #091d3e, #556b2f); border-radius: 999px; transition: width 0.4s ease; }
+    .prog-bar-fill { height: 100%; background: linear-gradient(90deg, #1565c0, #42a5f5); border-radius: 999px; transition: width 0.4s ease; }
 
     .course-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(265px, 1fr)); gap: 16px; }
     .course-card { overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; }
     .branch-book-card {
       display: flex; align-items: center; gap: 10px;
-      background: rgba(255, 255, 255, 0.14); border: 1px solid rgba(143, 169, 83, 0.45);
+      background: rgba(255, 255, 255, 0.16); border: 1px solid rgba(255, 255, 255, 0.35);
       padding: 7px 11px; border-radius: 14px;
     }
     .branch-book-card img {
       width: 52px; height: 66px; object-fit: contain; object-position: center top;
-      background: rgba(6, 17, 38, 0.35); border-radius: 9px; border: 1.5px solid #8fa953;
+      background: rgba(255, 255, 255, 0.25); border-radius: 9px; border: 1.5px solid #fff;
     }
     .course-banner {
       min-height: 158px; position: relative; overflow: hidden;
-      background: linear-gradient(135deg, #061126 0%, #0e2752 60%, #3f5221 100%);
+      background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%);
       color: #fff; padding: 17px; display: flex; justify-content: space-between; align-items: flex-end; gap: 10px;
     }
     .course-banner img.book-thumb {
       width: 72px; height: 94px; object-fit: contain; object-position: center top;
-      background: rgba(6, 17, 38, 0.35); border-radius: 11px; border: 1.5px solid rgba(143, 169, 83, 0.8); flex-shrink: 0;
+      background: rgba(255, 255, 255, 0.22); border-radius: 11px; border: 1.5px solid rgba(255, 255, 255, 0.85); flex-shrink: 0;
     }
     .course-body { padding: 16px; }
     .course-title { font-weight: 900; font-size: 1rem; margin-bottom: 6px; }
@@ -1297,7 +1291,7 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
     .landing-hero-card { padding: 28px; display: grid; grid-template-columns: 310px 1fr; gap: 26px; align-items: center; }
     @media (max-width: 860px) { .landing-hero-card { grid-template-columns: 1fr; } }
     .hero-teacher-frame {
-      background: linear-gradient(155deg, rgba(9, 29, 62, 0.14), rgba(85, 107, 47, 0.16));
+      background: linear-gradient(155deg, rgba(21, 101, 192, 0.12), rgba(33, 150, 243, 0.14));
       border-radius: 20px; padding: 12px; display: flex; justify-content: center; align-items: center;
       min-height: 340px; border: 1.5px solid var(--bdr);
     }
@@ -1313,19 +1307,18 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
     }
     @media (max-width: 840px) { .split-auth { grid-template-columns: 1fr; } }
     .promo-pane {
-      background: linear-gradient(155deg, #061126 0%, #0e2752 60%, #3f5221 100%);
+      background: linear-gradient(155deg, #0d47a1 0%, #1976d2 100%);
       color: #fff; border-radius: 22px; padding: 26px; box-shadow: var(--shadow-md);
       display: flex; flex-direction: column; justify-content: space-between; min-height: 440px;
-      border: 1.5px solid rgba(143, 169, 83, 0.35);
     }
-    .promo-pane.gold-mode { background: linear-gradient(155deg, #3f5221 0%, #091d3e 100%); }
+    .promo-pane.gold-mode { background: linear-gradient(155deg, #1565c0 0%, #2196f3 100%); }
     .promo-img {
       width: 215px; height: 265px; object-fit: contain; object-position: center top;
-      background: rgba(255, 255, 255, 0.12);
-      border-radius: 16px; border: 1.5px solid rgba(143, 169, 83, 0.6); margin: 14px auto 0; display: block;
+      background: rgba(255, 255, 255, 0.14);
+      border-radius: 16px; border: 1.5px solid rgba(255, 255, 255, 0.65); margin: 14px auto 0; display: block;
     }
     .step-track { height: 7px; background: var(--surface-soft); border-radius: 999px; overflow: hidden; margin-bottom: 14px; }
-    .step-fill { height: 100%; background: linear-gradient(90deg, #091d3e, #556b2f); }
+    .step-fill { height: 100%; background: linear-gradient(90deg, #1565c0, #42a5f5); }
 
     .secure-player-box {
       position: relative; width: 100%; max-width: 920px; aspect-ratio: 16 / 9; margin: 12px auto 0;
@@ -1366,9 +1359,9 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
     .site-footer {
       width: 100%;
       margin-top: 40px;
-      background: linear-gradient(135deg, #040b18 0%, #081834 65%, #283514 100%);
-      color: #f4f7f2;
-      border-top: 2px solid #6b7432;
+      background: #071327;
+      color: #ffffff;
+      border-top: 1px solid rgba(100, 181, 246, 0.22);
       padding: 36px 24px 26px;
     }
     .footer-inner { max-width: 1180px; margin: 0 auto; }
@@ -1388,13 +1381,13 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
       display: inline-flex;
       align-items: center;
       gap: 10px;
-      color: #f4f7f2;
+      color: #ffffff;
       text-decoration: none;
       font-weight: 800;
       font-size: 0.94rem;
       transition: transform 0.16s ease, color 0.16s ease;
     }
-    .social-row-link:hover { transform: translateX(-3px); color: #a4be66; }
+    .social-row-link:hover { transform: translateX(-3px); color: #90caf9; }
     .social-row-link.disabled-link { opacity: 0.45; pointer-events: none; }
     .social-sq-icon {
       width: 24px;
@@ -1408,35 +1401,42 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
       flex-shrink: 0;
     }
     .icon-fb { background: #1877f2; }
-    .icon-tt { background: #0f172a; border: 1px solid #8fa953; color: #a4be66; }
+    .icon-tt { background: #111827; border: 1px solid #374151; }
     .icon-yt { background: #ef4444; }
 
     .footer-nav-stack { display: flex; flex-direction: column; gap: 14px; }
     .footer-page-link {
-      color: #f4f7f2;
+      color: #ffffff;
       text-decoration: none;
       font-weight: 800;
       font-size: 1rem;
       transition: color 0.16s ease;
     }
-    .footer-page-link:hover { color: #a4be66; }
+    .footer-page-link:hover { color: #90caf9; }
 
     .footer-brand-box { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
     @media (max-width: 780px) { .footer-brand-box { align-items: center; } }
-    .footer-brand-emblem { font-size: 2rem; font-weight: 900; color: #a4be66; letter-spacing: 0.5px; }
-    .footer-copyright-line { font-size: 0.9rem; font-weight: 800; color: #d6e8b1; }
-    .footer-dev-line { font-size: 0.86rem; font-weight: 800; color: #8fa953; direction: ltr; }
+    .footer-brand-emblem { font-size: 2rem; font-weight: 900; color: #90caf9; letter-spacing: 0.5px; }
+    .footer-copyright-line { font-size: 0.9rem; font-weight: 800; color: #dbeafe; }
+    .footer-dev-line { font-size: 0.86rem; font-weight: 800; color: #64b5f6; direction: ltr; }
   </style>
 </head>
 <body>
   <div id="screenBlackoutGuard" aria-hidden="true"></div>
-  <div id="arabicBg" aria-hidden="true"></div>
+  <div id="thuluthBg" aria-hidden="true">
+    <div class="thuluth-phrase">أنت جخ</div>
+    <div class="thuluth-phrase">أنت جخ</div>
+    <div class="thuluth-phrase">أنت جخ</div>
+    <div class="thuluth-phrase">أنت جخ</div>
+    <div class="thuluth-phrase">أنت جخ</div>
+    <div class="thuluth-phrase">أنت جخ</div>
+  </div>
 
   ${showLandingAdminAvatar ? `
     <div class="floating-admin-wrap">
       <div class="floating-admin-menu" id="floatingAdminMenu">
-        <a class="btn btn-blue btn-sm" href="/admin?mode=admin" style="width:100%;">الأدمن</a>
-        <a class="btn btn-teal btn-sm" href="/admin?mode=team" style="width:100%;">تيم الأدمن</a>
+        <a class="btn btn-blue btn-sm" href="/admin" style="width:100%;">الأدمن</a>
+        <a class="btn btn-teal btn-sm" href="/team" style="width:100%;">تيم الأدمن</a>
       </div>
       <button type="button" class="floating-admin-avatar" id="floatingAdminToggleBtn" title="الأدمن وتيم الأدمن" aria-label="الأدمن وتيم الأدمن">
         <img src="${esc(settings.teacher_image)}" alt="أ. محمد يوسف" onerror="this.style.display='none';" />
@@ -1653,32 +1653,6 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
       }
     })();
 
-    (function renderFastRoamingArabicLetters() {
-      const container = document.getElementById("arabicBg");
-      if (!container) return;
-      const letters = "أبجدهوزحطيكلمنسعفصقرشتثخذضظغى".split("");
-      for (let i = 0; i < 48; i++) {
-        const span = document.createElement("span");
-        span.className = "ar-glyph";
-        span.textContent = letters[i % letters.length];
-        const leftPct = (i * 19) % 93;
-        const topPct = (i * 29) % 91;
-        const size = 28 + ((i * 7) % 28);
-        const dur = 1.45 + ((i * 3) % 5) * 0.35;
-        const delay = -((i * 0.5) % 2.5);
-        const dx = (i % 2 === 0 ? 1 : -1) * (85 + (i % 65));
-        const dy = (i % 3 === 0 ? -1 : 1) * (80 + (i % 60));
-        span.style.left = leftPct + "%";
-        span.style.top = topPct + "%";
-        span.style.fontSize = size + "px";
-        span.style.setProperty("--dur", dur + "s");
-        span.style.setProperty("--delay", delay + "s");
-        span.style.setProperty("--dx", dx + "px");
-        span.style.setProperty("--dy", dy + "px");
-        container.appendChild(span);
-      }
-    })();
-
     (function enforceOnScreenshotOrCaptureOnly() {
       let blackoutTimer = null;
       function triggerOnCapture(ms = 2600) {
@@ -1872,7 +1846,7 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
                 '<span class="pill pill-warn">' + escLocal(it.kind) + '</span>' +
                 '<div style="font-weight:800; margin-top:4px;">' + escLocal(it.title) + '</div>' +
                 '<div class="muted" style="margin-top:2px;">' + escLocal(it.preview) + '</div>' +
-                '<a href="' + escLocal(it.href) + '" data-acad-key="' + escLocal(it.key) + '" class="acad-open-link" style="display:inline-block; margin-top:6px; font-weight:800; font-size:0.8rem; color:var(--olive);">عرض الرد</a>' +
+                '<a href="' + escLocal(it.href) + '" data-acad-key="' + escLocal(it.key) + '" class="acad-open-link" style="display:inline-block; margin-top:6px; font-weight:800; font-size:0.8rem; color:var(--accent);">عرض الرد</a>' +
               '</div>'
             );
           });
@@ -2118,7 +2092,7 @@ function renderLanding(settings) {
     <div>
       <span class="pill pill-ok">معلم أول لغة عربية</span>
       <h1 style="font-size:1.85rem; font-weight:900; margin-top:10px; color:var(--accent);">${PLATFORM_NAME} مع محمد يوسف</h1>
-      <div style="font-size:1.08rem; font-weight:800; color:var(--olive); margin-top:6px;">
+      <div style="font-size:1.08rem; font-weight:800; color:var(--accent-2); margin-top:6px;">
         30 سنة خبرة تدريس في اللغة العربية للثانوية الأزهرية
       </div>
       <p class="muted" style="margin-top:12px; font-size:0.96rem; line-height:1.8;">
@@ -2168,7 +2142,7 @@ function renderStudentAuth(settings, authTab, step, draft, error, notice) {
         <form method="post" action="/student/login" autocomplete="off">
           <div class="field"><label>رقم الهاتف</label><input name="phone" type="tel" required autocomplete="off" placeholder="01xxxxxxxxx" /></div>
           <div class="field"><label>كلمة السر</label><input name="password" type="password" required autocomplete="new-password" placeholder="••••••••" /></div>
-          <div style="margin-bottom:14px;"><a href="/student?tab=forgot" style="font-size:0.85rem; font-weight:800; color:var(--olive);">هل نسيت كلمة السر؟ اضغط هنا</a></div>
+          <div style="margin-bottom:14px;"><a href="/student?tab=forgot" style="font-size:0.85rem; font-weight:800; color:var(--accent);">هل نسيت كلمة السر؟ اضغط هنا</a></div>
           <button type="submit" class="btn btn-blue" style="width:100%;">تسجيل الدخول</button>
         </form>
       </div>
@@ -2202,7 +2176,7 @@ function renderStudentAuth(settings, authTab, step, draft, error, notice) {
           <button type="submit" class="btn btn-teal" style="width:100%;">فتح المنصة بكود السنتر</button>
         </form>
         <div style="margin-top:14px; text-align:center; font-size:0.86rem;">
-          <a href="/student?tab=login" style="color:var(--olive); font-weight:800;">العودة لتسجيل الدخول العادي</a>
+          <a href="/student?tab=login" style="color:var(--accent); font-weight:800;">العودة لتسجيل الدخول العادي</a>
         </div>
       </div>
     </div>`;
@@ -2221,7 +2195,7 @@ function renderStudentAuth(settings, authTab, step, draft, error, notice) {
         <div class="field"><label>كلمة السر الجديدة *</label><input name="new_password" type="password" required autocomplete="new-password" minlength="4" /></div>
         <button type="submit" class="btn btn-teal" style="width:100%;">تعيين كلمة السر الجديدة</button>
       </form>
-      <div style="margin-top:12px; text-align:center;"><a href="/student?tab=login" style="font-weight:800; color:var(--olive); font-size:0.86rem;">العودة لتسجيل الدخول</a></div>
+      <div style="margin-top:12px; text-align:center;"><a href="/student?tab=login" style="font-weight:800; color:var(--accent); font-size:0.86rem;">العودة لتسجيل الدخول</a></div>
     </div>`;
   }
 
@@ -2237,7 +2211,7 @@ function renderStudentAuth(settings, authTab, step, draft, error, notice) {
       <img class="promo-img" src="${esc(settings.teacher_image)}" alt="الأستاذ محمد يوسف" onerror="this.style.display='none';" />
     </div>
     <div class="card" style="margin-bottom:0;">
-      <div style="display:flex; justify-content:space-between; font-size:0.84rem; font-weight:800; color:var(--olive);">
+      <div style="display:flex; justify-content:space-between; font-size:0.84rem; font-weight:800; color:var(--accent);">
         <span>الخطوة ${isStep2 ? "الثانية" : "الأولى"}</span>
         <span>${isStep2 ? "70%" : "35%"}</span>
       </div>
@@ -2285,7 +2259,7 @@ function renderStudentAuth(settings, authTab, step, draft, error, notice) {
         </script>
       `}
       <div style="margin-top:14px; text-align:center; font-size:0.86rem;">
-        لديك حساب بالفعل؟ <a href="/student?tab=login" style="color:var(--olive); font-weight:800;">تسجيل الدخول</a>
+        لديك حساب بالفعل؟ <a href="/student?tab=login" style="color:var(--accent); font-weight:800;">تسجيل الدخول</a>
       </div>
     </div>
   </div>`;
@@ -2359,7 +2333,7 @@ function renderStudentDash(settings, student, state) {
         <div>
           <div class="course-banner">
             <div>
-              <span class="pill" style="background:rgba(143,169,83,0.28); color:#e4f0cc;">${isUnlocked ? (isCenterStudent ? "مفعل سنتر ✓" : "مفعل ✓") : "مغلق 🔒"}</span>
+              <span class="pill" style="background:rgba(255,255,255,0.22); color:#fff;">${isUnlocked ? (isCenterStudent ? "مفعل سنتر ✓" : "مفعل ✓") : "مغلق 🔒"}</span>
               <div style="font-size:1.22rem; font-weight:900; margin-top:6px;">${esc(br)}</div>
               <div style="font-size:0.8rem; opacity:0.92;">${brLectures.length} محاضرة متاحة • ${COURSE_PRICE_EGP} ج</div>
             </div>
@@ -2659,10 +2633,10 @@ function renderStudentDash(settings, student, state) {
           : `
             <div style="font-weight:900; margin:10px 0 6px; color:var(--err);">الأسئلة التي أخطأت فيها وإجاباتها الصحيحة:</div>
             ${wrongItems.map((w, idx) => `
-              <div class="row" style="display:block; border-color:rgba(220,38,38,0.35);">
+              <div class="row" style="display:block; border-color:rgba(239,68,68,0.35);">
                 <div style="font-weight:800;">${idx + 1}. ${esc(w.question)}</div>
                 <div style="font-size:0.86rem; color:var(--err); margin-top:4px;">إجابتك: ${esc(w.student_answer || "لم تُجب")}</div>
-                <div style="font-size:0.86rem; color:var(--olive); font-weight:800; margin-top:2px;">الإجابة الصحيحة: ${esc(w.correct_answer || "")}</div>
+                <div style="font-size:0.86rem; color:var(--accent); font-weight:800; margin-top:2px;">الإجابة الصحيحة: ${esc(w.correct_answer || "")}</div>
               </div>
             `).join("")}
           `
@@ -2885,11 +2859,11 @@ function renderStudentDash(settings, student, state) {
             </div>
             <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
               <span>قيمة الخصم:</span>
-              <strong id="summaryDiscountAmt" style="color:var(--olive);">0 ج</strong>
+              <strong id="summaryDiscountAmt" style="color:var(--accent);">0 ج</strong>
             </div>
             <div style="display:flex; justify-content:space-between; border-top:1px solid var(--bdr); padding-top:8px; font-size:1.05rem;">
               <span>المطلوب دفعه:</span>
-              <strong id="summaryFinalPrice" style="color:var(--accent);">${COURSE_PRICE_EGP} ج</strong>
+              <strong id="summaryFinalPrice" style="color:var(--accent-2);">${COURSE_PRICE_EGP} ج</strong>
             </div>
           </div>
 
@@ -2943,7 +2917,7 @@ function renderStudentDash(settings, student, state) {
             const finalP = Math.max(0, basePrice - appliedDiscount);
             discAmtEl.textContent = appliedDiscount + " ج";
             finalPriceEl.textContent = finalP + " ج";
-            statusMsg.style.color = "var(--olive)";
+            statusMsg.style.color = "var(--accent)";
             statusMsg.textContent = "تم تطبيق كود الخصم (" + appliedCode + ") بقيمة " + appliedDiscount + " ج.";
           }
 
@@ -3041,7 +3015,7 @@ function renderStudentDash(settings, student, state) {
               preview.src = dataUrl;
               preview.style.display = "block";
             };
-            r.readAsDataURL(file);
+            reader.readAsDataURL(file);
           });
         })();
       </script>
@@ -3095,49 +3069,131 @@ function renderStudentDash(settings, student, state) {
   </script>`;
 }
 
-function renderAdminPage(settings, isAuthed, teamSession, data, section, error, notice, loginMode = "") {
-  const isTeamOnly = Boolean(!isAuthed && teamSession && teamSession.role === "team");
-  const hasStaffAccess = Boolean(isAuthed || isTeamOnly);
-  const currentActorName = isAuthed
-    ? "الأدمن"
-    : (teamSession ? `${teamSession.team_name} (${teamSession.team_phone})` : "");
-
-  if (!hasStaffAccess) {
-    const showTeamForm = loginMode === "team";
+function renderTeamStandalonePage(teamSession, forumPosts, error, notice) {
+  if (!teamSession) {
     return `
-    <div class="card" style="max-width:540px; margin:28px auto;">
-      <div style="display:flex; gap:10px; margin-bottom:18px;">
-        <a class="btn ${!showTeamForm ? "btn-blue" : "btn-out"}" style="flex:1;" href="/admin?mode=admin">الأدمن</a>
-        <a class="btn ${showTeamForm ? "btn-teal" : "btn-out"}" style="flex:1;" href="/admin?mode=team">تيم الأدمن</a>
-      </div>
-
+    <div class="card" style="max-width:520px; margin:28px auto;">
+      <span class="pill pill-ok">بوابة تيم الأدمن • المنتدى</span>
+      <h2 style="font-weight:900; margin-top:8px; margin-bottom:6px;">دخول تيم الأدمن</h2>
+      <p class="muted" style="font-size:0.86rem; margin-bottom:14px;">أدخل اسمك ورقم هاتفك والكود المخصص لك للدخول إلى المنتدى فقط (جلسة واحدة على جهاز واحد).</p>
       ${error ? `<div class="msg-err">${esc(error)}</div>` : ""}
-
-      ${!showTeamForm ? `
-        <h2 style="font-weight:900; margin-bottom:6px;">دخول الأدمن</h2>
-        <p class="muted" style="font-size:0.86rem; margin-bottom:14px;">تسجيل دخول الإدارة الكاملة بالبريد الإلكتروني وكلمة المرور.</p>
-        <form method="post" action="/admin/login" autocomplete="off">
-          <div class="field"><label>البريد الإلكتروني</label><input name="email" type="email" required autocomplete="off" placeholder="mohmed@mr.com" /></div>
-          <div class="field"><label>كلمة المرور</label><input name="password" type="password" required autocomplete="new-password" placeholder="••••••••" /></div>
-          <button type="submit" class="btn btn-blue" style="width:100%;">دخول الأدمن</button>
-        </form>
-      ` : `
-        <h2 style="font-weight:900; margin-bottom:6px;">دخول تيم الأدمن</h2>
-        <p class="muted" style="font-size:0.86rem; margin-bottom:14px;">ادخل باسمك ورقم هاتفك والكود المخصص لك (جلسة واحدة نشطة على جهاز واحد فقط).</p>
-        <form method="post" action="/team/login" autocomplete="off">
-          <div class="field"><label>اسم عضو التيم *</label><input name="team_name" type="text" required autocomplete="off" placeholder="اكتب اسمك كما أضافه الأدمن" /></div>
-          <div class="field"><label>رقم الهاتف *</label><input name="team_phone" type="tel" required autocomplete="off" placeholder="01xxxxxxxxx" /></div>
-          <div class="field"><label>الكود / الرمز الخاص بك *</label><input name="team_code" type="text" required autocomplete="off" placeholder="أدخل الكود المخصص لك" /></div>
-          <button type="submit" class="btn btn-teal" style="width:100%;">دخول تيم الأدمن</button>
-        </form>
-      `}
+      ${notice ? `<div class="msg-ok">${esc(notice)}</div>` : ""}
+      <form method="post" action="/team/login" autocomplete="off">
+        <div class="field"><label>اسم عضو التيم *</label><input name="team_name" type="text" required autocomplete="off" placeholder="اكتب اسمك كما أضافه الأدمن" /></div>
+        <div class="field"><label>رقم الهاتف *</label><input name="team_phone" type="tel" required autocomplete="off" placeholder="01xxxxxxxxx" /></div>
+        <div class="field"><label>الكود الخاص بك *</label><input name="team_code" type="text" required autocomplete="off" placeholder="أدخل الكود المخصص لك" /></div>
+        <button type="submit" class="btn btn-blue" style="width:100%;">دخول تيم الأدمن</button>
+      </form>
     </div>`;
   }
 
-  const activeSec = isTeamOnly
-    ? (["tickets", "forum", "support"].includes(section) ? section : "tickets")
-    : (section || "students");
+  const actorLabel = `${teamSession.team_name} (${teamSession.team_phone})`;
+  const sortedPosts = (forumPosts || []).slice().sort((a, b) =>
+    String(b.created_at || "").localeCompare(String(a.created_at || ""))
+  );
 
+  const postsHtml = sortedPosts.map(p => `
+    <div class="row" style="display:block;">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+        <div>
+          <span class="pill pill-ok">${esc(p.branch || "فرع")}</span>
+          <strong style="margin-right:6px;">الطالب: ${esc(p.student_name || "")}</strong>
+          <span class="pill pill-warn">هاتف: ${esc(p.student_phone || "-")}</span>
+          <span class="pill pill-warn">الصف: ${esc(p.student_grade || "-")}</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span class="muted" style="font-size:0.78rem;">${esc((p.created_at || "").slice(0, 16).replace("T", " "))}</span>
+          <form method="post" action="/team/delete-forum" style="margin:0;">
+            <input type="hidden" name="post_id" value="${esc(p.id)}" />
+            <button type="submit" class="btn btn-red btn-sm">حذف الرسالة</button>
+          </form>
+        </div>
+      </div>
+      <p style="margin:8px 0; font-size:0.92rem; font-weight:700;">${esc(p.message || "")}</p>
+      ${p.image_url ? `<img class="ticket-img-thumb" src="${esc(p.image_url)}" alt="صورة المنتدى" onerror="this.style.display='none';" />` : ""}
+      <form method="post" action="/team/reply-forum" style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
+        <input type="hidden" name="post_id" value="${esc(p.id)}" />
+        <input type="text" name="reply" value="${esc(p.reply || "")}" placeholder="اكتب ردك في المنتدى باسم ${esc(actorLabel)}..." style="flex:1; min-width:220px;" />
+        <button type="submit" class="btn btn-blue btn-sm">رد</button>
+      </form>
+    </div>
+  `).join("") || `<p class="muted">لا توجد رسائل في المنتدى حالياً.</p>`;
+
+  return `
+  <div class="card" style="max-width:1040px; margin:24px auto;">
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
+      <div>
+        <span class="pill pill-ok">المنتدى فقط • تيم الأدمن</span>
+        <h2 style="font-weight:900; margin-top:6px;">أهلاً بك يا ${esc(teamSession.team_name)}</h2>
+        <div class="muted" style="font-size:0.84rem;">رقم الهاتف: <strong>${esc(teamSession.team_phone)}</strong></div>
+      </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button type="button" class="btn btn-gold btn-sm" id="enableTeamPushBtn">تفعيل إشعارات الجهاز</button>
+        <a class="btn btn-red btn-sm" href="/logout">تسجيل الخروج</a>
+      </div>
+    </div>
+
+    ${error ? `<div class="msg-err">${esc(error)}</div>` : ""}
+    ${notice ? `<div class="msg-ok">${esc(notice)}</div>` : ""}
+
+    <h3 style="font-weight:900; margin-bottom:10px;">رسائل الطلاب في المنتدى</h3>
+    ${postsHtml}
+  </div>
+
+  <script>
+    (function () {
+      document.getElementById("enableTeamPushBtn")?.addEventListener("click", async function () {
+        if (!("Notification" in window)) {
+          alert("هذا المتصفح لا يدعم إشعارات الويب.");
+          return;
+        }
+        const perm = await Notification.requestPermission();
+        if (perm === "granted") {
+          new Notification("${PLATFORM_NAME} — إشعارات التيم", {
+            body: "سيصلك إشعار عند إرسال طالب رسالة أو عند رد عضو من التيم بأنها تم الرد."
+          });
+        }
+      });
+
+      let lastAlertKey = localStorage.getItem("nb_team_last_alert") || "";
+      async function pollTeamAlerts() {
+        try {
+          const res = await fetch("/api/staff/alerts");
+          if (!res.ok) return;
+          const d = await res.json();
+          if (d.latest_key && d.latest_key !== lastAlertKey) {
+            lastAlertKey = d.latest_key;
+            localStorage.setItem("nb_team_last_alert", lastAlertKey);
+            if ("Notification" in window && Notification.permission === "granted") {
+              new Notification(d.title || "إشعار المنتدى", {
+                body: d.body || ""
+              });
+            }
+          }
+        } catch {}
+      }
+      pollTeamAlerts();
+      setInterval(pollTeamAlerts, 6000);
+    })();
+  </script>`;
+}
+
+function renderAdminPage(settings, isAuthed, data, section, error, notice) {
+  if (!isAuthed) {
+    return `
+    <div class="card" style="max-width:480px; margin:28px auto;">
+      <h2 style="font-weight:900; margin-bottom:8px;">دخول الأدمن</h2>
+      <p class="muted" style="font-size:0.86rem; margin-bottom:14px;">لوحة تحكم منصة ${PLATFORM_NAME} (الأدمن).</p>
+      ${error ? `<div class="msg-err">${esc(error)}</div>` : ""}
+      <form method="post" action="/admin/login" autocomplete="off">
+        <div class="field"><label>البريد الإلكتروني</label><input name="email" type="email" required autocomplete="off" placeholder="mohmed@mr.com" /></div>
+        <div class="field"><label>كلمة المرور</label><input name="password" type="password" required autocomplete="new-password" placeholder="••••••••" /></div>
+        <button type="submit" class="btn btn-blue" style="width:100%;">دخول الأدمن</button>
+      </form>
+    </div>`;
+  }
+
+  const activeSec = section || "students";
   const allLectures = sortLectures(data.lectures || []);
   const allExams = data.exams || [];
   const allSubmissions = data.submissions || [];
@@ -3252,15 +3308,14 @@ function renderAdminPage(settings, isAuthed, teamSession, data, section, error, 
         <div>
           <span class="pill pill-ok">الطالب: ${esc(t.student_name || "")}</span>
           <span class="pill pill-warn">هاتف: ${esc(t.student_phone || "")}</span>
-          ${t.student_grade ? `<span class="pill pill-warn">${esc(t.student_grade)}</span>` : ""}
         </div>
       </div>
       <p style="margin:6px 0; font-size:0.88rem;">${esc(t.message)}</p>
       ${t.image_url ? `<img class="ticket-img-thumb" src="${esc(t.image_url)}" alt="صورة السؤال" onerror="this.style.display='none';" />` : ""}
       <form method="post" action="/admin/reply-ticket" style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
         <input type="hidden" name="ticket_id" value="${esc(t.id)}" />
-        <input name="reply" type="text" value="${esc(t.reply || "")}" placeholder="اكتب رد ${esc(currentActorName)} هنا..." style="flex:1; min-width:220px;" />
-        <button type="submit" class="btn btn-teal btn-sm">حفظ الرد باسم (${esc(currentActorName)})</button>
+        <input name="reply" type="text" value="${esc(t.reply || "")}" placeholder="اكتب رد تيم الدعم العلمي أو الأستاذ هنا..." style="flex:1; min-width:220px;" />
+        <button type="submit" class="btn btn-teal btn-sm">حفظ الرد</button>
       </form>
     </div>
   `).join("") || `<p class="muted">لا توجد أسئلة من الطلاب حالياً.</p>`;
@@ -3286,8 +3341,8 @@ function renderAdminPage(settings, isAuthed, teamSession, data, section, error, 
       ${p.image_url ? `<img class="ticket-img-thumb" src="${esc(p.image_url)}" alt="صورة المنتدى" onerror="this.style.display='none';" />` : ""}
       <form method="post" action="/admin/reply-forum" style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
         <input type="hidden" name="post_id" value="${esc(p.id)}" />
-        <input type="text" name="reply" value="${esc(p.reply || "")}" placeholder="اكتب ردك في المنتدى باسم ${esc(currentActorName)}..." style="flex:1; min-width:220px;" />
-        <button type="submit" class="btn btn-blue btn-sm">رد باسم (${esc(currentActorName)})</button>
+        <input type="text" name="reply" value="${esc(p.reply || "")}" placeholder="اكتب ردك في المنتدى..." style="flex:1; min-width:220px;" />
+        <button type="submit" class="btn btn-blue btn-sm">رد</button>
       </form>
     </div>
   `).join("") || `<p class="muted">لا توجد مشاركات في المنتدى حتى الآن.</p>`;
@@ -3316,7 +3371,7 @@ function renderAdminPage(settings, isAuthed, teamSession, data, section, error, 
         </div>
         <form method="post" action="/admin/support-reply" style="display:flex; gap:8px; flex-wrap:wrap;">
           <input type="hidden" name="session_id" value="${esc(th.id)}" />
-          <input type="text" name="reply_text" required placeholder="اكتب رد الدعم الفني باسم ${esc(currentActorName)}..." style="flex:1; min-width:220px;" />
+          <input type="text" name="reply_text" required placeholder="اكتب رد الدعم الفني هنا..." style="flex:1; min-width:220px;" />
           <button type="submit" class="btn btn-blue btn-sm">إرسال الرد</button>
         </form>
       </div>
@@ -3328,11 +3383,11 @@ function renderAdminPage(settings, isAuthed, teamSession, data, section, error, 
     sectionHtml = `
       <div class="card">
         <h3 style="font-weight:900; margin-bottom:6px;">إضافة تيم الأدمن (الاسم + رقم الهاتف + الكود)</h3>
-        <p class="muted" style="font-size:0.85rem; margin-bottom:14px;">اكتب اسم عضو التيم ورقم هاتفه والكود الخاص به يدوياً، ولن يتمكن من الدخول إلا بهم وعلى جهاز واحد فقط في نفس الوقت.</p>
+        <p class="muted" style="font-size:0.85rem; margin-bottom:14px;">أضف اسم عضو التيم ورقم هاتفه والكود الخاص به ليتمكن من الدخول لصفحة التيم الخاصة بالمنتدى (وجلسة واحدة على جهاز واحد).</p>
         <form method="post" action="/admin/create-team" class="grid3">
           <div class="field"><label>اسم عضو التيم *</label><input name="team_name" type="text" required placeholder="اكتب اسم عضو التيم..." /></div>
           <div class="field"><label>رقم الهاتف *</label><input name="team_phone" type="tel" required placeholder="01xxxxxxxxx" /></div>
-          <div class="field"><label>كود التيم *</label><input name="team_code" type="text" required placeholder="اكتب الكود المخصص له..." /></div>
+          <div class="field"><label>كود التيم *</label><input name="team_code" type="text" required placeholder="اكتب الكود الخاص به..." /></div>
           <div style="grid-column:1/-1;"><button type="submit" class="btn btn-teal">حفظ وإضافة عضو التيم</button></div>
         </form>
         <div style="margin-top:16px;">${teamMemberRows}</div>
@@ -3358,14 +3413,14 @@ function renderAdminPage(settings, isAuthed, teamSession, data, section, error, 
     sectionHtml = `
       <div style="margin-bottom:10px;">
         <h3 style="font-weight:900;">الدعم الفني</h3>
-        <p class="muted" style="font-size:0.86rem;">رسائل وصور الدعم الفني الواردة من الشات المباشر والرد عليها باسم (${esc(currentActorName)}).</p>
+        <p class="muted" style="font-size:0.86rem;">رسائل وصور الدعم الفني الواردة من الشات المباشر والرد عليها.</p>
       </div>
       ${supportRows}
     `;
   } else if (activeSec === "forum") {
     sectionHtml = `
       <div class="card">
-        <h3 style="font-weight:900; margin-bottom:10px;">منتدى فروع اللغة العربية — متابعة والرد أو الحذف باسم (${esc(currentActorName)})</h3>
+        <h3 style="font-weight:900; margin-bottom:10px;">منتدى فروع اللغة العربية — متابعة والرد أو الحذف</h3>
         ${adminForumRows}
       </div>
     `;
@@ -3843,7 +3898,7 @@ function renderAdminPage(settings, isAuthed, teamSession, data, section, error, 
                     '<form method="post" action="/admin/revoke-branch" style="display:inline; margin:0;">' +
                       '<input type="hidden" name="phone" value="' + escHtml(st.phone) + '" />' +
                       '<input type="hidden" name="branch" value="' + escHtml(b) + '" />' +
-                      '<button type="submit" style="border:none; background:rgba(220,38,38,0.85); color:#fff; border-radius:999px; padding:1px 7px; font-size:0.72rem; font-weight:800; cursor:pointer;">إلغاء التفعيل</button>' +
+                      '<button type="submit" style="border:none; background:#ef4444; color:#fff; border-radius:999px; padding:1px 7px; font-size:0.72rem; font-weight:800; cursor:pointer;">إلغاء التفعيل</button>' +
                     '</form>' +
                   '</span>'
                 ).join("")
@@ -4031,7 +4086,7 @@ function renderAdminPage(settings, isAuthed, teamSession, data, section, error, 
   } else if (activeSec === "tickets") {
     sectionHtml = `
       <div class="card">
-        <h3 style="font-weight:900; margin-bottom:10px;">تيم الدعم العلمي — أسئلة الطلاب والرد عليها باسم (${esc(currentActorName)})</h3>
+        <h3 style="font-weight:900; margin-bottom:10px;">تيم الدعم العلمي — أسئلة الطلاب والرد عليها</h3>
         ${ticketsRows}
       </div>
     `;
@@ -4066,87 +4121,32 @@ function renderAdminPage(settings, isAuthed, teamSession, data, section, error, 
     <div>
       ${error ? `<div class="msg-err">${esc(error)}</div>` : ""}
       ${notice ? `<div class="msg-ok">${esc(notice)}</div>` : ""}
-
-      <div class="card" style="padding:14px 18px; display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
-        <div>
-          <span class="pill pill-ok">${isAuthed ? "وضع الأدمن الكامل" : "وضع تيم الأدمن"}</span>
-          <strong style="margin-right:8px;">المسجل حالياً: ${esc(currentActorName)}</strong>
-        </div>
-        <button type="button" class="btn btn-gold btn-sm" id="enableStaffPushBtn">تفعيل إشعارات الجهاز الفورية</button>
+      <div class="kpi-grid">
+        <div class="kpi-card"><div><div class="kpi-num">${allStudents.length}</div><div class="kpi-lbl">طلاب المنصة</div></div><div class="kpi-icon-box">👨‍🎓</div></div>
+        <div class="kpi-card teal-kpi"><div><div class="kpi-num">${allLectures.length}</div><div class="kpi-lbl">المحاضرات</div></div><div class="kpi-icon-box">🎥</div></div>
+        <div class="kpi-card gold-kpi"><div><div class="kpi-num">${allExams.length}</div><div class="kpi-lbl">الواجبات والاختبارات</div></div><div class="kpi-icon-box">📝</div></div>
+        <div class="kpi-card teal-kpi"><div><div class="kpi-num">${allTeamMembers.length}</div><div class="kpi-lbl">أعضاء التيم</div></div><div class="kpi-icon-box">👥</div></div>
       </div>
-
-      ${isAuthed ? `
-        <div class="kpi-grid">
-          <div class="kpi-card"><div><div class="kpi-num">${allStudents.length}</div><div class="kpi-lbl">طلاب المنصة</div></div><div class="kpi-icon-box">👨‍🎓</div></div>
-          <div class="kpi-card teal-kpi"><div><div class="kpi-num">${allLectures.length}</div><div class="kpi-lbl">المحاضرات</div></div><div class="kpi-icon-box">🎥</div></div>
-          <div class="kpi-card gold-kpi"><div><div class="kpi-num">${allExams.length}</div><div class="kpi-lbl">الواجبات والاختبارات</div></div><div class="kpi-icon-box">📝</div></div>
-          <div class="kpi-card teal-kpi"><div><div class="kpi-num">${allTeamMembers.length}</div><div class="kpi-lbl">أعضاء التيم</div></div><div class="kpi-icon-box">👥</div></div>
-        </div>
-      ` : ""}
-
       ${sectionHtml}
     </div>
-
     <aside class="right-drawer">
       <div class="drawer-top">
         <span class="drawer-title" style="font-weight:900; font-size:0.92rem;">إدارة ${PLATFORM_NAME}</span>
         <button type="button" class="collapse-btn" onclick="document.getElementById('adminShell')?.classList.toggle('collapsed')">⇄</button>
       </div>
-      ${isAuthed ? `
-        <a class="nav-item-link ${activeSec === "students" ? "active" : ""}" href="/admin?section=students"><span>👨‍🎓</span><span class="nav-label">طلاب المنصة</span></a>
-        <a class="nav-item-link ${activeSec === "center_students" ? "active" : ""}" href="/admin?section=center_students"><span>🏫</span><span class="nav-label">طلاب السنتر</span></a>
-        <a class="nav-item-link ${activeSec === "ranking" ? "active" : ""}" href="/admin?section=ranking"><span>🏆</span><span class="nav-label">ترتيب الطلاب</span></a>
-        <a class="nav-item-link ${activeSec === "lectures" ? "active" : ""}" href="/admin?section=lectures"><span>🎥</span><span class="nav-label">إضافة محاضرة</span></a>
-        <a class="nav-item-link ${activeSec === "codes" ? "active" : ""}" href="/admin?section=codes"><span>🔑</span><span class="nav-label">الأكواد والخصومات</span></a>
-        <a class="nav-item-link ${activeSec === "add_team" ? "active" : ""}" href="/admin?section=add_team"><span>👥</span><span class="nav-label">إضافة تيم</span></a>
-        <a class="nav-item-link ${activeSec === "exams" ? "active" : ""}" href="/admin?section=exams"><span>📝</span><span class="nav-label">الواجبات والاختبارات</span></a>
-      ` : ""}
+      <a class="nav-item-link ${activeSec === "students" ? "active" : ""}" href="/admin?section=students"><span>👨‍🎓</span><span class="nav-label">طلاب المنصة</span></a>
+      <a class="nav-item-link ${activeSec === "center_students" ? "active" : ""}" href="/admin?section=center_students"><span>🏫</span><span class="nav-label">طلاب السنتر</span></a>
+      <a class="nav-item-link ${activeSec === "ranking" ? "active" : ""}" href="/admin?section=ranking"><span>🏆</span><span class="nav-label">ترتيب الطلاب</span></a>
+      <a class="nav-item-link ${activeSec === "lectures" ? "active" : ""}" href="/admin?section=lectures"><span>🎥</span><span class="nav-label">إضافة محاضرة</span></a>
+      <a class="nav-item-link ${activeSec === "codes" ? "active" : ""}" href="/admin?section=codes"><span>🔑</span><span class="nav-label">الأكواد والخصومات</span></a>
+      <a class="nav-item-link ${activeSec === "add_team" ? "active" : ""}" href="/admin?section=add_team"><span>👥</span><span class="nav-label">إضافة تيم</span></a>
+      <a class="nav-item-link ${activeSec === "exams" ? "active" : ""}" href="/admin?section=exams"><span>📝</span><span class="nav-label">الواجبات والاختبارات</span></a>
       <a class="nav-item-link ${activeSec === "tickets" ? "active" : ""}" href="/admin?section=tickets"><span>❓</span><span class="nav-label">تيم الدعم العلمي</span></a>
       <a class="nav-item-link ${activeSec === "forum" ? "active" : ""}" href="/admin?section=forum"><span>💬</span><span class="nav-label">المنتدى</span></a>
       <a class="nav-item-link ${activeSec === "support" ? "active" : ""}" href="/admin?section=support"><span>🎧</span><span class="nav-label">دعم فني</span></a>
-      ${isAuthed ? `
-        <a class="nav-item-link ${activeSec === "settings" ? "active" : ""}" href="/admin?section=settings"><span>⚙️</span><span class="nav-label">الإعدادات والإشعار</span></a>
-      ` : ""}
+      <a class="nav-item-link ${activeSec === "settings" ? "active" : ""}" href="/admin?section=settings"><span>⚙️</span><span class="nav-label">الإعدادات والإشعار</span></a>
     </aside>
-  </div>
-
-  <script>
-    (function () {
-      const pushBtn = document.getElementById("enableStaffPushBtn");
-      pushBtn?.addEventListener("click", async function () {
-        if (!("Notification" in window)) {
-          alert("هذا المتصفح لا يدعم إشعارات الويب.");
-          return;
-        }
-        const perm = await Notification.requestPermission();
-        if (perm === "granted") {
-          new Notification("${PLATFORM_NAME} — تم تفعيل الإشعارات", {
-            body: "سيصلك تنبيه فوري عند رسالة طالب أو عند قيام أحد أعضاء التيم بالرد."
-          });
-        }
-      });
-
-      let lastAlertKey = localStorage.getItem("nb_staff_last_alert") || "";
-      async function pollStaffAlerts() {
-        try {
-          const res = await fetch("/api/staff/alerts");
-          if (!res.ok) return;
-          const d = await res.json();
-          if (d.latest_key && d.latest_key !== lastAlertKey) {
-            lastAlertKey = d.latest_key;
-            localStorage.setItem("nb_staff_last_alert", lastAlertKey);
-            if ("Notification" in window && Notification.permission === "granted") {
-              new Notification(d.title || "تنبيه جديد في المنصة", {
-                body: d.body || ""
-              });
-            }
-          }
-        } catch {}
-      }
-      pollStaffAlerts();
-      setInterval(pollStaffAlerts, 6000);
-    })();
-  </script>`;
+  </div>`;
 }
 
 async function parseFormBody(req) {
@@ -4214,7 +4214,7 @@ export default {
 
     let teamSession = null;
     let teamKicked = false;
-    if (!isAdmin && teamCookie && teamCookie.role === "team" && teamCookie.team_id) {
+    if (teamCookie && teamCookie.role === "team" && teamCookie.team_id) {
       const dbTm = await fsGet(env, "team_members", teamCookie.team_id);
       if (dbTm) {
         if (dbTm.active_session && teamCookie.nonce && dbTm.active_session !== teamCookie.nonce) {
@@ -4235,7 +4235,7 @@ export default {
         });
       }
       if (teamKicked) {
-        return new Response(JSON.stringify({ kicked: true, redirect: "/admin?mode=team&error=" + encodeURIComponent("تم تسجيل الدخول من جهاز آخر") }), {
+        return new Response(JSON.stringify({ kicked: true, redirect: "/team?error=" + encodeURIComponent("تم تسجيل الدخول من جهاز آخر") }), {
           headers: {
             "Content-Type": "application/json; charset=utf-8",
             "Set-Cookie": clearCookieHeader("nb_team")
@@ -4252,16 +4252,11 @@ export default {
         "Set-Cookie": clearCookieHeader("nb_st")
       });
     }
-    if (teamKicked && path.startsWith("/admin")) {
-      return redirectRes(`/admin?mode=team&error=${encodeURIComponent("تم تسجيل الدخول إلى حساب التيم من جهاز آخر، سجل دخولك مجدداً")}`, {
+    if (teamKicked && path.startsWith("/team")) {
+      return redirectRes(`/team?error=${encodeURIComponent("تم تسجيل الدخول إلى حساب التيم من جهاز آخر، سجل دخولك مجدداً")}`, {
         "Set-Cookie": clearCookieHeader("nb_team")
       });
     }
-
-    const hasStaffAccess = Boolean(isAdmin || teamSession);
-    const currentActorName = isAdmin
-      ? "الأدمن"
-      : (teamSession ? `${teamSession.team_name} (${teamSession.team_phone})` : "");
 
     const allTickets = await fsList(env, "tickets");
     const academicUnreadItems = student
@@ -4277,7 +4272,7 @@ export default {
       : [];
 
     if (path === "/api/staff/alerts" && method === "GET") {
-      if (!hasStaffAccess) {
+      if (!isAdmin && !teamSession) {
         return new Response(JSON.stringify({ latest_key: "" }), {
           headers: { "Content-Type": "application/json; charset=utf-8" }
         });
@@ -4357,11 +4352,6 @@ export default {
           image_url: imageUrl,
           at: new Date().toISOString()
         });
-        await fsSet(env, "staff_alerts", "latest", {
-          latest_key: `sup_${msgId}`,
-          title: `رسالة دعم فني من: ${visitorName || existing.visitor_name || "زائر"}`,
-          body: text || "أرسل صورة في الدعم الفني"
-        });
       }
 
       const updatedDoc = {
@@ -4410,7 +4400,7 @@ export default {
     }
 
     if (path === "/about" && method === "GET") {
-      return htmlRes(renderLayout("من نحن", settings, student, hasStaffAccess, renderAboutStandalonePage(settings), {
+      return htmlRes(renderLayout("من نحن", settings, student, isAdmin, renderAboutStandalonePage(settings), {
         showLandingAdminAvatar: false,
         showSupportWidget: true,
         academicUnreadCount: academicUnreadItems.length,
@@ -4419,7 +4409,7 @@ export default {
     }
 
     if (path === "/privacy" && method === "GET") {
-      return htmlRes(renderLayout("سياسة الخصوصية", settings, student, hasStaffAccess, renderPrivacyStandalonePage(), {
+      return htmlRes(renderLayout("سياسة الخصوصية", settings, student, isAdmin, renderPrivacyStandalonePage(), {
         showLandingAdminAvatar: false,
         showSupportWidget: true,
         academicUnreadCount: academicUnreadItems.length,
@@ -4428,7 +4418,7 @@ export default {
     }
 
     if (path === "/" && method === "GET") {
-      return htmlRes(renderLayout("الرئيسية", settings, student, hasStaffAccess, renderLanding(settings), {
+      return htmlRes(renderLayout("الرئيسية", settings, student, isAdmin, renderLanding(settings), {
         showLandingAdminAvatar: true,
         showSupportWidget: true,
         academicUnreadCount: academicUnreadItems.length,
@@ -4436,432 +4426,13 @@ export default {
       }));
     }
 
-    if (path === "/student" && method === "GET") {
-      const tab = url.searchParams.get("tab") || "register";
-      const step = Number(url.searchParams.get("step") || "1");
-      const draft = {
-        first_name: url.searchParams.get("first_name") || "",
-        second_name: url.searchParams.get("second_name") || "",
-        third_name: url.searchParams.get("third_name") || "",
-        fourth_name: url.searchParams.get("fourth_name") || "",
-        phone: url.searchParams.get("phone") || ""
-      };
+    if (path === "/team" && method === "GET") {
       const error = url.searchParams.get("error") || "";
       const notice = url.searchParams.get("notice") || "";
-
-      if (!student) {
-        return htmlRes(renderLayout("بوابة الطالب", settings, null, hasStaffAccess, renderStudentAuth(settings, tab, step, draft, error, notice), {
-          showSupportWidget: true,
-          academicUnreadCount: 0,
-          academicUnreadItems: []
-        }));
-      }
-
-      const lectureIdParam = url.searchParams.get("lecture") || "";
-      if (lectureIdParam) {
-        await fsSet(env, "watched_lectures", `${student.phone}_${lectureIdParam}`, {
-          student_phone: student.phone,
-          lecture_id: lectureIdParam,
-          watched_at: new Date().toISOString()
-        });
-      }
-
-      const [lectures, exams, submissions, drafts, watched, discounts, forumPosts] = await Promise.all([
-        fsList(env, "lectures"),
-        fsList(env, "exams"),
-        fsList(env, "submissions"),
-        fsList(env, "exam_drafts"),
-        fsList(env, "watched_lectures"),
-        fsList(env, "discount_codes"),
-        fsList(env, "forum_posts")
-      ]);
-
-      const myTickets = allTickets.filter(t => t.student_phone === student.phone);
-      const mySubmissions = submissions.filter(s => s.student_phone === student.phone);
-      const myDrafts = drafts.filter(d => d.student_phone === student.phone);
-      const myWatched = watched.filter(w => w.student_phone === student.phone);
-
-      const dashHtml = renderStudentDash(settings, student, {
-        section: url.searchParams.get("section") || "dashboard",
-        branch: url.searchParams.get("branch") || "",
-        forumBranch: url.searchParams.get("forum_branch") || BRANCHES[0],
-        lectureId: lectureIdParam,
-        examId: url.searchParams.get("exam_id") || "",
-        lectures,
-        exams,
-        tickets: myTickets,
-        submissions: mySubmissions,
-        drafts: myDrafts,
-        watched: myWatched,
-        discounts,
-        forumPosts,
-        error,
-        notice
-      });
-
-      return htmlRes(renderLayout("لوحة الطالب", settings, student, hasStaffAccess, dashHtml, {
-        showSupportWidget: true,
-        academicUnreadCount: academicUnreadItems.length,
-        academicUnreadItems
-      }));
-    }
-
-    if (path === "/student/register" && method === "POST") {
-      const body = await parseFormBody(req);
-      const phone = String(body.phone || "").trim();
-      const parentPhone = String(body.parent_phone || "").trim();
-      const fullName = String(body.full_name || "").trim();
-      const password = String(body.password || "");
-      const governorate = String(body.governorate || "").trim();
-      if (!phone || !fullName || !password || !parentPhone || !governorate) {
-        return redirectRes(`/student?tab=register&step=1&error=${encodeURIComponent("أكمل جميع البيانات المطلوبة")}`);
-      }
-      if (phone === parentPhone) {
-        return redirectRes(`/student?tab=register&step=1&error=${encodeURIComponent("يجب أن يكون رقم هاتف ولي الأمر مختلفاً عن رقم هاتف الطالب")}`);
-      }
-      const exists = await fsGet(env, "students", phone);
-      if (exists) {
-        return redirectRes(`/student?tab=login&error=${encodeURIComponent("رقم الهاتف مسجل بالفعل، سجل الدخول الآن")}`);
-      }
-      const nonce = "st_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
-      const stObj = {
-        phone,
-        full_name: fullName,
-        grade: String(body.grade || GRADES[0]),
-        track: String(body.track || TRACKS[0]),
-        parent_phone: parentPhone,
-        governorate,
-        password_plain: password,
-        password_hash: await sha256(password),
-        branches: [],
-        active_session: nonce,
-        created_at: new Date().toISOString()
-      };
-      await fsSet(env, "students", phone, stObj);
-      const tok = makeToken({ phone, nonce }, secret);
-      return redirectRes(`/student?section=dashboard&notice=${encodeURIComponent("تم إنشاء حسابك بنجاح!")}`, {
-        "Set-Cookie": setCookieHeader("nb_st", tok)
-      });
-    }
-
-    if (path === "/student/login" && method === "POST") {
-      const body = await parseFormBody(req);
-      const phone = String(body.phone || "").trim();
-      const password = String(body.password || "");
-      const st = await fsGet(env, "students", phone);
-      if (!st) {
-        return redirectRes(`/student?tab=login&error=${encodeURIComponent("رقم الهاتف غير مسجل")}`);
-      }
-      const okPass = st.password_hash === (await sha256(password)) || (st.password_plain && st.password_plain === password);
-      if (!okPass) {
-        return redirectRes(`/student?tab=login&error=${encodeURIComponent("كلمة السر غير صحيحة")}`);
-      }
-      const nonce = "st_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
-      await fsSet(env, "students", phone, {
-        ...st,
-        password_plain: st.password_plain || password,
-        active_session: nonce
-      });
-      const tok = makeToken({ phone, nonce }, secret);
-      return redirectRes("/student?section=dashboard", {
-        "Set-Cookie": setCookieHeader("nb_st", tok)
-      });
-    }
-
-    if (path === "/student/center-login" && method === "POST") {
-      const body = await parseFormBody(req);
-      const code = String(body.center_code || "").trim().toUpperCase();
-      const name = String(body.name || "").trim();
-      const phone = String(body.phone || "").trim();
-      const grade = String(body.grade || GRADES[0]).trim();
-      const track = String(body.track || TRACKS[0]).trim();
-      const password = String(body.password || "").trim();
-
-      if (!code || !name || !phone || !password) {
-        return redirectRes(`/student?tab=center&error=${encodeURIComponent("أكمل الاسم الرباعي ورقم الهاتف وكلمة السر وكود السنتر")}`);
-      }
-
-      const codeDoc = await fsGet(env, "codes", code);
-      if (!codeDoc || codeDoc.type !== "center") {
-        return redirectRes(`/student?tab=center&error=${encodeURIComponent("كود السنتر غير صحيح")}`);
-      }
-      if (codeDoc.used) {
-        return redirectRes(`/student?tab=center&error=${encodeURIComponent("كود السنتر هذا تم استخدامه لمرة واحدة من قبل ولا يمكن استخدامه مرة أخرى")}`);
-      }
-
-      await fsSet(env, "codes", code, {
-        ...codeDoc,
-        used: true,
-        used_by: phone,
-        used_at: new Date().toISOString()
-      });
-
-      const nonce = "st_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
-      let st = await fsGet(env, "students", phone);
-      if (!st) {
-        st = {
-          phone,
-          full_name: name,
-          grade,
-          track,
-          parent_phone: "سنتر",
-          governorate: "سنتر",
-          password_plain: password,
-          password_hash: await sha256(password),
-          branches: [...BRANCHES],
-          is_center_student: true,
-          center_code: code,
-          active_session: nonce,
-          created_at: new Date().toISOString()
-        };
-      } else {
-        st = {
-          ...st,
-          full_name: name || st.full_name,
-          grade: grade || st.grade,
-          track: track || st.track,
-          password_plain: password,
-          password_hash: await sha256(password),
-          branches: [...BRANCHES],
-          is_center_student: true,
-          center_code: code,
-          active_session: nonce
-        };
-      }
-      await fsSet(env, "students", phone, st);
-      const tok = makeToken({ phone, nonce }, secret);
-      return redirectRes(`/student?section=dashboard&notice=${encodeURIComponent("تم تفعيل كود السنتر لمرة واحدة وفتح كل الفروع لك")}`, {
-        "Set-Cookie": setCookieHeader("nb_st", tok)
-      });
-    }
-
-    if (path === "/student/reset-password" && method === "POST") {
-      const body = await parseFormBody(req);
-      const phone = String(body.phone || "").trim();
-      const parentPhone = String(body.parent_phone || "").trim();
-      const newPass = String(body.new_password || "");
-      if (phone === parentPhone) {
-        return redirectRes(`/student?tab=forgot&error=${encodeURIComponent("رقم ولي الأمر يجب أن يختلف عن رقم الطالب")}`);
-      }
-      const st = await fsGet(env, "students", phone);
-      if (!st || String(st.parent_phone || "").trim() !== parentPhone) {
-        return redirectRes(`/student?tab=forgot&error=${encodeURIComponent("بيانات الطالب أو ولي الأمر غير مطابقة")}`);
-      }
-      await fsSet(env, "students", phone, {
-        ...st,
-        password_plain: newPass,
-        password_hash: await sha256(newPass)
-      });
-      return redirectRes(`/student?tab=login&notice=${encodeURIComponent("تم تحديث كلمة السر بنجاح")}`);
-    }
-
-    if (path === "/student/redeem-code" && method === "POST" && student) {
-      const body = await parseFormBody(req);
-      const code = String(body.code || "").trim().toUpperCase();
-      const codeDoc = await fsGet(env, "codes", code);
-      if (!codeDoc) {
-        return redirectRes(`/student?section=codes&error=${encodeURIComponent("الكود غير صحيح")}`);
-      }
-      if (codeDoc.used) {
-        return redirectRes(`/student?section=codes&error=${encodeURIComponent("هذا الكود مستخدم من قبل (يُستخدم لمرة واحدة فقط)")}`);
-      }
-      const currentBranches = new Set(student.branches || []);
-      let noticeText = "تم تفعيل الفرع بنجاح!";
-      if (codeDoc.type === "center") {
-        BRANCHES.forEach(b => currentBranches.add(b));
-        student.is_center_student = true;
-        student.center_code = code;
-        noticeText = "تم تفعيل كود السنتر وفتح جميع الفروع بنجاح!";
-      } else if (codeDoc.branch) {
-        currentBranches.add(codeDoc.branch);
-        noticeText = `تم تفعيل فرع (${codeDoc.branch}) بنجاح!`;
-      }
-      await fsSet(env, "codes", code, {
-        ...codeDoc,
-        used: true,
-        used_by: student.phone,
-        used_at: new Date().toISOString()
-      });
-      await fsSet(env, "students", student.phone, { ...student, branches: Array.from(currentBranches) });
-      return redirectRes(`/student?section=dashboard&notice=${encodeURIComponent(noticeText)}`);
-    }
-
-    if (path === "/student/exam-action" && method === "POST" && student) {
-      const body = await parseFormBody(req);
-      const examId = String(body.exam_id || "");
-      const actionType = String(body.action_type || "finish");
-      const ex = await fsGet(env, "exams", examId);
-      if (!ex) {
-        return redirectRes(`/student?section=exams&error=${encodeURIComponent("الواجب غير موجود")}`);
-      }
-      const subId = `${student.phone}_${examId}`;
-      const existingSub = await fsGet(env, "submissions", subId);
-      if (existingSub) {
-        return redirectRes(`/student?section=results&error=${encodeURIComponent("تم تسليم هذا الواجب مسبقاً ولا يمكن إعادته")}`);
-      }
-
-      const qs = Array.isArray(ex.questions) ? ex.questions : [];
-      const chosenAnswers = qs.map((_, i) => {
-        const raw = body[`q_${i}`];
-        return raw === undefined || raw === "" ? null : Number(raw);
-      });
-
-      if (actionType === "save") {
-        await fsSet(env, "exam_drafts", subId, {
-          student_phone: student.phone,
-          exam_id: examId,
-          answers: chosenAnswers,
-          saved_at: new Date().toISOString()
-        });
-        return redirectRes(`/student?section=exams&notice=${encodeURIComponent("تم حفظ إجاباتك لاستكمال الواجب لاحقاً")}`);
-      }
-
-      let score = 0;
-      const details = qs.map((q, i) => {
-        const chosenIdx = chosenAnswers[i];
-        const correctIdx = Number(q.correct_idx ?? 0);
-        const opts = Array.isArray(q.options) ? q.options : [];
-        const isCorrect = chosenIdx !== null && chosenIdx === correctIdx;
-        if (isCorrect) score++;
-        return {
-          question: String(q.text || ""),
-          student_answer: chosenIdx !== null && opts[chosenIdx] !== undefined ? String(opts[chosenIdx]) : "لم تُجب",
-          correct_answer: opts[correctIdx] !== undefined ? String(opts[correctIdx]) : "",
-          is_correct: isCorrect
-        };
-      });
-
-      const total = Math.max(1, qs.length);
-      const pct = Math.round((score / total) * 100);
-      const wrongCount = Math.max(0, qs.length - score);
-
-      await fsSet(env, "submissions", subId, {
-        student_phone: student.phone,
-        student_name: student.full_name,
-        exam_id: examId,
-        exam_title: ex.title,
-        branch: ex.branch || "عام",
-        score,
-        total: qs.length,
-        pct,
-        wrong_count: wrongCount,
-        details,
-        submitted_at: new Date().toISOString()
-      });
-
-      await fsDelete(env, "exam_drafts", subId);
-
-      return redirectRes(`/student?section=results&notice=${encodeURIComponent(`تم إنهاء الاختبار بنجاح! نتيجتك: ${score}/${qs.length} (${pct}%)`)}`);
-    }
-
-    if (path === "/student/forum-post" && method === "POST" && student) {
-      const body = await parseFormBody(req);
-      const branch = String(body.branch || BRANCHES[0]).trim();
-      const message = String(body.message || "").trim();
-      const imageUrl = String(body.image_url || "").trim();
-      if (!message && !imageUrl) {
-        return redirectRes(`/student?section=forum&forum_branch=${encodeURIComponent(branch)}&error=${encodeURIComponent("اكتب رسالتك أو أرفق صورة أولاً")}`);
-      }
-      const postId = `fp_${Date.now()}`;
-      await fsSet(env, "forum_posts", postId, {
-        branch,
-        student_phone: student.phone,
-        student_name: student.full_name,
-        student_grade: student.grade,
-        message,
-        image_url: imageUrl,
-        reply: "",
-        replied_by: "",
-        created_at: new Date().toISOString()
-      });
-      await fsSet(env, "staff_alerts", "latest", {
-        latest_key: `forum_${postId}`,
-        title: `سؤال جديد في المنتدى (${branch})`,
-        body: `الطالب: ${student.full_name} (${student.grade}) — ${message.slice(0, 75)}`
-      });
-      return redirectRes(`/student?section=forum&forum_branch=${encodeURIComponent(branch)}&notice=${encodeURIComponent("تم نشر مشاركتك في منتدى " + branch + " وإرسال إشعار للتيم")}`);
-    }
-
-    if (path === "/student/tickets" && method === "POST" && student) {
-      const body = await parseFormBody(req);
-      const id = `tk_${Date.now()}`;
-      const subj = String(body.subject || "").trim();
-      const msg = String(body.message || "").trim();
-      await fsSet(env, "tickets", id, {
-        student_phone: student.phone,
-        student_name: student.full_name,
-        student_grade: student.grade,
-        subject: subj,
-        message: msg,
-        image_url: String(body.image_url || "").trim(),
-        reply: "",
-        replied_by: "",
-        created_at: new Date().toISOString()
-      });
-      await fsSet(env, "staff_alerts", "latest", {
-        latest_key: `ticket_${id}`,
-        title: `سؤال جديد في الدعم العلمي — ${student.full_name}`,
-        body: `${subj}: ${msg.slice(0, 75)}`
-      });
-      return redirectRes(`/student?section=tickets&notice=${encodeURIComponent("تم إرسال سؤالك إلى تيم الدعم العلمي بنجاح")}`);
-    }
-
-    if (path === "/admin" && method === "GET") {
-      const section = url.searchParams.get("section") || "students";
-      const rankingGrade = url.searchParams.get("rank_grade") || GRADES[0];
-      const preselectLectureId = url.searchParams.get("lecture_id") || "";
-      const loginMode = url.searchParams.get("mode") || "admin";
-      const error = url.searchParams.get("error") || "";
-      const notice = url.searchParams.get("notice") || "";
-      if (!hasStaffAccess) {
-        return htmlRes(renderLayout("دخول الأدمن وتيم الأدمن", settings, student, false, renderAdminPage(settings, false, null, {}, section, error, notice, loginMode), {
-          showSupportWidget: false
-        }));
-      }
-      const [students, lectures, codes, exams, submissions, watched, discounts, forumPosts, supportThreads, teamMembers] = await Promise.all([
-        fsList(env, "students"),
-        fsList(env, "lectures"),
-        fsList(env, "codes"),
-        fsList(env, "exams"),
-        fsList(env, "submissions"),
-        fsList(env, "watched_lectures"),
-        fsList(env, "discount_codes"),
-        fsList(env, "forum_posts"),
-        fsList(env, "support_chats"),
-        fsList(env, "team_members")
-      ]);
-      const data = {
-        students,
-        lectures,
-        codes,
-        exams,
-        tickets: allTickets,
-        submissions,
-        watched,
-        discounts,
-        forumPosts,
-        supportThreads,
-        teamMembers,
-        rankingGrade,
-        preselectLectureId
-      };
-      return htmlRes(renderLayout(isAdmin ? "لوحة تحكم الأدمن" : "لوحة تيم الأدمن", settings, student, true, renderAdminPage(settings, isAdmin, teamSession, data, section, error, notice, loginMode), {
+      const forumPosts = teamSession ? await fsList(env, "forum_posts") : [];
+      return htmlRes(renderLayout("تيم الأدمن — المنتدى", settings, null, false, renderTeamStandalonePage(teamSession, forumPosts, error, notice), {
         showSupportWidget: false
       }));
-    }
-
-    if (path === "/admin/login" && method === "POST") {
-      const body = await parseFormBody(req);
-      const email = String(body.email || "").trim().toLowerCase();
-      const pass = String(body.password || "");
-      const ok = await verifyAdminCredentials(env, settings, email, pass);
-      if (!ok) {
-        return redirectRes(`/admin?mode=admin&error=${encodeURIComponent("بيانات الأدمن غير صحيحة")}`);
-      }
-      const tok = makeToken({ role: "admin", at: Date.now() }, secret);
-      return redirectRes("/admin?section=students", {
-        "Set-Cookie": `${setCookieHeader("nb_adm", tok)}, ${clearCookieHeader("nb_team")}`
-      });
     }
 
     if (path === "/team/login" && method === "POST") {
@@ -4871,7 +4442,7 @@ export default {
       const tCode = String(body.team_code || "").trim();
 
       if (!tName || !tPhone || !tCode) {
-        return redirectRes(`/admin?mode=team&error=${encodeURIComponent("أدخل الاسم ورقم الهاتف والكود المخصص لك")}`);
+        return redirectRes(`/team?error=${encodeURIComponent("أدخل الاسم ورقم الهاتف والكود الخاص بك")}`);
       }
 
       const members = await fsList(env, "team_members");
@@ -4882,7 +4453,7 @@ export default {
       );
 
       if (!matched) {
-        return redirectRes(`/admin?mode=team&error=${encodeURIComponent("بيانات عضو التيم (الاسم أو رقم الهاتف أو الكود) غير صحيحة")}`);
+        return redirectRes(`/team?error=${encodeURIComponent("بيانات عضو التيم (الاسم أو رقم الهاتف أو الكود) غير صحيحة")}`);
       }
 
       const nonce = "tm_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
@@ -4900,276 +4471,723 @@ export default {
         nonce
       }, secret);
 
-      return redirectRes("/admin?section=tickets", {
-        "Set-Cookie": `${setCookieHeader("nb_team", tok)}, ${clearCookieHeader("nb_adm")}`
+      return redirectRes("/team", {
+        "Set-Cookie": setCookieHeader("nb_team", tok)
       });
     }
 
-    if (path.startsWith("/admin/") && method === "POST") {
-      if (!hasStaffAccess) return redirectRes("/admin");
+    if (path === "/team/reply-forum" && method === "POST") {
+      if (!teamSession) return redirectRes("/team");
       const body = await parseFormBody(req);
+      const postId = String(body.post_id || "").trim();
+      const reply = String(body.reply || "").trim();
+      const post = await fsGet(env, "forum_posts", postId);
+      if (post) {
+        const actor = `${teamSession.team_name} (${teamSession.team_phone})`;
+        await fsSet(env, "forum_posts", postId, {
+          ...post,
+          reply,
+          replied_by: actor,
+          replied_at: new Date().toISOString()
+        });
+        await fsSet(env, "staff_alerts", "latest", {
+          latest_key: `replied_forum_${postId}_${Date.now()}`,
+          title: "تم الرد",
+          body: `تم الرد على الطالب (${post.student_name || ""}) بواسطة ${teamSession.team_name}`
+        });
+      }
+      return redirectRes(`/team?notice=${encodeURIComponent("تم الرد وإرسال إشعار لبقية التيم: تم الرد")}`);
+    }
 
-      const teamAllowedRoutes = new Set([
-        "/admin/reply-ticket",
-        "/admin/reply-forum",
-        "/admin/delete-forum",
-        "/admin/support-reply"
+    if (path === "/team/delete-forum" && method === "POST") {
+      if (!teamSession) return redirectRes("/team");
+      const body = await parseFormBody(req);
+      const postId = String(body.post_id || "").trim();
+      if (postId) await fsDelete(env, "forum_posts", postId);
+      return redirectRes(`/team?notice=${encodeURIComponent("تم حذف الرسالة من المنتدى")}`);
+    }
+
+    if (path === "/student" && method === "GET") {
+      const tab = url.searchParams.get("tab") || "register";
+      const step = Number(url.searchParams.get("step") || "1");
+      const draft = {
+        first_name: url.searchParams.get("first_name") || "",
+        second_name: url.searchParams.get("second_name") || "",
+        third_name: url.searchParams.get("third_name") || "",
+        fourth_name: url.searchParams.get("fourth_name") || "",
+        phone: url.searchParams.get("phone") || ""
+      };
+      const error = url.searchParams.get("error") || "";
+      const notice = url.searchParams.get("notice") || "";
+
+      if (!student) {
+        return htmlRes(renderLayout("بوابة الطالب", settings, null, false, renderStudentAuth(settings, tab, step, draft, error, notice), {
+          showSupportWidget: true
+        }));
+      }
+
+      const [lectures, exams, submissions, drafts, watched, discounts, forumPosts] = await Promise.all([
+        fsList(env, "lectures"),
+        fsList(env, "exams"),
+        fsList(env, "submissions"),
+        fsList(env, "exam_drafts"),
+        fsList(env, "watched_lectures"),
+        fsList(env, "discount_codes"),
+        fsList(env, "forum_posts")
       ]);
-      if (!isAdmin && !teamAllowedRoutes.has(path)) {
-        return redirectRes(`/admin?section=tickets&error=${encodeURIComponent("هذه الصلاحية للأدمن فقط")}`);
-      }
 
-      if (path === "/admin/create-team") {
-        const teamName = String(body.team_name || "").trim();
-        const teamPhone = String(body.team_phone || "").trim();
-        const teamCode = String(body.team_code || "").trim();
-        if (!teamName || !teamPhone || !teamCode) {
-          return redirectRes(`/admin?section=add_team&error=${encodeURIComponent("اكتب الاسم ورقم الهاتف والكود لعضو التيم")}`);
-        }
-        const tid = `tm_${Date.now()}`;
-        await fsSet(env, "team_members", tid, {
-          name: teamName,
-          phone: teamPhone,
-          code: teamCode,
-          active_session: "",
-          created_at: new Date().toISOString()
+      const stPhone = String(student.phone || "");
+      const mySubmissions = submissions.filter(s => String(s.student_phone || "") === stPhone);
+      const myDrafts = drafts.filter(d => String(d.student_phone || "") === stPhone);
+      const myWatched = watched.filter(w => String(w.student_phone || "") === stPhone);
+      const myTickets = allTickets.filter(t => String(t.student_phone || "") === stPhone);
+
+      const section = url.searchParams.get("section") || "dashboard";
+      const branch = url.searchParams.get("branch") || "";
+      const forumBranch = url.searchParams.get("forum_branch") || BRANCHES[0];
+      const lectureId = url.searchParams.get("lecture_id") || "";
+      const examId = url.searchParams.get("exam_id") || "";
+
+      if (section === "branch" && branch && lectureId) {
+        await fsSet(env, "watched_lectures", `${stPhone}_${lectureId}`, {
+          student_phone: stPhone,
+          lecture_id: lectureId,
+          watched_at: new Date().toISOString()
         });
-        return redirectRes(`/admin?section=add_team&notice=${encodeURIComponent("تم إضافة عضو التيم بنجاح")}`);
+        myWatched.push({ student_phone: stPhone, lecture_id: lectureId });
       }
 
-      if (path === "/admin/delete-team") {
-        const tid = String(body.team_id || "").trim();
-        if (tid) await fsDelete(env, "team_members", tid);
-        return redirectRes(`/admin?section=add_team&notice=${encodeURIComponent("تم حذف عضو التيم")}`);
+      return htmlRes(renderLayout("لوحة الطالب", settings, student, false, renderStudentDash(settings, student, {
+        section, branch, forumBranch, lectureId, examId, error, notice,
+        lectures, exams, submissions: mySubmissions, drafts: myDrafts, watched: myWatched, tickets: myTickets, discounts, forumPosts
+      }), {
+        showSupportWidget: true,
+        academicUnreadCount: academicUnreadItems.length,
+        academicUnreadItems
+      }));
+    }
+
+    if (path === "/student/register" && method === "POST") {
+      const body = await parseFormBody(req);
+      const fullName = String(body.full_name || "").trim();
+      const phone = String(body.phone || "").trim();
+      const grade = String(body.grade || GRADES[0]).trim();
+      const track = String(body.track || TRACKS[0]).trim();
+      const parentPhone = String(body.parent_phone || "").trim();
+      const governorate = String(body.governorate || "").trim();
+      const password = String(body.password || "");
+
+      if (!fullName || !phone || !parentPhone || !governorate || !password) {
+        return redirectRes(`/student?tab=register&step=2&error=${encodeURIComponent("أكمل جميع الحقول المطلوبة")}`);
+      }
+      if (parentPhone === phone) {
+        return redirectRes(`/student?tab=register&step=2&error=${encodeURIComponent("يجب أن يكون رقم هاتف ولي الأمر مختلفاً عن رقم الطالب")}`);
       }
 
-      if (path === "/admin/support-reply") {
-        const sid = String(body.session_id || "").trim();
-        const replyText = String(body.reply_text || "").trim();
-        if (sid && replyText) {
-          const existing = await fsGet(env, "support_chats", sid);
-          if (existing) {
-            const msgs = Array.isArray(existing.messages) ? [...existing.messages] : [];
-            msgs.push({
-              id: "adm_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6),
-              sender: "admin",
-              sender_name: currentActorName,
-              text: replyText,
-              image_url: "",
-              at: new Date().toISOString()
-            });
-            await fsSet(env, "support_chats", sid, {
-              ...existing,
-              messages: msgs,
-              updated_at: new Date().toISOString()
-            });
-            await fsSet(env, "staff_alerts", "latest", {
-              latest_key: `replied_sup_${Date.now()}`,
-              title: `تم الرد على (${existing.visitor_name || "زائر"}) في الدعم الفني`,
-              body: `تم الرد بواسطة: ${currentActorName}`
-            });
-          }
-        }
-        return redirectRes(`/admin?section=support&notice=${encodeURIComponent("تم إرسال رد الدعم الفني وإشعار التيم بأنها تم الرد")}`);
+      const existing = await fsGet(env, "students", phone);
+      if (existing) {
+        return redirectRes(`/student?tab=login&error=${encodeURIComponent("هذا الرقم مسجل مسبقاً، سجل الدخول")}`);
       }
 
-      if (path === "/admin/reply-forum") {
-        const postId = String(body.post_id || "").trim();
-        const reply = String(body.reply || "").trim();
-        const post = await fsGet(env, "forum_posts", postId);
-        if (post) {
-          await fsSet(env, "forum_posts", postId, {
-            ...post,
-            reply,
-            replied_by: currentActorName,
-            replied_at: new Date().toISOString()
-          });
-          await fsSet(env, "staff_alerts", "latest", {
-            latest_key: `replied_forum_${postId}_${Date.now()}`,
-            title: `تم الرد في المنتدى على الطالب: ${post.student_name || ""}`,
-            body: `تم الرد بواسطة: ${currentActorName}`
-          });
-        }
-        return redirectRes(`/admin?section=forum&notice=${encodeURIComponent("تم حفظ الرد في المنتدى وإرسال إشعار للتيم بأنها تم الرد")}`);
+      const nonce = "st_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
+      const newStudent = {
+        full_name: fullName,
+        phone,
+        parent_phone: parentPhone,
+        governorate,
+        grade,
+        track,
+        password_hash: await sha256(password),
+        password_plain: password,
+        branches: [],
+        is_center_student: false,
+        center_code: "",
+        active_session: nonce,
+        created_at: new Date().toISOString()
+      };
+      await fsSet(env, "students", phone, newStudent);
+      const tok = makeToken({ phone, nonce }, secret);
+      return redirectRes("/student?section=dashboard", {
+        "Set-Cookie": setCookieHeader("nb_st", tok)
+      });
+    }
+
+    if (path === "/student/login" && method === "POST") {
+      const body = await parseFormBody(req);
+      const phone = String(body.phone || "").trim();
+      const password = String(body.password || "");
+      const st = await fsGet(env, "students", phone);
+      const inputHash = await sha256(password);
+      const validPass = st && (st.password_hash === inputHash || (st.password_plain && st.password_plain === password));
+      if (!st || !validPass) {
+        return redirectRes(`/student?tab=login&error=${encodeURIComponent("رقم الهاتف أو كلمة السر غير صحيحة")}`);
+      }
+      const nonce = "st_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
+      await fsSet(env, "students", phone, {
+        ...st,
+        password_plain: password || st.password_plain || "",
+        active_session: nonce,
+        last_login_at: new Date().toISOString()
+      });
+      const tok = makeToken({ phone, nonce }, secret);
+      return redirectRes("/student?section=dashboard", {
+        "Set-Cookie": setCookieHeader("nb_st", tok)
+      });
+    }
+
+    if (path === "/student/center-login" && method === "POST") {
+      const body = await parseFormBody(req);
+      const centerCode = String(body.center_code || "").trim().toUpperCase();
+      const name = String(body.name || "").trim();
+      const phone = String(body.phone || "").trim();
+      const grade = String(body.grade || GRADES[0]).trim();
+      const track = String(body.track || TRACKS[0]).trim();
+      const password = String(body.password || "");
+
+      if (!centerCode || !name || !phone || !password) {
+        return redirectRes(`/student?tab=center&error=${encodeURIComponent("أدخل كود السنتر والاسم الرباعي والرقم وكلمة السر")}`);
       }
 
-      if (path === "/admin/delete-forum") {
-        const postId = String(body.post_id || "").trim();
-        if (postId) await fsDelete(env, "forum_posts", postId);
-        return redirectRes(`/admin?section=forum&notice=${encodeURIComponent("تم حذف الرسالة من المنتدى")}`);
+      const codeDoc = await fsGet(env, "codes", centerCode);
+      if (!codeDoc || codeDoc.type !== "center") {
+        return redirectRes(`/student?tab=center&error=${encodeURIComponent("كود السنتر غير صحيح")}`);
+      }
+      if (codeDoc.used) {
+        return redirectRes(`/student?tab=center&error=${encodeURIComponent("تم استخدام كود السنتر هذا من قبل (يُستخدم لمرة واحدة فقط)")}`);
       }
 
-      if (path === "/admin/generate-codes") {
-        const count = Math.min(50, Math.max(1, Number(body.count || 1)));
-        const codeType = body.code_type === "center" ? "center" : "branch";
-        const branch = String(body.branch || BRANCHES[0]);
-        for (let i = 0; i < count; i++) {
-          const rnd = Math.random().toString(36).substring(2, 8).toUpperCase();
-          const codeStr = `${codeType === "center" ? "CTR" : "BR"}-${rnd}`;
-          await fsSet(env, "codes", codeStr, {
-            code: codeStr,
-            type: codeType,
-            branch: codeType === "branch" ? branch : "الكل",
-            used: false,
-            created_at: new Date().toISOString()
-          });
-        }
-        return redirectRes(`/admin?section=codes&notice=${encodeURIComponent(`تم توليد ${count} كود بنجاح`)}`);
+      const nonce = "st_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
+      const existingSt = await fsGet(env, "students", phone);
+      const updatedStudent = {
+        ...(existingSt || {}),
+        full_name: name,
+        phone,
+        grade,
+        track,
+        password_hash: await sha256(password),
+        password_plain: password,
+        branches: [...BRANCHES],
+        is_center_student: true,
+        center_code: centerCode,
+        active_session: nonce,
+        created_at: existingSt?.created_at || new Date().toISOString()
+      };
+
+      await fsSet(env, "students", phone, updatedStudent);
+      await fsSet(env, "codes", centerCode, {
+        ...codeDoc,
+        used: true,
+        used_by: phone,
+        used_at: new Date().toISOString()
+      });
+
+      const tok = makeToken({ phone, nonce }, secret);
+      return redirectRes(`/student?section=dashboard&notice=${encodeURIComponent("تم تفعيل حساب السنتر وفتح جميع الفروع لك")}`, {
+        "Set-Cookie": setCookieHeader("nb_st", tok)
+      });
+    }
+
+    if (path === "/student/reset-password" && method === "POST") {
+      const body = await parseFormBody(req);
+      const phone = String(body.phone || "").trim();
+      const parentPhone = String(body.parent_phone || "").trim();
+      const newPassword = String(body.new_password || "");
+      const st = await fsGet(env, "students", phone);
+      if (!st || !st.parent_phone || String(st.parent_phone).trim() !== parentPhone) {
+        return redirectRes(`/student?tab=forgot&error=${encodeURIComponent("رقم الطالب أو رقم ولي الأمر غير مطابق")}`);
+      }
+      await fsSet(env, "students", phone, {
+        ...st,
+        password_hash: await sha256(newPassword),
+        password_plain: newPassword
+      });
+      return redirectRes(`/student?tab=login&notice=${encodeURIComponent("تم تعيين كلمة السر الجديدة بنجاح، سجل الدخول الآن")}`);
+    }
+
+    if (path === "/student/redeem-code" && method === "POST") {
+      if (!student) return redirectRes("/student?tab=login");
+      const body = await parseFormBody(req);
+      const code = String(body.code || "").trim().toUpperCase();
+      const codeDoc = await fsGet(env, "codes", code);
+      if (!codeDoc) {
+        return redirectRes(`/student?section=codes&error=${encodeURIComponent("الكود غير صحيح")}`);
+      }
+      if (codeDoc.used) {
+        return redirectRes(`/student?section=codes&error=${encodeURIComponent("هذا الكود تم استخدامه مسبقاً")}`);
       }
 
-      if (path === "/admin/delete-code") {
-        const codeId = String(body.code_id || "").trim();
-        if (codeId) {
-          await fsDelete(env, "codes", codeId);
-        }
-        return redirectRes(`/admin?section=codes&notice=${encodeURIComponent("تم حذف الكود بنجاح")}`);
+      let nextBranches = Array.isArray(student.branches) ? [...student.branches] : [];
+      let isCenter = Boolean(student.is_center_student);
+      if (codeDoc.type === "center") {
+        nextBranches = [...BRANCHES];
+        isCenter = true;
+      } else if (codeDoc.branch && !nextBranches.includes(codeDoc.branch)) {
+        nextBranches.push(codeDoc.branch);
       }
 
-      if (path === "/admin/create-discount") {
-        const rawCode = String(body.discount_code || "").trim().toUpperCase();
-        const amount = Math.min(COURSE_PRICE_EGP, Math.max(1, Number(body.discount_amount || 0)));
-        const codeStr = rawCode || ("DISC-" + Math.random().toString(36).substring(2, 7).toUpperCase());
-        await fsSet(env, "discount_codes", codeStr, {
-          code: codeStr,
-          amount,
+      await fsSet(env, "students", student.phone, {
+        ...student,
+        branches: nextBranches,
+        is_center_student: isCenter
+      });
+      await fsSet(env, "codes", code, {
+        ...codeDoc,
+        used: true,
+        used_by: student.phone,
+        used_at: new Date().toISOString()
+      });
+
+      return redirectRes(`/student?section=codes&notice=${encodeURIComponent("تم تفعيل الكود بنجاح")}`);
+    }
+
+    if (path === "/student/exam-action" && method === "POST") {
+      if (!student) return redirectRes("/student?tab=login");
+      const body = await parseFormBody(req);
+      const examId = String(body.exam_id || "").trim();
+      const actionType = String(body.action_type || "finish").trim();
+      const ex = await fsGet(env, "exams", examId);
+      if (!ex) return redirectRes("/student?section=exams");
+
+      const questions = Array.isArray(ex.questions) ? ex.questions : [];
+      const answers = questions.map((_, i) => {
+        const v = body[`q_${i}`];
+        return v !== undefined && v !== "" ? Number(v) : -1;
+      });
+
+      const draftId = `${student.phone}_${examId}`;
+
+      if (actionType === "save") {
+        await fsSet(env, "exam_drafts", draftId, {
+          student_phone: student.phone,
+          exam_id: examId,
+          answers,
+          updated_at: new Date().toISOString()
+        });
+        return redirectRes(`/student?section=exams&notice=${encodeURIComponent("تم حفظ الواجب كمسودة ويمكنك استكماله في أي وقت")}`);
+      }
+
+      const existingSub = await fsGet(env, "submissions", `${student.phone}_${examId}`);
+      if (existingSub) {
+        return redirectRes(`/student?section=results&error=${encodeURIComponent("لقد قمت بتسليم هذا الاختبار مسبقاً")}`);
+      }
+
+      let score = 0;
+      const details = questions.map((q, i) => {
+        const opts = Array.isArray(q.options) ? q.options : [];
+        const ansIdx = answers[i];
+        const correctIdx = Number(q.correct_idx ?? 0);
+        const isCorrect = ansIdx === correctIdx;
+        if (isCorrect) score++;
+        return {
+          question: q.text || "",
+          student_answer: ansIdx >= 0 && ansIdx < opts.length ? opts[ansIdx] : "لم تُجب",
+          correct_answer: opts[correctIdx] || "",
+          is_correct: isCorrect
+        };
+      });
+
+      const total = questions.length;
+      const wrongCount = total - score;
+      const pct = total > 0 ? Math.round((score / total) * 100) : 0;
+
+      await fsSet(env, "submissions", `${student.phone}_${examId}`, {
+        student_phone: student.phone,
+        student_name: student.full_name,
+        exam_id: examId,
+        exam_title: ex.title,
+        branch: ex.branch || "عام",
+        score,
+        wrong_count: wrongCount,
+        total,
+        pct,
+        details,
+        submitted_at: new Date().toISOString()
+      });
+      await fsDelete(env, "exam_drafts", draftId);
+
+      return redirectRes("/student?section=results");
+    }
+
+    if (path === "/student/tickets" && method === "POST") {
+      if (!student) return redirectRes("/student?tab=login");
+      const body = await parseFormBody(req);
+      const subject = String(body.subject || "").trim();
+      const message = String(body.message || "").trim();
+      const imageUrl = String(body.image_url || "").trim();
+      if (!subject || !message) {
+        return redirectRes(`/student?section=tickets&error=${encodeURIComponent("اكتب عنوان السؤال وتفاصيله")}`);
+      }
+      const id = "tkt_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6);
+      await fsSet(env, "tickets", id, {
+        student_phone: student.phone,
+        student_name: student.full_name,
+        subject,
+        message,
+        image_url: imageUrl,
+        reply: "",
+        created_at: new Date().toISOString()
+      });
+      return redirectRes(`/student?section=tickets&notice=${encodeURIComponent("تم إرسال سؤالك لتيم الدعم العلمي بنجاح")}`);
+    }
+
+    if (path === "/student/forum-post" && method === "POST") {
+      if (!student) return redirectRes("/student?tab=login");
+      const body = await parseFormBody(req);
+      const branch = BRANCHES.includes(String(body.branch || "")) ? String(body.branch) : BRANCHES[0];
+      const message = String(body.message || "").trim();
+      const imageUrl = String(body.image_url || "").trim();
+      if (!message && !imageUrl) {
+        return redirectRes(`/student?section=forum&forum_branch=${encodeURIComponent(branch)}&error=${encodeURIComponent("اكتب مشاركتك أو أرفق صورة")}`);
+      }
+      const postId = "frm_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6);
+      await fsSet(env, "forum_posts", postId, {
+        branch,
+        student_phone: student.phone,
+        student_name: student.full_name,
+        student_grade: student.grade,
+        message,
+        image_url: imageUrl,
+        reply: "",
+        replied_by: "",
+        created_at: new Date().toISOString()
+      });
+
+      await fsSet(env, "staff_alerts", "latest", {
+        latest_key: `new_forum_${postId}_${Date.now()}`,
+        title: `رسالة جديدة في منتدى ${branch}`,
+        body: `أرسل الطالب (${student.full_name}) رسالة في منتدى ${branch}`
+      });
+
+      return redirectRes(`/student?section=forum&forum_branch=${encodeURIComponent(branch)}&notice=${encodeURIComponent("تم نشر مشاركتك في المنتدى بنجاح")}`);
+    }
+
+    if (path === "/admin" && method === "GET") {
+      const section = url.searchParams.get("section") || "students";
+      const error = url.searchParams.get("error") || "";
+      const notice = url.searchParams.get("notice") || "";
+      const rankingGrade = url.searchParams.get("rank_grade") || GRADES[0];
+      const preselectLectureId = url.searchParams.get("lecture_id") || "";
+
+      const data = isAdmin ? {
+        students: await fsList(env, "students"),
+        lectures: await fsList(env, "lectures"),
+        exams: await fsList(env, "exams"),
+        submissions: await fsList(env, "submissions"),
+        watched: await fsList(env, "watched_lectures"),
+        codes: await fsList(env, "codes"),
+        discounts: await fsList(env, "discount_codes"),
+        teamMembers: await fsList(env, "team_members"),
+        tickets: allTickets,
+        forumPosts: await fsList(env, "forum_posts"),
+        supportThreads: await fsList(env, "support_chats"),
+        rankingGrade,
+        preselectLectureId
+      } : {};
+
+      return htmlRes(renderLayout("الأدمن", settings, null, isAdmin, renderAdminPage(settings, isAdmin, data, section, error, notice), {
+        showSupportWidget: false
+      }));
+    }
+
+    if (path === "/admin/login" && method === "POST") {
+      const body = await parseFormBody(req);
+      const email = String(body.email || "").trim();
+      const password = String(body.password || "");
+      const ok = await verifyAdminCredentials(env, settings, email, password);
+      if (!ok) {
+        return redirectRes(`/admin?error=${encodeURIComponent("بيانات دخول الأدمن غير صحيحة")}`);
+      }
+      const tok = makeToken({ role: "admin" }, secret);
+      return redirectRes("/admin?section=students", {
+        "Set-Cookie": setCookieHeader("nb_adm", tok)
+      });
+    }
+
+    if (path === "/admin/create-team" && method === "POST") {
+      if (!isAdmin) return redirectRes("/admin");
+      const body = await parseFormBody(req);
+      const teamName = String(body.team_name || "").trim();
+      const teamPhone = String(body.team_phone || "").trim();
+      const teamCode = String(body.team_code || "").trim();
+      if (!teamName || !teamPhone || !teamCode) {
+        return redirectRes(`/admin?section=add_team&error=${encodeURIComponent("أدخل اسم عضو التيم ورقم الهاتف والكود الخاص به")}`);
+      }
+      const id = "tm_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6);
+      await fsSet(env, "team_members", id, {
+        name: teamName,
+        phone: teamPhone,
+        code: teamCode,
+        created_at: new Date().toISOString()
+      });
+      return redirectRes(`/admin?section=add_team&notice=${encodeURIComponent("تم إضافة عضو التيم بنجاح")}`);
+    }
+
+    if (path === "/admin/delete-team" && method === "POST") {
+      if (!isAdmin) return redirectRes("/admin");
+      const body = await parseFormBody(req);
+      const teamId = String(body.team_id || "").trim();
+      if (teamId) await fsDelete(env, "team_members", teamId);
+      return redirectRes(`/admin?section=add_team&notice=${encodeURIComponent("تم حذف عضو التيم")}`);
+    }
+
+    if (path === "/admin/support-reply" && method === "POST") {
+      if (!isAdmin) return redirectRes("/admin");
+      const body = await parseFormBody(req);
+      const sid = String(body.session_id || "").trim();
+      const replyText = String(body.reply_text || "").trim();
+      const doc = await fsGet(env, "support_chats", sid);
+      if (doc && replyText) {
+        const msgs = Array.isArray(doc.messages) ? [...doc.messages] : [];
+        msgs.push({
+          id: "adm_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6),
+          sender: "admin",
+          sender_name: "الأدمن",
+          text: replyText,
+          at: new Date().toISOString()
+        });
+        await fsSet(env, "support_chats", sid, {
+          ...doc,
+          messages: msgs,
+          updated_at: new Date().toISOString()
+        });
+      }
+      return redirectRes(`/admin?section=support&notice=${encodeURIComponent("تم إرسال رد الدعم الفني")}`);
+    }
+
+    if (path === "/admin/grant-branches" && method === "POST") {
+      if (!isAdmin) return redirectRes("/admin");
+      const body = await parseFormBody(req);
+      const phone = String(body.phone || "").trim();
+      const st = await fsGet(env, "students", phone);
+      if (st) {
+        const rawB = body.branches;
+        const chosen = Array.isArray(rawB) ? rawB : (rawB ? [rawB] : []);
+        const validBranches = chosen.filter(b => BRANCHES.includes(String(b)));
+        await fsSet(env, "students", phone, { ...st, branches: validBranches });
+      }
+      return redirectRes(`/admin?section=students&notice=${encodeURIComponent("تم تحديث اشتراك الفروع للطالب")}`);
+    }
+
+    if (path === "/admin/revoke-branch" && method === "POST") {
+      if (!isAdmin) return redirectRes("/admin");
+      const body = await parseFormBody(req);
+      const phone = String(body.phone || "").trim();
+      const branchToRemove = String(body.branch || "").trim();
+      const st = await fsGet(env, "students", phone);
+      if (st) {
+        const current = Array.isArray(st.branches) ? st.branches : [];
+        const updated = current.filter(b => String(b) !== branchToRemove);
+        await fsSet(env, "students", phone, {
+          ...st,
+          branches: updated,
+          is_center_student: false
+        });
+      }
+      return redirectRes(`/admin?section=students&notice=${encodeURIComponent("تم إلغاء تفعيل الفرع عن الطالب")}`);
+    }
+
+    if (path === "/admin/delete-student" && method === "POST") {
+      if (!isAdmin) return redirectRes("/admin");
+      const body = await parseFormBody(req);
+      const phone = String(body.phone || "").trim();
+      if (phone) await fsDelete(env, "students", phone);
+      return redirectRes(`/admin?section=students&notice=${encodeURIComponent("تم حذف الطالب")}`);
+    }
+
+    if (path === "/admin/generate-codes" && method === "POST") {
+      if (!isAdmin) return redirectRes("/admin");
+      const body = await parseFormBody(req);
+      const codeType = body.code_type === "center" ? "center" : "branch";
+      const branch = String(body.branch || BRANCHES[0]);
+      const count = Math.min(50, Math.max(1, Number(body.count || 1)));
+      const prefix = codeType === "center" ? "CTR-" : "BR-";
+      for (let i = 0; i < count; i++) {
+        const rand = Math.random().toString(36).toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 7);
+        const code = `${prefix}${rand}`;
+        await fsSet(env, "codes", code, {
+          code,
+          type: codeType,
+          branch: codeType === "branch" ? branch : "",
           used: false,
+          used_by: "",
           created_at: new Date().toISOString()
         });
-        return redirectRes(`/admin?section=codes&notice=${encodeURIComponent(`تم إنشاء كود الخصم (${codeStr}) بقيمة ${amount} ج لمرة واحدة`)}`);
       }
+      return redirectRes(`/admin?section=codes&notice=${encodeURIComponent(`تم توليد ${count} كود بنجاح`)}`);
+    }
 
-      if (path === "/admin/delete-discount") {
-        const discId = String(body.discount_id || "").trim();
-        if (discId) {
-          await fsDelete(env, "discount_codes", discId);
-        }
-        return redirectRes(`/admin?section=codes&notice=${encodeURIComponent("تم حذف كود الخصم بنجاح")}`);
-      }
+    if (path === "/admin/delete-code" && method === "POST") {
+      if (!isAdmin) return redirectRes("/admin");
+      const body = await parseFormBody(req);
+      const codeId = String(body.code_id || "").trim();
+      if (codeId) await fsDelete(env, "codes", codeId);
+      return redirectRes(`/admin?section=codes&notice=${encodeURIComponent("تم حذف الكود")}`);
+    }
 
-      if (path === "/admin/add-lecture") {
-        const id = `lec_${Date.now()}`;
-        let customItems = [];
-        try {
-          const parsed = JSON.parse(String(body.custom_items_json || "[]"));
-          if (Array.isArray(parsed)) customItems = parsed;
-        } catch {
-          customItems = [];
-        }
+    if (path === "/admin/create-discount" && method === "POST") {
+      if (!isAdmin) return redirectRes("/admin");
+      const body = await parseFormBody(req);
+      const rawCode = String(body.discount_code || "").trim().toUpperCase();
+      const amount = Math.min(COURSE_PRICE_EGP, Math.max(1, Number(body.discount_amount || 0)));
+      const code = rawCode || ("DSC-" + Math.random().toString(36).toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6));
+      await fsSet(env, "discount_codes", code, {
+        code,
+        amount,
+        used: false,
+        used_by: "",
+        created_at: new Date().toISOString()
+      });
+      return redirectRes(`/admin?section=codes&notice=${encodeURIComponent(`تم إنشاء كود الخصم (${code}) بقيمة ${amount} ج`)}`);
+    }
 
+    if (path === "/admin/delete-discount" && method === "POST") {
+      if (!isAdmin) return redirectRes("/admin");
+      const body = await parseFormBody(req);
+      const discountId = String(body.discount_id || "").trim();
+      if (discountId) await fsDelete(env, "discount_codes", discountId);
+      return redirectRes(`/admin?section=codes&notice=${encodeURIComponent("تم حذف كود الخصم")}`);
+    }
+
+    if (path === "/admin/add-lecture" && method === "POST") {
+      if (!isAdmin) return redirectRes("/admin");
+      const body = await parseFormBody(req);
+      const title = String(body.title || "").trim();
+      const branch = String(body.branch || BRANCHES[0]).trim();
+      const grade = String(body.grade || GRADES[0]).trim();
+      const track = String(body.track || TRACKS[0]).trim();
+      const orderNum = Number(body.order_num || 1);
+      const videoUrl = String(body.video_url || "").trim();
+      let customItems = [];
+      try {
+        const parsed = JSON.parse(String(body.custom_items_json || "[]"));
+        if (Array.isArray(parsed)) customItems = parsed;
+      } catch {}
+
+      if (title) {
+        const id = "lec_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6);
         await fsSet(env, "lectures", id, {
-          title: String(body.title || ""),
-          branch: String(body.branch || BRANCHES[0]),
-          grade: String(body.grade || GRADES[0]),
-          track: String(body.track || TRACKS[0]),
-          order_num: Number(body.order_num || 1),
-          video_url: String(body.video_url || ""),
+          title, branch, grade, track,
+          order_num: orderNum,
+          video_url: videoUrl,
           custom_items: customItems,
           created_at: new Date().toISOString()
         });
-        return redirectRes(`/admin?section=lectures&notice=${encodeURIComponent("تمت إضافة المحاضرة والعناصر التي بداخلها بنجاح")}`);
       }
-
-      if (path === "/admin/delete-lecture") {
-        await fsDelete(env, "lectures", String(body.lecture_id || ""));
-        return redirectRes(`/admin?section=lectures&notice=${encodeURIComponent("تم حذف المحاضرة")}`);
-      }
-
-      if (path === "/admin/add-exam") {
-        let questions = [];
-        try {
-          questions = JSON.parse(String(body.questions_json || "[]"));
-        } catch {
-          questions = [];
-        }
-        if (!Array.isArray(questions) || questions.length === 0) {
-          return redirectRes(`/admin?section=exams&error=${encodeURIComponent("أضف سؤالاً واحداً على الأقل")}`);
-        }
-        const id = `ex_${Date.now()}`;
-        await fsSet(env, "exams", id, {
-          title: String(body.title || ""),
-          branch: String(body.branch || BRANCHES[0]),
-          lecture_id: String(body.lecture_id || "").trim(),
-          questions,
-          created_at: new Date().toISOString()
-        });
-        return redirectRes(`/admin?section=exams&notice=${encodeURIComponent("تم نشر الواجب / الاختبار بنجاح")}`);
-      }
-
-      if (path === "/admin/delete-exam") {
-        await fsDelete(env, "exams", String(body.exam_id || ""));
-        return redirectRes(`/admin?section=exams&notice=${encodeURIComponent("تم حذف الواجب / الاختبار")}`);
-      }
-
-      if (path === "/admin/grant-branches") {
-        const phone = String(body.phone || "").trim();
-        const st = await fsGet(env, "students", phone);
-        if (st) {
-          const rawB = body.branches;
-          const selectedBranches = Array.isArray(rawB) ? rawB.map(String) : (rawB ? [String(rawB)] : []);
-          const validBranches = selectedBranches.filter(b => BRANCHES.includes(b));
-          await fsSet(env, "students", phone, { ...st, branches: validBranches });
-        }
-        return redirectRes(`/admin?section=students&notice=${encodeURIComponent("تم تحديث اشتراك الفروع للطالب")}`);
-      }
-
-      if (path === "/admin/revoke-branch") {
-        const phone = String(body.phone || "").trim();
-        const branchToRemove = String(body.branch || "").trim();
-        const st = await fsGet(env, "students", phone);
-        if (st && branchToRemove) {
-          const nextBranches = (Array.isArray(st.branches) ? st.branches : []).filter(b => String(b) !== branchToRemove);
-          await fsSet(env, "students", phone, { ...st, branches: nextBranches });
-        }
-        return redirectRes(`/admin?section=students&notice=${encodeURIComponent(`تم إلغاء تفعيل فرع (${branchToRemove}) للطالب`)}`);
-      }
-
-      if (path === "/admin/delete-student") {
-        const phone = String(body.phone || "").trim();
-        if (phone) {
-          await fsDelete(env, "students", phone);
-        }
-        return redirectRes(`/admin?section=students&notice=${encodeURIComponent("تم حذف الطالب من المنصة")}`);
-      }
-
-      if (path === "/admin/reply-ticket") {
-        const tid = String(body.ticket_id || "");
-        const tk = await fsGet(env, "tickets", tid);
-        if (tk) {
-          await fsSet(env, "tickets", tid, {
-            ...tk,
-            reply: String(body.reply || ""),
-            replied_by: currentActorName
-          });
-          await fsSet(env, "staff_alerts", "latest", {
-            latest_key: `replied_tk_${tid}_${Date.now()}`,
-            title: `تم الرد على الطالب: ${tk.student_name || ""}`,
-            body: `تم الرد بواسطة: ${currentActorName}`
-          });
-        }
-        return redirectRes(`/admin?section=tickets&notice=${encodeURIComponent("تم حفظ الرد وإشعار التيم بأنها تم الرد")}`);
-      }
-
-      if (path === "/admin/settings") {
-        const newAdminEmail = String(body.admin_email || settings.admin_email || DEFAULT_ADMIN_EMAIL).trim();
-        const newAdminPass = String(body.new_admin_password || "").trim();
-        const nextHash = newAdminPass ? await sha256(newAdminPass) : settings.admin_password_hash;
-        const nextPlain = newAdminPass ? newAdminPass : (settings.admin_password || "");
-        await fsSet(env, "settings", "main", {
-          admin_email: newAdminEmail,
-          admin_password: nextPlain,
-          admin_password_hash: nextHash,
-          vodafone_number: String(body.vodafone_number || "01066329782").trim(),
-          admin_whatsapp: String(body.admin_whatsapp || "01066329782").trim(),
-          facebook_url: String(body.facebook_url || "").trim(),
-          tiktok_url: String(body.tiktok_url || "").trim(),
-          youtube_url: String(body.youtube_url || "").trim(),
-          teacher_image: String(body.teacher_image || TEACHER_MAIN_PHOTO).trim(),
-          global_notice: String(body.global_notice || "").trim()
-        });
-        return redirectRes(`/admin?section=settings&notice=${encodeURIComponent("تم حفظ الإعدادات في Firebase بنجاح")}`);
-      }
+      return redirectRes(`/admin?section=lectures&notice=${encodeURIComponent("تمت إضافة المحاضرة وعناصرها بنجاح")}`);
     }
 
-    return redirectRes("/");
+    if (path === "/admin/delete-lecture" && method === "POST") {
+      if (!isAdmin) return redirectRes("/admin");
+      const body = await parseFormBody(req);
+      const lecId = String(body.lecture_id || "").trim();
+      if (lecId) await fsDelete(env, "lectures", lecId);
+      return redirectRes(`/admin?section=lectures&notice=${encodeURIComponent("تم حذف المحاضرة")}`);
+    }
+
+    if (path === "/admin/add-exam" && method === "POST") {
+      if (!isAdmin) return redirectRes("/admin");
+      const body = await parseFormBody(req);
+      const title = String(body.title || "").trim();
+      const branch = String(body.branch || "عام").trim();
+      const lectureId = String(body.lecture_id || "").trim();
+      let questions = [];
+      try {
+        const parsed = JSON.parse(String(body.questions_json || "[]"));
+        if (Array.isArray(parsed)) questions = parsed;
+      } catch {}
+
+      if (title && questions.length > 0) {
+        const id = "ex_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6);
+        await fsSet(env, "exams", id, {
+          title, branch, lecture_id: lectureId, questions,
+          created_at: new Date().toISOString()
+        });
+      }
+      return redirectRes(`/admin?section=exams&notice=${encodeURIComponent("تم حفظ ونشر الواجب / الاختبار بنجاح")}`);
+    }
+
+    if (path === "/admin/delete-exam" && method === "POST") {
+      if (!isAdmin) return redirectRes("/admin");
+      const body = await parseFormBody(req);
+      const examId = String(body.exam_id || "").trim();
+      if (examId) await fsDelete(env, "exams", examId);
+      return redirectRes(`/admin?section=exams&notice=${encodeURIComponent("تم حذف الواجب / الاختبار")}`);
+    }
+
+    if (path === "/admin/reply-ticket" && method === "POST") {
+      if (!isAdmin) return redirectRes("/admin");
+      const body = await parseFormBody(req);
+      const ticketId = String(body.ticket_id || "").trim();
+      const reply = String(body.reply || "").trim();
+      const tkt = await fsGet(env, "tickets", ticketId);
+      if (tkt) {
+        await fsSet(env, "tickets", ticketId, {
+          ...tkt,
+          reply,
+          replied_by: "الأدمن",
+          replied_at: new Date().toISOString()
+        });
+      }
+      return redirectRes(`/admin?section=tickets&notice=${encodeURIComponent("تم حفظ الرد على سؤال الطالب")}`);
+    }
+
+    if (path === "/admin/reply-forum" && method === "POST") {
+      if (!isAdmin) return redirectRes("/admin");
+      const body = await parseFormBody(req);
+      const postId = String(body.post_id || "").trim();
+      const reply = String(body.reply || "").trim();
+      const post = await fsGet(env, "forum_posts", postId);
+      if (post) {
+        await fsSet(env, "forum_posts", postId, {
+          ...post,
+          reply,
+          replied_by: "الأدمن",
+          replied_at: new Date().toISOString()
+        });
+        await fsSet(env, "staff_alerts", "latest", {
+          latest_key: `replied_forum_${postId}_${Date.now()}`,
+          title: "تم الرد",
+          body: `تم الرد على الطالب (${post.student_name || ""}) بواسطة الأدمن`
+        });
+      }
+      return redirectRes(`/admin?section=forum&notice=${encodeURIComponent("تم حفظ الرد في المنتدى")}`);
+    }
+
+    if (path === "/admin/delete-forum" && method === "POST") {
+      if (!isAdmin) return redirectRes("/admin");
+      const body = await parseFormBody(req);
+      const postId = String(body.post_id || "").trim();
+      if (postId) await fsDelete(env, "forum_posts", postId);
+      return redirectRes(`/admin?section=forum&notice=${encodeURIComponent("تم حذف الرسالة من المنتدى")}`);
+    }
+
+    if (path === "/admin/settings" && method === "POST") {
+      if (!isAdmin) return redirectRes("/admin");
+      const body = await parseFormBody(req);
+      const nextEmail = String(body.admin_email || settings.admin_email || DEFAULT_ADMIN_EMAIL).trim();
+      const newPass = String(body.new_admin_password || "").trim();
+
+      const updatedSettings = {
+        ...settings,
+        admin_email: nextEmail,
+        vodafone_number: String(body.vodafone_number || "").trim(),
+        admin_whatsapp: String(body.admin_whatsapp || "").trim(),
+        facebook_url: String(body.facebook_url || "").trim(),
+        tiktok_url: String(body.tiktok_url || "").trim(),
+        youtube_url: String(body.youtube_url || "").trim(),
+        teacher_image: String(body.teacher_image || "").trim() || TEACHER_MAIN_PHOTO,
+        global_notice: String(body.global_notice || "").trim()
+      };
+
+      if (newPass) {
+        updatedSettings.admin_password = newPass;
+        updatedSettings.admin_password_hash = await sha256(newPass);
+      }
+
+      await fsSet(env, "settings", "main", updatedSettings);
+      return redirectRes(`/admin?section=settings&notice=${encodeURIComponent("تم حفظ الإعدادات بنجاح")}`);
+    }
+
+    return new Response("Not Found", { status: 404 });
   }
 };
