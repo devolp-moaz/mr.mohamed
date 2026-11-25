@@ -1356,19 +1356,19 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
     .course-body { padding: 16px; }
     .course-title { font-weight: 900; font-size: 1rem; margin-bottom: 6px; }
 
-    .landing-hero-box { max-width: 1120px; margin: 24px auto 0; padding: 0 16px; }
-    .landing-hero-card { padding: 28px; display: grid; grid-template-columns: 310px 1fr; gap: 26px; align-items: center; }
-    @media (max-width: 860px) { .landing-hero-card { grid-template-columns: 1fr; } }
+    .landing-hero-box { max-width: 1480px; margin: 24px auto 0; padding: 0 16px; }
+    .landing-hero-card { padding: 34px; display: grid; grid-template-columns: 380px 1fr; gap: 34px; align-items: center; min-height: 420px; }
+    @media (max-width: 860px) { .landing-hero-card { grid-template-columns: 1fr; min-height: auto; } }
     .hero-teacher-frame {
       background: linear-gradient(155deg, rgba(21, 101, 192, 0.12), rgba(33, 150, 243, 0.14));
       border-radius: 20px; padding: 12px; display: flex; justify-content: center; align-items: center;
-      min-height: 340px; border: 1.5px solid var(--bdr);
+      min-height: 420px; border: 1.5px solid var(--bdr);
     }
     .hero-teacher-frame img {
-      width: 100%; max-height: 340px; object-fit: contain; object-position: center top;
+      width: 100%; max-height: 420px; object-fit: contain; object-position: center top;
       border-radius: 14px; display: block;
     }
-    .landing-start-section { max-width: 1120px; margin: 22px auto 36px; padding: 0 16px; }
+    .landing-start-section { max-width: 1480px; margin: 22px auto 36px; padding: 0 16px; }
 
     .split-auth {
       max-width: 1060px; margin: 22px auto; padding: 0 16px;
@@ -1737,7 +1737,7 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
             window.location.href = data.redirect || "/student?tab=login";
           }
         } catch {}
-      }, 6000);
+      }, 1500);
     })();
 
     (function initSupportAndBellNotifications() {
