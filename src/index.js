@@ -40,6 +40,21 @@ const PLATFORM_NAME = "نور البيان";
 const COURSE_PRICE_EGP = 500;
 const ABSENCE_LESSON_PRICE_EGP = 70;
 
+function generateCenterCodeMO() {
+  let digits = "";
+  const arr = new Uint32Array(1);
+  crypto.getRandomValues(arr);
+  digits = String(arr[0] % 90000000 + 10000000);
+  return "MO" + digits;
+}
+
+function normalizeMoCode(raw) {
+  const s = String(raw || "").trim().toUpperCase();
+  if (!s) return "";
+  if (s.startsWith("MO")) return s;
+  return "MO" + s;
+}
+
 async function sha256(val) {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(val || "")));
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
@@ -268,6 +283,11 @@ function checkCenterStudentLectureAccess(student, lecture) {
   if (!isCenter) return { allowed: true, reason: "" };
 
   const lecId = String(lecture.id || "");
+  const lockedList = Array.isArray(student.locked_lectures) ? student.locked_lectures.map(String) : [];
+  if (lockedList.includes(lecId)) {
+    return { allowed: false, reason: "absent" };
+  }
+
   const unlockedList = Array.isArray(student.unlocked_lectures) ? student.unlocked_lectures.map(String) : [];
   if (unlockedList.includes(lecId)) {
     return { allowed: true, reason: "" };
@@ -2201,7 +2221,7 @@ function renderStudentAuth(settings, authTab, step, draft, error, notice) {
       <div class="promo-pane gold-mode">
         <div>
           <h2 style="font-size:1.32rem; font-weight:900;">دخول طلاب السنتر بكود التفعيل</h2>
-          <p style="margin-top:10px; font-size:0.92rem; opacity:0.95;">أدخل اسمك الرباعي وبياناتك وكلمة السر وكود السنتر لمرة واحدة ليتم فتح المنصة وكل الفروع لك مباشرة.</p>
+          <p style="margin-top:10px; font-size:0.92rem; opacity:0.95;">أدخل اسمك الرباعي وبياناتك وكلمة السر وكود السنتر (يبدأ بـ MO متبوعاً بأرقام) لمرة واحدة لفتح المنصة.</p>
         </div>
         <img class="promo-img" src="${esc(settings.teacher_image)}" alt="الأستاذ محمد يوسف" onerror="this.style.display='none';" />
       </div>
@@ -2211,7 +2231,7 @@ function renderStudentAuth(settings, authTab, step, draft, error, notice) {
         ${error ? `<div class="msg-err">${esc(error)}</div>` : ""}
         ${notice ? `<div class="msg-ok">${esc(notice)}</div>` : ""}
         <form method="post" action="/student/center-login" autocomplete="off">
-          <div class="field"><label>كود السنتر (لمرة واحدة) *</label><input name="center_code" type="text" required autocomplete="off" placeholder="مثال: CTR-XXXXXX" /></div>
+          <div class="field"><label>كود السنتر (لمرة واحدة) *</label><input name="center_code" type="text" required autocomplete="off" placeholder="مثال: MO12345678" /></div>
           <div class="field"><label>اسم الطالب رباعي *</label><input name="name" type="text" required autocomplete="off" placeholder="الاسم الرباعي بالكامل" /></div>
           <div class="field"><label>رقم هاتف الطالب *</label><input name="phone" type="tel" required autocomplete="off" placeholder="01xxxxxxxxx" /></div>
           <div class="grid2">
@@ -3122,6 +3142,15 @@ function renderTeamStandalonePage(teamSession, forumPosts, lectures, students, t
     attended_codes: Array.isArray(l.attended_codes) ? l.attended_codes : []
   }));
 
+  const centerStudentsPayload = centerStudents.map(st => ({
+    full_name: String(st.full_name || ""),
+    phone: String(st.phone || ""),
+    grade: String(st.grade || ""),
+    center_code: String(st.center_code || "").trim().toUpperCase(),
+    unlocked_lectures: Array.isArray(st.unlocked_lectures) ? st.unlocked_lectures.map(String) : [],
+    locked_lectures: Array.isArray(st.locked_lectures) ? st.locked_lectures.map(String) : []
+  }));
+
   const postsHtml = sortedPosts.map(p => `
     <div class="row" style="display:block;">
       <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
@@ -3151,73 +3180,228 @@ function renderTeamStandalonePage(teamSession, forumPosts, lectures, students, t
 
   const absenceTabHtml = `
     <div class="card" style="margin-bottom:0;">
-      <h3 style="font-weight:900; margin-bottom:6px;">الغياب — تسجيل حضور طلاب السنتر بالأكواد</h3>
+      <h3 style="font-weight:900; margin-bottom:6px;">الغياب — التحقق من الكود وتأكيد حضور طلاب السنتر</h3>
       <p class="muted" style="font-size:0.86rem; margin-bottom:14px;">
-        اختر الصف الدراسي والمحاضرة الجديدة، ثم ضع أكواد طلاب السنتر الذين حضروا في السنتر.
-        الطلاب أصحاب الأكواد المدخلة ستُفتح لهم المحاضرة فوراً، أما طلاب السنتر الذين لم يحضروا فستُغلق عنهم المحاضرة ويظهر لهم: <strong>الحصة بـ ${ABSENCE_LESSON_PRICE_EGP} ج</strong> مع زر دفع عبر واتساب.
+        اختر الصف الدراسي والمحاضرة، ثم اكتب الكود (مثال: MO12345678). سيظهر لك اسم الطالب صاحب الكود تلقائياً، وعند الضغط على <strong>تأكيد</strong> يتم فتح المحاضرة له وتظهر القائمة تحت الخانة مباشرة.
+        أما طلاب السنتر الغائبون فتُغلق عنهم المحاضرة وتظهر لهم بسعر <strong>${ABSENCE_LESSON_PRICE_EGP} ج</strong> مع زر دفع عبر واتساب.
       </p>
 
-      <form method="post" action="/team/save-absence" id="teamAbsenceForm">
-        <div class="grid2">
-          <div class="field">
-            <label>اختر الصف الدراسي *</label>
-            <select name="grade" id="absenceGradeSelect" required>
-              ${GRADES.map(g => `<option value="${esc(g)}">${esc(g)}</option>`).join("")}
-            </select>
-          </div>
-          <div class="field">
-            <label>اختر المحاضرة الجديدة المراد فتحها للحاضرين *</label>
-            <select name="lecture_id" id="absenceLectureSelect" required></select>
-          </div>
+      <div class="grid2">
+        <div class="field">
+          <label>1. اختر الصف الدراسي *</label>
+          <select id="teamAbsenceGradeSelect">
+            ${GRADES.map(g => `<option value="${esc(g)}">${esc(g)}</option>`).join("")}
+          </select>
         </div>
+        <div class="field">
+          <label>2. اختر المحاضرة *</label>
+          <select id="teamAbsenceLectureSelect"></select>
+        </div>
+      </div>
+
+      <form method="post" action="/team/confirm-absence-code" id="teamConfirmAbsenceForm">
+        <input type="hidden" name="grade" id="hiddenAbsenceGrade" />
+        <input type="hidden" name="lecture_id" id="hiddenAbsenceLectureId" />
 
         <div class="field">
-          <label>أكواد طلاب السنتر الحاضرين (اكتب أو الصق كل الأكواد مفصولة بمسافة أو سطر أو فاصلة) *</label>
-          <textarea name="present_codes" id="presentCodesBox" required placeholder="مثال:&#10;CTR-A1B2C3&#10;CTR-D4E5F6&#10;CTR-G7H8I9"></textarea>
+          <label>3. اكتب كود الطالب (يبدأ بـ MO متبوعاً بأرقام) *</label>
+          <input type="text" name="center_code" id="teamCodeInput" required autocomplete="off" placeholder="مثال: MO12345678" />
         </div>
 
-        <div style="margin-bottom:14px; display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
-          <button type="button" class="btn btn-out btn-sm" id="fillCurrentCodesBtn">عرض الأكواد المسجلة سابقاً لهذه المحاضرة</button>
-          <span class="muted" style="font-size:0.82rem;">إجمالي طلاب السنتر المسجلين بالمنصة: <strong>${centerStudents.length}</strong></span>
-        </div>
+        <div id="codeLookupResultBox" class="row" style="display:none; margin-bottom:14px;"></div>
 
-        <button type="submit" class="btn btn-blue" style="width:100%;">حفظ الحضور وفتح المحاضرة للحاضرين فقط</button>
+        <button type="submit" class="btn btn-blue" id="confirmAbsenceBtn" style="width:100%;">تأكيد</button>
+      </form>
+
+      <div id="confirmedCodesBelowBox" style="margin-top:18px;"></div>
+    </div>
+
+    <div class="card" style="margin-top:16px; margin-bottom:0;">
+      <h3 style="font-weight:900; margin-bottom:6px;">إلغاء محاضرة عن طالب سنتر</h3>
+      <p class="muted" style="font-size:0.85rem; margin-bottom:12px;">اختر الطالب والصف والمحاضرة لإلغاء المحاضرة وقفلها عنه فوراً.</p>
+
+      <form method="post" action="/team/revoke-student-lecture" class="grid3">
+        <div class="field">
+          <label>اختر الصف *</label>
+          <select id="revokeGradeSelect">
+            ${GRADES.map(g => `<option value="${esc(g)}">${esc(g)}</option>`).join("")}
+          </select>
+        </div>
+        <div class="field">
+          <label>اختر الطالب *</label>
+          <select name="student_phone" id="revokeStudentSelect" required></select>
+        </div>
+        <div class="field">
+          <label>اختر المحاضرة المراد إلغاؤها *</label>
+          <select name="lecture_id" id="revokeLectureSelect" required></select>
+        </div>
+        <div style="grid-column:1/-1;">
+          <button type="submit" class="btn btn-red">إلغاء المحاضرة عن الطالب</button>
+        </div>
       </form>
     </div>
 
     <script>
       (function () {
         const lecturesData = ${safeJsonForScript(lecturesPayload)};
-        const gradeSel = document.getElementById("absenceGradeSelect");
-        const lecSel = document.getElementById("absenceLectureSelect");
-        const codesBox = document.getElementById("presentCodesBox");
-        const fillBtn = document.getElementById("fillCurrentCodesBtn");
+        const centerStudentsData = ${safeJsonForScript(centerStudentsPayload)};
 
-        function updateLecturesForGrade() {
+        const gradeSel = document.getElementById("teamAbsenceGradeSelect");
+        const lecSel = document.getElementById("teamAbsenceLectureSelect");
+        const hiddenGrade = document.getElementById("hiddenAbsenceGrade");
+        const hiddenLecId = document.getElementById("hiddenAbsenceLectureId");
+        const codeInput = document.getElementById("teamCodeInput");
+        const lookupBox = document.getElementById("codeLookupResultBox");
+        const confirmedBelowBox = document.getElementById("confirmedCodesBelowBox");
+        const formEl = document.getElementById("teamConfirmAbsenceForm");
+
+        const revGradeSel = document.getElementById("revokeGradeSelect");
+        const revStudentSel = document.getElementById("revokeStudentSelect");
+        const revLecSel = document.getElementById("revokeLectureSelect");
+
+        function escLocal(s) {
+          return String(s ?? "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;");
+        }
+
+        function normCode(raw) {
+          const s = String(raw || "").trim().toUpperCase();
+          if (!s) return "";
+          return s.startsWith("MO") ? s : ("MO" + s);
+        }
+
+        function refreshLectureDropdowns() {
           const g = (gradeSel?.value || "").trim();
           const filtered = lecturesData.filter(l => !g || String(l.grade) === g);
           if (!filtered.length) {
-            lecSel.innerHTML = '<option value="">لا توجد محاضرات مضافة لهذا الصف بعد</option>';
-            return;
+            lecSel.innerHTML = '<option value="">لا توجد محاضرات لهذا الصف</option>';
+          } else {
+            lecSel.innerHTML = filtered.map(l =>
+              '<option value="' + escLocal(l.id) + '">' + escLocal(l.title) + ' (' + escLocal(l.branch) + ')</option>'
+            ).join("");
           }
-          lecSel.innerHTML = filtered.map(function (l) {
-            const badge = l.requires_attendance ? (" [مسجل حضور: " + l.attended_codes.length + " كود]") : "";
-            return '<option value="' + l.id.replace(/"/g, "&quot;") + '">' + l.title + ' (' + l.branch + ')' + badge + '</option>';
-          }).join("");
+          syncHiddenFields();
+          lookupCodeAndShowName();
+          renderConfirmedCodesList();
         }
 
-        gradeSel?.addEventListener("change", updateLecturesForGrade);
-        updateLecturesForGrade();
+        function syncHiddenFields() {
+          if (hiddenGrade) hiddenGrade.value = (gradeSel?.value || "").trim();
+          if (hiddenLecId) hiddenLecId.value = (lecSel?.value || "").trim();
+        }
 
-        fillBtn?.addEventListener("click", function () {
-          const selectedId = (lecSel?.value || "").trim();
-          const found = lecturesData.find(l => String(l.id) === selectedId);
-          if (found && Array.isArray(found.attended_codes) && found.attended_codes.length) {
-            codesBox.value = found.attended_codes.join("\\n");
+        function lookupCodeAndShowName() {
+          const raw = (codeInput?.value || "").trim();
+          if (!raw) {
+            lookupBox.style.display = "none";
+            lookupBox.innerHTML = "";
+            return;
+          }
+          const normalized = normCode(raw);
+          const matchedStudent = centerStudentsData.find(st =>
+            String(st.center_code || "").trim().toUpperCase() === normalized ||
+            String(st.center_code || "").trim().toUpperCase() === raw.toUpperCase()
+          );
+
+          lookupBox.style.display = "flex";
+          if (matchedStudent) {
+            lookupBox.innerHTML =
+              '<div>' +
+                '<span class="pill pill-ok">الكود موجود ✓</span> ' +
+                '<strong style="margin-right:6px;">اسم الطالب: ' + escLocal(matchedStudent.full_name) + '</strong>' +
+                '<span class="muted" style="font-size:0.82rem;"> • كود: ' + escLocal(matchedStudent.center_code) + ' • ' + escLocal(matchedStudent.grade) + '</span>' +
+              '</div>';
           } else {
-            alert("لا توجد أكواد مسجلة مسبقاً لهذه المحاضرة.");
+            lookupBox.innerHTML =
+              '<div>' +
+                '<span class="pill pill-err">تنبيه</span> ' +
+                '<strong style="margin-right:6px;">لا يوجد طالب سنتر مسجل بهذا الكود (' + escLocal(normalized) + ') حالياً</strong>' +
+              '</div>';
+          }
+        }
+
+        function renderConfirmedCodesList() {
+          const g = (gradeSel?.value || "").trim();
+          const selectedLecId = (lecSel?.value || "").trim();
+          const lecObj = lecturesData.find(l => String(l.id) === selectedLecId);
+          const attendedCodes = Array.isArray(lecObj?.attended_codes) ? lecObj.attended_codes : [];
+
+          const manuallyUnlockedStudents = centerStudentsData.filter(st =>
+            (!g || String(st.grade) === g) &&
+            Array.isArray(st.unlocked_lectures) &&
+            st.unlocked_lectures.includes(selectedLecId)
+          );
+
+          const rows = [];
+          attendedCodes.forEach(c => {
+            const stMatch = centerStudentsData.find(s => String(s.center_code || "").toUpperCase() === String(c).toUpperCase());
+            rows.push(
+              '<div class="row">' +
+                '<div>' +
+                  '<span class="pill pill-ok">مفعّل ✓</span> ' +
+                  '<strong>' + escLocal(c) + '</strong>' +
+                  (stMatch ? (' — <span>' + escLocal(stMatch.full_name) + '</span>') : '') +
+                '</div>' +
+                '<span class="muted" style="font-size:0.8rem;">تم تأكيد حضوره</span>' +
+              '</div>'
+            );
+          });
+
+          manuallyUnlockedStudents.forEach(st => {
+            if (!attendedCodes.some(c => String(c).toUpperCase() === String(st.center_code).toUpperCase())) {
+              rows.push(
+                '<div class="row">' +
+                  '<div>' +
+                    '<span class="pill pill-ok">مفعّل ✓</span> ' +
+                    '<strong>' + escLocal(st.center_code || "-") + '</strong> — <span>' + escLocal(st.full_name) + '</span>' +
+                  '</div>' +
+                  '<span class="muted" style="font-size:0.8rem;">مفتوحة للطالب</span>' +
+                '</div>'
+              );
+            }
+          });
+
+          confirmedBelowBox.innerHTML =
+            '<h4 style="font-weight:900; margin-bottom:6px;">الأكواد والطلاب الذين تم تفعيلهم وتأكيدهم لهذه المحاضرة:</h4>' +
+            (rows.length ? rows.join("") : '<div class="muted" style="font-size:0.84rem;">لم يتم تأكيد أي كود لهذه المحاضرة بعد.</div>');
+        }
+
+        function refreshRevokeDropdowns() {
+          const g = (revGradeSel?.value || "").trim();
+          const stList = centerStudentsData.filter(s => !g || String(s.grade) === g);
+          const lecList = lecturesData.filter(l => !g || String(l.grade) === g);
+
+          revStudentSel.innerHTML = stList.length
+            ? stList.map(s => '<option value="' + escLocal(s.phone) + '">' + escLocal(s.full_name) + ' (' + escLocal(s.center_code || s.phone) + ')</option>').join("")
+            : '<option value="">لا يوجد طلاب سنتر في هذا الصف</option>';
+
+          revLecSel.innerHTML = lecList.length
+            ? lecList.map(l => '<option value="' + escLocal(l.id) + '">' + escLocal(l.title) + ' (' + escLocal(l.branch) + ')</option>').join("")
+            : '<option value="">لا توجد محاضرات في هذا الصف</option>';
+        }
+
+        gradeSel?.addEventListener("change", refreshLectureDropdowns);
+        lecSel?.addEventListener("change", function () {
+          syncHiddenFields();
+          renderConfirmedCodesList();
+        });
+        codeInput?.addEventListener("input", lookupCodeAndShowName);
+
+        formEl?.addEventListener("submit", function () {
+          syncHiddenFields();
+          if (codeInput && codeInput.value.trim()) {
+            codeInput.value = normCode(codeInput.value);
           }
         });
+
+        revGradeSel?.addEventListener("change", refreshRevokeDropdowns);
+
+        refreshLectureDropdowns();
+        refreshRevokeDropdowns();
+        if (codeInput) codeInput.value = "";
       })();
     </script>
   `;
@@ -3321,7 +3505,7 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
   const codesRows = (data.codes || []).slice(-25).reverse().map(c => `
     <div class="row">
       <div>
-        <strong class="copyable-code-val">${esc(c.code)}</strong> — <span class="pill pill-ok">${esc(c.type === "center" ? "كود سنتر (لمرة واحدة)" : "كود فرع: " + (c.branch || ""))}</span>
+        <strong class="copyable-code-val">${esc(c.code)}</strong> — <span class="pill pill-ok">${esc(c.type === "center" ? "كود سنتر (يبدأ بـ MO وأرقام)" : "كود فرع: " + (c.branch || ""))}</span>
         <span class="pill ${c.used ? "pill-warn" : "pill-ok"}" style="margin-right:6px;">${c.used ? "مستخدم (" + esc(c.used_by || "") + ")" : "متاح"}</span>
       </div>
       <div style="display:flex; gap:8px; align-items:center;">
@@ -3480,7 +3664,8 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
         center_code: String(st.center_code || ""),
         grade: String(st.grade || ""),
         track: String(st.track || ""),
-        unlocked_lectures: Array.isArray(st.unlocked_lectures) ? st.unlocked_lectures.map(String) : []
+        unlocked_lectures: Array.isArray(st.unlocked_lectures) ? st.unlocked_lectures.map(String) : [],
+        locked_lectures: Array.isArray(st.locked_lectures) ? st.locked_lectures.map(String) : []
       }));
 
     const lecturesForCenterControl = allLectures.map(l => ({
@@ -3534,9 +3719,10 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
 
             const lecsHtml = gradeLectures.length
               ? gradeLectures.map(function (lec) {
+                  const isExplicitlyLocked = st.locked_lectures.includes(String(lec.id));
                   const isManualOpen = st.unlocked_lectures.includes(String(lec.id));
                   const isAttendedOpen = !lec.requires_attendance || (stCode && lec.attended_codes.includes(stCode));
-                  const isCurrentlyOpen = isManualOpen || isAttendedOpen;
+                  const isCurrentlyOpen = !isExplicitlyLocked && (isManualOpen || isAttendedOpen);
 
                   return (
                     '<div class="row">' +
@@ -3665,12 +3851,12 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
   } else if (activeSec === "codes") {
     sectionHtml = `
       <div class="card">
-        <h3 style="font-weight:900; margin-bottom:10px;">توليد أكواد (سنتر لمرة واحدة / فروع)</h3>
+        <h3 style="font-weight:900; margin-bottom:10px;">توليد أكواد (سنتر تبدأ بـ MO وأرقام فقط / فروع)</h3>
         <form method="post" action="/admin/generate-codes" class="grid3">
           <div class="field">
             <label>نوع الكود</label>
             <select name="code_type">
-              <option value="center">كود سنتر (يُستخدم مرة واحدة)</option>
+              <option value="center">كود سنتر (MO + أرقام فقط، لمرة واحدة)</option>
               <option value="branch">كود تفعيل فرع</option>
             </select>
           </div>
@@ -4353,730 +4539,593 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
       ${error ? `<div class="msg-err">${esc(error)}</div>` : ""}
       ${notice ? `<div class="msg-ok">${esc(notice)}</div>` : ""}
       <div class="kpi-grid">
-        <div class="kpi-card"><div><div class="kpi-num">${allStudents.length}</div><div class="kpi-lbl">طلاب المنصة</div></div><div class="kpi-icon-box">👨‍🎓</div></div>
+        <div class="kpi-card"><div><div class="kpi-num">${allStudents.length}</div><div class="kpi-lbl">الطلاب</div></div><div class="kpi-icon-box">👥</div></div>
         <div class="kpi-card teal-kpi"><div><div class="kpi-num">${allLectures.length}</div><div class="kpi-lbl">المحاضرات</div></div><div class="kpi-icon-box">🎥</div></div>
-        <div class="kpi-card gold-kpi"><div><div class="kpi-num">${allExams.length}</div><div class="kpi-lbl">الواجبات والاختبارات</div></div><div class="kpi-icon-box">📝</div></div>
-        <div class="kpi-card teal-kpi"><div><div class="kpi-num">${allTeamMembers.length}</div><div class="kpi-lbl">أعضاء التيم</div></div><div class="kpi-icon-box">👥</div></div>
+        <div class="kpi-card gold-kpi"><div><div class="kpi-num">${allExams.length}</div><div class="kpi-lbl">الواجبات والامتحانات</div></div><div class="kpi-icon-box">📝</div></div>
+        <div class="kpi-card teal-kpi"><div><div class="kpi-num">${allForumPosts.length}</div><div class="kpi-lbl">منشورات المنتدى</div></div><div class="kpi-icon-box">💬</div></div>
       </div>
       ${sectionHtml}
     </div>
     <aside class="right-drawer">
       <div class="drawer-top">
-        <span class="drawer-title" style="font-weight:900; font-size:0.92rem;">إدارة ${PLATFORM_NAME}</span>
-        <button type="button" class="collapse-btn" onclick="document.getElementById('adminShell')?.classList.toggle('collapsed')">⇄</button>
+        <span class="drawer-title" style="font-weight:900; font-size:0.92rem;">قائمة الأدمن</span>
+        <button type="button" class="collapse-btn" id="collapseAdminBtn">⇄</button>
       </div>
-      <a class="nav-item-link ${activeSec === "students" ? "active" : ""}" href="/admin?section=students"><span>👨‍🎓</span><span class="nav-label">طلاب المنصة</span></a>
+      <a class="nav-item-link ${activeSec === "students" ? "active" : ""}" href="/admin?section=students"><span>👥</span><span class="nav-label">طلاب المنصة</span></a>
       <a class="nav-item-link ${activeSec === "center_students" ? "active" : ""}" href="/admin?section=center_students"><span>🏫</span><span class="nav-label">طلاب السنتر</span></a>
       <a class="nav-item-link ${activeSec === "activate_center_lectures" ? "active" : ""}" href="/admin?section=activate_center_lectures"><span>🔓</span><span class="nav-label">تفعيل طلاب سنتر</span></a>
       <a class="nav-item-link ${activeSec === "ranking" ? "active" : ""}" href="/admin?section=ranking"><span>🏆</span><span class="nav-label">ترتيب الطلاب</span></a>
-      <a class="nav-item-link ${activeSec === "lectures" ? "active" : ""}" href="/admin?section=lectures"><span>🎥</span><span class="nav-label">إضافة محاضرة</span></a>
+      <a class="nav-item-link ${activeSec === "lectures" ? "active" : ""}" href="/admin?section=lectures"><span>🎥</span><span class="nav-label">المحاضرات</span></a>
+      <a class="nav-item-link ${activeSec === "exams" ? "active" : ""}" href="/admin?section=exams"><span>📝</span><span class="nav-label">الواجبات والامتحانات</span></a>
       <a class="nav-item-link ${activeSec === "codes" ? "active" : ""}" href="/admin?section=codes"><span>🔑</span><span class="nav-label">الأكواد والخصومات</span></a>
-      <a class="nav-item-link ${activeSec === "add_team" ? "active" : ""}" href="/admin?section=add_team"><span>👥</span><span class="nav-label">إضافة تيم</span></a>
-      <a class="nav-item-link ${activeSec === "exams" ? "active" : ""}" href="/admin?section=exams"><span>📝</span><span class="nav-label">الواجبات والاختبارات</span></a>
       <a class="nav-item-link ${activeSec === "forum" ? "active" : ""}" href="/admin?section=forum"><span>💬</span><span class="nav-label">المنتدى</span></a>
-      <a class="nav-item-link ${activeSec === "support" ? "active" : ""}" href="/admin?section=support"><span>🎧</span><span class="nav-label">دعم فني</span></a>
-      <a class="nav-item-link ${activeSec === "settings" ? "active" : ""}" href="/admin?section=settings"><span>⚙️</span><span class="nav-label">الإعدادات والإشعار</span></a>
+      <a class="nav-item-link ${activeSec === "support" ? "active" : ""}" href="/admin?section=support"><span>🎧</span><span class="nav-label">الدعم الفني</span></a>
+      <a class="nav-item-link ${activeSec === "add_team" ? "active" : ""}" href="/admin?section=add_team"><span>🛡️</span><span class="nav-label">إضافة تيم الأدمن</span></a>
+      <a class="nav-item-link ${activeSec === "settings" ? "active" : ""}" href="/admin?section=settings"><span>⚙️</span><span class="nav-label">الإعدادات</span></a>
+      <a class="nav-item-link" href="/logout" style="color:var(--err);"><span>🚪</span><span class="nav-label">خروج</span></a>
     </aside>
-  </div>`;
-}
-
-async function parseFormBody(req) {
-  const ct = req.headers.get("Content-Type") || "";
-  const out = {};
-  if (ct.includes("application/x-www-form-urlencoded")) {
-    const text = await req.text();
-    const params = new URLSearchParams(text);
-    for (const [k, v] of params.entries()) {
-      if (k in out) {
-        if (!Array.isArray(out[k])) out[k] = [out[k]];
-        out[k].push(v);
-      } else {
-        out[k] = v;
-      }
-    }
-    return out;
-  }
-  if (ct.includes("multipart/form-data")) {
-    const fd = await req.formData();
-    for (const [k, v] of fd.entries()) {
-      if (typeof v === "string") {
-        if (k in out) {
-          if (!Array.isArray(out[k])) out[k] = [out[k]];
-          out[k].push(v);
-        } else {
-          out[k] = v;
-        }
-      }
-    }
-    return out;
-  }
-  try {
-    return await req.json();
-  } catch {
-    return out;
-  }
+  </div>
+  <script>
+    document.getElementById("collapseAdminBtn")?.addEventListener("click", function () {
+      document.getElementById("adminShell")?.classList.toggle("collapsed");
+    });
+  </script>`;
 }
 
 export default {
   async fetch(req, env) {
     const url = new URL(req.url);
     const path = url.pathname;
-    const method = req.method.toUpperCase();
-    const secret = env.FIREBASE_API_KEY || "jakh-worker-secret";
-
+    const secret = env.SESSION_SECRET || "jakh-secret";
     const settings = await getSettings(env);
-    const stCookie = parseToken(getCookie(req, "nb_st"), secret);
-    const admCookie = parseToken(getCookie(req, "nb_adm"), secret);
-    const teamCookie = parseToken(getCookie(req, "nb_team"), secret);
-    const isAdmin = Boolean(admCookie && admCookie.role === "admin");
 
-    let student = null;
-    let studentKicked = false;
-    if (stCookie && stCookie.phone) {
-      const dbSt = await fsGet(env, "students", stCookie.phone);
-      if (dbSt) {
-        if (dbSt.active_session && stCookie.nonce && dbSt.active_session !== stCookie.nonce) {
-          studentKicked = true;
-        } else {
-          student = dbSt;
-        }
-      }
-    }
+    const studentToken = getCookie(req, "nb_student_session");
+    const studentPayload = parseToken(studentToken, secret);
+    const student = studentPayload?.phone ? await fsGet(env, "students", studentPayload.phone) : null;
 
+    const adminToken = getCookie(req, "nb_admin_session");
+    const adminPayload = parseToken(adminToken, secret);
+    const isAdmin = Boolean(adminPayload?.admin);
+
+    const teamToken = getCookie(req, "nb_team_session");
+    const teamPayload = parseToken(teamToken, secret);
     let teamSession = null;
-    let teamKicked = false;
-    if (teamCookie && teamCookie.role === "team" && teamCookie.team_id) {
-      const dbTm = await fsGet(env, "team_members", teamCookie.team_id);
-      if (dbTm) {
-        if (dbTm.active_session && teamCookie.nonce && dbTm.active_session !== teamCookie.nonce) {
-          teamKicked = true;
-        } else {
-          teamSession = teamCookie;
-        }
+    if (teamPayload?.team_id) {
+      const tmDoc = await fsGet(env, "team_members", teamPayload.team_id);
+      if (tmDoc && (!teamPayload.session_id || !tmDoc.active_session_id || tmDoc.active_session_id === teamPayload.session_id)) {
+        teamSession = {
+          team_id: tmDoc.id,
+          team_name: tmDoc.name || teamPayload.team_name || "عضو التيم",
+          team_phone: tmDoc.phone || teamPayload.team_phone || "",
+          session_id: tmDoc.active_session_id || teamPayload.session_id || ""
+        };
       }
     }
 
-    if (path === "/api/session/check" && method === "GET") {
-      if (studentKicked) {
-        return new Response(JSON.stringify({ kicked: true, redirect: "/student?tab=login&error=" + encodeURIComponent("تم تسجيل الدخول من جهاز آخر") }), {
-          headers: {
-            "Content-Type": "application/json; charset=utf-8",
-            "Set-Cookie": clearCookieHeader("nb_st")
-          }
+    const isStaff = isAdmin || Boolean(teamSession);
+
+    if (path === "/api/session/check") {
+      if (student && studentPayload?.session_id && student.active_session_id && student.active_session_id !== studentPayload.session_id) {
+        return new Response(JSON.stringify({ kicked: true, redirect: "/student?tab=login" }), {
+          headers: { "Content-Type": "application/json" }
         });
       }
-      if (teamKicked) {
-        return new Response(JSON.stringify({ kicked: true, redirect: "/team?error=" + encodeURIComponent("تم تسجيل الدخول من جهاز آخر") }), {
-          headers: {
-            "Content-Type": "application/json; charset=utf-8",
-            "Set-Cookie": clearCookieHeader("nb_team")
-          }
-        });
+      if (teamPayload?.team_id) {
+        const tmCheck = await fsGet(env, "team_members", teamPayload.team_id);
+        if (tmCheck && teamPayload.session_id && tmCheck.active_session_id && tmCheck.active_session_id !== teamPayload.session_id) {
+          return new Response(JSON.stringify({ kicked: true, redirect: "/team" }), {
+            headers: { "Content-Type": "application/json" }
+          });
+        }
       }
       return new Response(JSON.stringify({ kicked: false }), {
-        headers: { "Content-Type": "application/json; charset=utf-8" }
+        headers: { "Content-Type": "application/json" }
       });
     }
 
-    if (studentKicked && path.startsWith("/student")) {
-      return redirectRes(`/student?tab=login&error=${encodeURIComponent("تم تسجيل الدخول إلى حسابك من جهاز آخر، سجل دخولك مجدداً")}`, {
-        "Set-Cookie": clearCookieHeader("nb_st")
-      });
-    }
-    if (teamKicked && path.startsWith("/team")) {
-      return redirectRes(`/team?error=${encodeURIComponent("تم تسجيل الدخول إلى حساب التيم من جهاز آخر، سجل دخولك مجدداً")}`, {
-        "Set-Cookie": clearCookieHeader("nb_team")
-      });
-    }
-
-    const allForumPostsForBell = student ? await fsList(env, "forum_posts") : [];
-    const academicUnreadItems = student
-      ? allForumPostsForBell
-          .filter(p => String(p.student_phone || "") === String(student.phone || "") && Boolean(String(p.reply || "").trim()))
-          .map(p => ({
-            key: `frm_${p.id}_${String(p.reply || "").length}`,
-            kind: `منتدى ${p.branch || ""}`,
-            title: `رد من ${p.replied_by || "تيم الأدمن"}`,
-            preview: String(p.reply || "").slice(0, 70),
-            href: `/student?section=forum&forum_branch=${encodeURIComponent(p.branch || BRANCHES[0])}`
-          }))
-      : [];
-
-    if (path === "/api/staff/alerts" && method === "GET") {
-      if (!isAdmin && !teamSession) {
-        return new Response(JSON.stringify({ latest_key: "" }), {
-          headers: { "Content-Type": "application/json; charset=utf-8" }
+    if (path === "/api/staff/alerts") {
+      if (!isStaff) {
+        return new Response(JSON.stringify({ error: "unauthorized" }), {
+          status: 401,
+          headers: { "Content-Type": "application/json" }
         });
       }
-      const alerts = await fsList(env, "staff_alerts");
-      const sorted = alerts.sort((a, b) => String(b.at || "").localeCompare(String(a.at || "")));
-      const top = sorted[0];
-      return new Response(JSON.stringify({
-        latest_key: top ? String(top.id) : "",
-        title: top ? String(top.title || "") : "",
-        body: top ? String(top.body || "") : ""
-      }), {
-        headers: { "Content-Type": "application/json; charset=utf-8" }
+      const posts = await fsList(env, "forum_posts");
+      posts.sort((a, b) => String(b.created_at || "").localeCompare(String(a.created_at || "")));
+      const latestPost = posts[0];
+      if (!latestPost) {
+        return new Response(JSON.stringify({ latest_key: "" }), {
+          headers: { "Content-Type": "application/json" }
+        });
+      }
+      const key = `${latestPost.id}_${latestPost.created_at || ""}_${latestPost.reply ? "replied" : "new"}`;
+      const title = latestPost.reply
+        ? `تم الرد في منتدى ${latestPost.branch || ""}`
+        : `رسالة جديدة في منتدى ${latestPost.branch || ""}`;
+      const body = latestPost.reply
+        ? `قام ${latestPost.replied_by || "عضو التيم"} بالرد على ${latestPost.student_name || "طالب"}: ${latestPost.reply}`
+        : `من الطالب ${latestPost.student_name || "طالب"}: ${latestPost.message || ""}`;
+      return new Response(JSON.stringify({ latest_key: key, title, body }), {
+        headers: { "Content-Type": "application/json" }
       });
     }
 
-    if (path === "/api/support/thread" && method === "GET") {
+    if (path === "/api/support/thread") {
       const sid = String(url.searchParams.get("session_id") || "").trim();
       if (!sid) {
         return new Response(JSON.stringify({ messages: [], read_admin_ids: [] }), {
-          headers: { "Content-Type": "application/json; charset=utf-8" }
+          headers: { "Content-Type": "application/json" }
         });
       }
-      const doc = await fsGet(env, "support_chats", sid);
+      const th = await fsGet(env, "support_threads", sid);
       return new Response(JSON.stringify({
-        visitor_name: doc?.visitor_name || "",
-        messages: Array.isArray(doc?.messages) ? doc.messages : [],
-        read_admin_ids: Array.isArray(doc?.read_admin_ids) ? doc.read_admin_ids : []
+        visitor_name: th?.visitor_name || "",
+        messages: Array.isArray(th?.messages) ? th.messages : [],
+        read_admin_ids: Array.isArray(th?.read_admin_ids) ? th.read_admin_ids : []
       }), {
-        headers: { "Content-Type": "application/json; charset=utf-8" }
+        headers: { "Content-Type": "application/json" }
       });
     }
 
-    if (path === "/api/support/mark-read" && method === "POST") {
-      const body = await parseFormBody(req);
-      const sid = String(body.session_id || "").trim();
-      const incomingIds = Array.isArray(body.read_admin_ids) ? body.read_admin_ids.map(String) : [];
+    if (path === "/api/support/mark-read" && req.method === "POST") {
+      let payload = {};
+      try { payload = await req.json(); } catch {}
+      const sid = String(payload.session_id || "").trim();
+      const incomingIds = Array.isArray(payload.read_admin_ids) ? payload.read_admin_ids.map(String) : [];
       if (sid) {
-        const existing = (await fsGet(env, "support_chats", sid)) || {};
-        const prevRead = Array.isArray(existing.read_admin_ids) ? existing.read_admin_ids.map(String) : [];
-        const merged = Array.from(new Set([...prevRead, ...incomingIds]));
-        await fsSet(env, "support_chats", sid, {
+        const existing = (await fsGet(env, "support_threads", sid)) || {
+          visitor_name: "",
+          student_phone: "",
+          messages: [],
+          read_admin_ids: [],
+          created_at: new Date().toISOString()
+        };
+        const merged = Array.from(new Set([...(Array.isArray(existing.read_admin_ids) ? existing.read_admin_ids : []), ...incomingIds]));
+        await fsSet(env, "support_threads", sid, {
           ...existing,
-          read_admin_ids: merged
+          read_admin_ids: merged,
+          updated_at: new Date().toISOString()
         });
       }
       return new Response(JSON.stringify({ ok: true }), {
-        headers: { "Content-Type": "application/json; charset=utf-8" }
+        headers: { "Content-Type": "application/json" }
       });
     }
 
-    if (path === "/api/support/send" && method === "POST") {
-      const body = await parseFormBody(req);
-      const sid = String(body.session_id || "").trim();
+    if (path === "/api/support/send" && req.method === "POST") {
+      let payload = {};
+      try { payload = await req.json(); } catch {}
+      const sid = String(payload.session_id || "").trim();
+      const visitorName = String(payload.visitor_name || "").trim();
+      const stPhone = String(payload.student_phone || "").trim();
+      const text = String(payload.text || "").trim();
+      const imageUrl = String(payload.image_url || "").trim();
+      const msgId = String(payload.msg_id || ("m_" + Date.now()));
+      const registerNameOnly = Boolean(payload.register_name_only);
+
       if (!sid) {
         return new Response(JSON.stringify({ ok: false }), {
           status: 400,
-          headers: { "Content-Type": "application/json; charset=utf-8" }
+          headers: { "Content-Type": "application/json" }
         });
       }
-      const existing = (await fsGet(env, "support_chats", sid)) || {
-        visitor_name: "",
-        student_phone: "",
+
+      const existing = (await fsGet(env, "support_threads", sid)) || {
+        visitor_name: visitorName,
+        student_phone: stPhone,
         messages: [],
         read_admin_ids: [],
-        updated_at: new Date().toISOString()
+        created_at: new Date().toISOString()
       };
-      const vName = String(body.visitor_name || existing.visitor_name || "").trim();
-      const sPhone = String(body.student_phone || existing.student_phone || "").trim();
-      const messages = Array.isArray(existing.messages) ? [...existing.messages] : [];
-      const readAdminIds = Array.isArray(existing.read_admin_ids) ? [...existing.read_admin_ids] : [];
 
-      if (!body.register_name_only) {
-        const textVal = String(body.text || "").trim();
-        const imgVal = String(body.image_url || "").trim();
-        const msgId = String(body.msg_id || ("m_" + Date.now()));
-        if (textVal || imgVal) {
-          messages.push({
-            id: msgId,
-            sender: "user",
-            sender_name: vName,
-            text: textVal,
-            image_url: imgVal,
-            at: new Date().toISOString()
-          });
-        }
-      }
-
-      const nowIso = new Date().toISOString();
-      await fsSet(env, "support_chats", sid, {
-        visitor_name: vName,
-        student_phone: sPhone,
-        messages,
-        read_admin_ids: readAdminIds,
-        updated_at: nowIso
-      });
-
-      return new Response(JSON.stringify({ ok: true, visitor_name: vName, messages }), {
-        headers: { "Content-Type": "application/json; charset=utf-8" }
-      });
-    }
-
-    if (path === "/" && method === "GET") {
-      return htmlRes(
-        renderLayout("الرئيسية", settings, student, isAdmin || Boolean(teamSession), renderLanding(settings), {
-          showLandingAdminAvatar: true,
-          showSupportWidget: true,
-          academicUnreadCount: academicUnreadItems.length,
-          academicUnreadItems
-        })
-      );
-    }
-
-    if (path === "/about" && method === "GET") {
-      return htmlRes(
-        renderLayout("من نحن", settings, student, isAdmin || Boolean(teamSession), renderAboutStandalonePage(settings), {
-          showLandingAdminAvatar: false,
-          showSupportWidget: true,
-          academicUnreadCount: academicUnreadItems.length,
-          academicUnreadItems
-        })
-      );
-    }
-
-    if (path === "/privacy" && method === "GET") {
-      return htmlRes(
-        renderLayout("سياسة الخصوصية", settings, student, isAdmin || Boolean(teamSession), renderPrivacyStandalonePage(), {
-          showLandingAdminAvatar: false,
-          showSupportWidget: false,
-          academicUnreadCount: academicUnreadItems.length,
-          academicUnreadItems
-        })
-      );
-    }
-
-    if (path === "/logout") {
-      return redirectRes("/", {
-        "Set-Cookie": [clearCookieHeader("nb_st"), clearCookieHeader("nb_adm"), clearCookieHeader("nb_team")].join(", ")
-      });
-    }
-
-    if (path === "/team" && method === "GET") {
-      const error = url.searchParams.get("error") || "";
-      const notice = url.searchParams.get("notice") || "";
-      const teamSection = url.searchParams.get("section") || "forum";
-      const [forumPosts, lectures, students] = teamSession
-        ? await Promise.all([
-            fsList(env, "forum_posts"),
-            fsList(env, "lectures"),
-            fsList(env, "students")
-          ])
-        : [[], [], []];
-      return htmlRes(
-        renderLayout(
-          "تيم الأدمن",
-          settings,
-          null,
-          Boolean(teamSession),
-          renderTeamStandalonePage(teamSession, forumPosts, lectures, students, teamSection, error, notice),
-          {
-            showLandingAdminAvatar: false,
-            showSupportWidget: false
-          }
-        )
-      );
-    }
-
-    if (path === "/team/login" && method === "POST") {
-      const f = await parseFormBody(req);
-      const tName = String(f.team_name || "").trim();
-      const tPhone = String(f.team_phone || "").trim();
-      const tCode = String(f.team_code || "").trim().toUpperCase();
-
-      const members = await fsList(env, "team_members");
-      const found = members.find(m =>
-        String(m.name || "").trim() === tName &&
-        String(m.phone || "").trim() === tPhone &&
-        String(m.code || "").trim().toUpperCase() === tCode
-      );
-      if (!found) {
-        return redirectRes(`/team?error=${encodeURIComponent("الاسم أو رقم الهاتف أو الكود غير صحيح، راجع الأدمن")}`);
-      }
-
-      const nonce = crypto.randomUUID();
-      await fsSet(env, "team_members", found.id, {
-        ...found,
-        active_session: nonce
-      });
-
-      const tok = makeToken({
-        role: "team",
-        team_id: found.id,
-        team_name: found.name,
-        team_phone: found.phone,
-        nonce
-      }, secret);
-
-      return redirectRes("/team", { "Set-Cookie": setCookieHeader("nb_team", tok) });
-    }
-
-    if (path === "/team/reply-forum" && method === "POST") {
-      if (!teamSession) return redirectRes("/team");
-      const f = await parseFormBody(req);
-      const postId = String(f.post_id || "").trim();
-      const reply = String(f.reply || "").trim();
-      const doc = await fsGet(env, "forum_posts", postId);
-      if (doc) {
-        const actor = `${teamSession.team_name} (${teamSession.team_phone})`;
-        await fsSet(env, "forum_posts", postId, {
-          ...doc,
-          reply,
-          replied_by: actor,
-          replied_at: new Date().toISOString()
-        });
-        await fsSet(env, "staff_alerts", `al_${Date.now()}`, {
-          title: `تم الرد على رسالة منتدى ${doc.branch || ""}`,
-          body: `قام ${actor} بالرد على رسالة الطالب ${doc.student_name || ""}`,
+      const msgs = Array.isArray(existing.messages) ? [...existing.messages] : [];
+      if (!registerNameOnly && (text || imageUrl)) {
+        msgs.push({
+          id: msgId,
+          sender: "user",
+          sender_name: visitorName || existing.visitor_name || "مستخدم",
+          text,
+          image_url: imageUrl,
           at: new Date().toISOString()
         });
       }
-      return redirectRes(`/team?section=forum&notice=${encodeURIComponent("تم نشر الرد في المنتدى وإرسال إشعار للتيم")}`);
-    }
 
-    if (path === "/team/delete-forum" && method === "POST") {
-      if (!teamSession) return redirectRes("/team");
-      const f = await parseFormBody(req);
-      const postId = String(f.post_id || "").trim();
-      if (postId) await fsDelete(env, "forum_posts", postId);
-      return redirectRes(`/team?section=forum&notice=${encodeURIComponent("تم حذف رسالة المنتدى")}`);
-    }
+      const updatedDoc = {
+        visitor_name: visitorName || existing.visitor_name || "",
+        student_phone: stPhone || existing.student_phone || "",
+        messages: msgs,
+        read_admin_ids: Array.isArray(existing.read_admin_ids) ? existing.read_admin_ids : [],
+        created_at: existing.created_at || new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      await fsSet(env, "support_threads", sid, updatedDoc);
 
-    if (path === "/team/save-absence" && method === "POST") {
-      if (!teamSession) return redirectRes("/team");
-      const f = await parseFormBody(req);
-      const lectureId = String(f.lecture_id || "").trim();
-      const rawCodes = String(f.present_codes || "").trim();
-      if (!lectureId) {
-        return redirectRes(`/team?section=absence&error=${encodeURIComponent("يرجى اختيار المحاضرة أولاً")}`);
-      }
-      const lec = await fsGet(env, "lectures", lectureId);
-      if (!lec) {
-        return redirectRes(`/team?section=absence&error=${encodeURIComponent("المحاضرة غير موجودة")}`);
-      }
-
-      const codesList = Array.from(new Set(
-        rawCodes
-          .split(/[\s,،;|\n\r]+/)
-          .map(x => String(x || "").trim().toUpperCase())
-          .filter(Boolean)
-      ));
-
-      await fsSet(env, "lectures", lectureId, {
-        ...lec,
-        requires_attendance: true,
-        attended_codes: codesList,
-        attendance_updated_by: `${teamSession.team_name} (${teamSession.team_phone})`,
-        attendance_updated_at: new Date().toISOString()
+      return new Response(JSON.stringify({ ok: true, messages: msgs }), {
+        headers: { "Content-Type": "application/json" }
       });
-
-      return redirectRes(`/team?section=absence&notice=${encodeURIComponent(`تم حفظ الحضور (${codesList.length} كود) وفتح المحاضرة للطلاب الحاضرين فقط، وإغلاقها على الغائبين بسعر ${ABSENCE_LESSON_PRICE_EGP} ج`)}`);
     }
 
-    if (path === "/student" && method === "GET") {
+    let academicUnreadCount = 0;
+    const academicUnreadItems = [];
+    if (student && !isStaff) {
+      const allPostsForNotif = await fsList(env, "forum_posts");
+      allPostsForNotif
+        .filter(p => String(p.student_phone || "") === String(student.phone || "") && p.reply)
+        .forEach(p => {
+          academicUnreadCount++;
+          academicUnreadItems.push({
+            key: `forum_${p.id}_${String(p.reply || "").slice(0, 16)}`,
+            kind: "المنتدى",
+            title: `رد على سؤالك في منتدى ${p.branch || ""}`,
+            preview: String(p.reply || "").slice(0, 75),
+            href: `/student?section=forum&forum_branch=${encodeURIComponent(p.branch || BRANCHES[0])}`
+          });
+        });
+    }
+
+    const commonLayoutOpts = {
+      showLandingAdminAvatar: false,
+      showSupportWidget: true,
+      academicUnreadCount,
+      academicUnreadItems
+    };
+
+    if (path === "/logout") {
+      return redirectRes("/", {
+        headers: [
+          ["Set-Cookie", clearCookieHeader("nb_student_session")],
+          ["Set-Cookie", clearCookieHeader("nb_admin_session")],
+          ["Set-Cookie", clearCookieHeader("nb_team_session")]
+        ]
+      });
+    }
+
+    if (path === "/about") {
+      return htmlRes(renderLayout("من نحن", settings, student, isStaff, renderAboutStandalonePage(settings), commonLayoutOpts));
+    }
+
+    if (path === "/privacy") {
+      return htmlRes(renderLayout("سياسة الخصوصية", settings, student, isStaff, renderPrivacyStandalonePage(), commonLayoutOpts));
+    }
+
+    if (path === "/") {
+      return htmlRes(renderLayout(
+        "الرئيسية",
+        settings,
+        student,
+        isStaff,
+        renderLanding(settings),
+        { ...commonLayoutOpts, showLandingAdminAvatar: true }
+      ));
+    }
+
+    if (path === "/student") {
+      const tab = url.searchParams.get("tab") || "login";
+      const step = Number(url.searchParams.get("step") || "1");
+      const draft = {
+        first_name: url.searchParams.get("first_name") || "",
+        second_name: url.searchParams.get("second_name") || "",
+        third_name: url.searchParams.get("third_name") || "",
+        fourth_name: url.searchParams.get("fourth_name") || "",
+        phone: url.searchParams.get("phone") || ""
+      };
       const error = url.searchParams.get("error") || "";
       const notice = url.searchParams.get("notice") || "";
-      if (!student) {
-        const authTab = url.searchParams.get("tab") || "login";
-        const step = Number(url.searchParams.get("step") || "1");
-        const draft = {
-          first_name: url.searchParams.get("first_name") || "",
-          second_name: url.searchParams.get("second_name") || "",
-          third_name: url.searchParams.get("third_name") || "",
-          fourth_name: url.searchParams.get("fourth_name") || "",
-          phone: url.searchParams.get("phone") || ""
-        };
-        return htmlRes(
-          renderLayout("بوابة الطالب", settings, null, false, renderStudentAuth(settings, authTab, step, draft, error, notice), {
-            showLandingAdminAvatar: false,
-            showSupportWidget: true
-          })
-        );
+
+      if (student && tab !== "login" && tab !== "register" && tab !== "center" && tab !== "forgot") {
+        const [lectures, exams, submissions, drafts, watched, forumPosts, discounts] = await Promise.all([
+          fsList(env, "lectures"),
+          fsList(env, "exams"),
+          fsList(env, "submissions"),
+          fsList(env, "exam_drafts"),
+          fsList(env, "watched_lectures"),
+          fsList(env, "forum_posts"),
+          fsList(env, "discount_codes")
+        ]);
+
+        const mySubs = submissions.filter(s => String(s.student_phone) === String(student.phone));
+        const myDrafts = drafts.filter(d => String(d.student_phone) === String(student.phone));
+        const myWatched = watched.filter(w => String(w.student_phone) === String(student.phone));
+
+        return htmlRes(renderLayout("بوابة الطالب", settings, student, isStaff, renderStudentDash(settings, student, {
+          section: url.searchParams.get("section") || "dashboard",
+          branch: url.searchParams.get("branch") || "",
+          forumBranch: url.searchParams.get("forum_branch") || BRANCHES[0],
+          lectureId: url.searchParams.get("lecture_id") || "",
+          examId: url.searchParams.get("exam_id") || "",
+          lectures,
+          exams,
+          submissions: mySubs,
+          drafts: myDrafts,
+          watched: myWatched,
+          forumPosts,
+          discounts,
+          error,
+          notice
+        }), commonLayoutOpts));
       }
 
-      const [lectures, exams, allSubmissions, allDrafts, allWatched, discounts, forumPosts] = await Promise.all([
-        fsList(env, "lectures"),
-        fsList(env, "exams"),
-        fsList(env, "exam_submissions"),
-        fsList(env, "exam_drafts"),
-        fsList(env, "watched_lectures"),
-        fsList(env, "discount_codes"),
-        fsList(env, "forum_posts")
-      ]);
-
-      const state = {
-        section: url.searchParams.get("section") || "dashboard",
-        branch: url.searchParams.get("branch") || "",
-        forumBranch: url.searchParams.get("forum_branch") || BRANCHES[0],
-        lectureId: url.searchParams.get("lecture_id") || "",
-        examId: url.searchParams.get("exam_id") || "",
-        error,
-        notice,
-        lectures: lectures.filter(l => (!l.grade || l.grade === student.grade) && (!l.track || l.track === student.track)),
-        exams: exams.filter(e => !e.grade || e.grade === student.grade),
-        submissions: allSubmissions.filter(s => String(s.student_phone) === String(student.phone)),
-        drafts: allDrafts.filter(d => String(d.student_phone) === String(student.phone)),
-        watched: allWatched.filter(w => String(w.student_phone) === String(student.phone)),
-        discounts,
-        forumPosts
-      };
-
-      if (state.section === "branch" && state.lectureId) {
-        const targetLec = state.lectures.find(l => String(l.id) === String(state.lectureId));
-        if (targetLec && checkCenterStudentLectureAccess(student, targetLec).allowed) {
-          const watchDocId = `${student.phone}_${state.lectureId}`;
-          await fsSet(env, "watched_lectures", watchDocId, {
-            student_phone: student.phone,
-            lecture_id: state.lectureId,
-            watched_at: new Date().toISOString()
-          });
-          if (!state.watched.some(w => String(w.lecture_id) === String(state.lectureId))) {
-            state.watched.push({ student_phone: student.phone, lecture_id: state.lectureId });
-          }
+      if (tab === "register" && step === 2) {
+        const missing = [];
+        if (!draft.first_name.trim()) missing.push("الاسم الأول");
+        if (!draft.second_name.trim()) missing.push("الاسم الثاني");
+        if (!draft.third_name.trim()) missing.push("الاسم الثالث");
+        if (!draft.fourth_name.trim()) missing.push("الاسم الرابع");
+        if (!draft.phone.trim()) missing.push("رقم هاتف الطالب");
+        if (missing.length) {
+          return htmlRes(renderLayout(
+            "إنشاء حساب جديد",
+            settings,
+            student,
+            isStaff,
+            renderStudentAuth(settings, "register", 1, draft, `أكمل الحقول التالية أولاً: ${missing.join("، ")}`, ""),
+            commonLayoutOpts
+          ));
         }
       }
 
-      return htmlRes(
-        renderLayout("لوحة الطالب", settings, student, false, renderStudentDash(settings, student, state), {
-          showLandingAdminAvatar: false,
-          showSupportWidget: true,
-          academicUnreadCount: academicUnreadItems.length,
-          academicUnreadItems
-        })
-      );
+      return htmlRes(renderLayout(
+        "بوابة الطالب",
+        settings,
+        student,
+        isStaff,
+        renderStudentAuth(settings, tab, step, draft, error, notice),
+        commonLayoutOpts
+      ));
     }
 
-    if (path === "/student/register" && method === "POST") {
-      const f = await parseFormBody(req);
-      const phone = String(f.phone || "").trim();
-      const parentPhone = String(f.parent_phone || "").trim();
-      const fullName = String(f.full_name || "").trim();
-      const password = String(f.password || "");
-      const governorate = String(f.governorate || "").trim();
+    if (path === "/student/login" && req.method === "POST") {
+      const fd = await req.formData();
+      const phone = String(fd.get("phone") || "").trim();
+      const password = String(fd.get("password") || "");
+      const st = await fsGet(env, "students", phone);
+      const pwHash = await sha256(password);
 
-      if (!phone || !fullName || !password || !parentPhone || !governorate) {
-        return redirectRes(`/student?tab=register&step=1&error=${encodeURIComponent("أكمل جميع الحقول الإجبارية")}`);
+      if (!st || (st.password_hash !== pwHash && st.password_plain !== password)) {
+        return redirectRes(`/student?tab=login&error=${encodeURIComponent("رقم الهاتف أو كلمة السر غير صحيحة.")}`);
+      }
+
+      const newSessionId = "s_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
+      await fsSet(env, "students", phone, {
+        ...st,
+        password_plain: st.password_plain || password,
+        active_session_id: newSessionId
+      });
+
+      const tok = makeToken({ phone, session_id: newSessionId }, secret);
+      return redirectRes("/student", {
+        headers: [["Set-Cookie", setCookieHeader("nb_student_session", tok)]]
+      });
+    }
+
+    if (path === "/student/center-login" && req.method === "POST") {
+      const fd = await req.formData();
+      const centerCode = normalizeMoCode(fd.get("center_code") || "");
+      const name = String(fd.get("name") || "").trim();
+      const phone = String(fd.get("phone") || "").trim();
+      const grade = String(fd.get("grade") || GRADES[0]).trim();
+      const track = String(fd.get("track") || TRACKS[0]).trim();
+      const password = String(fd.get("password") || "").trim();
+
+      if (!centerCode || !name || !phone || !password) {
+        return redirectRes(`/student?tab=center&error=${encodeURIComponent("أكمل الاسم الرباعي ورقم الهاتف والصف والشعبة وكلمة السر وكود السنتر.")}`);
+      }
+
+      const codes = await fsList(env, "activation_codes");
+      const found = codes.find(c =>
+        String(c.code || "").toUpperCase() === centerCode &&
+        c.type === "center" &&
+        !c.used
+      );
+      if (!found) {
+        return redirectRes(`/student?tab=center&error=${encodeURIComponent("كود السنتر غير صحيح أو تم استخدامه من قبل.")}`);
+      }
+
+      const existingSt = await fsGet(env, "students", phone);
+      const newSessionId = "s_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
+
+      await fsSet(env, "activation_codes", found.id, {
+        ...found,
+        used: true,
+        used_by: `${name} (${phone})`
+      });
+
+      const doc = {
+        full_name: name,
+        phone,
+        parent_phone: existingSt?.parent_phone || "",
+        governorate: existingSt?.governorate || "",
+        grade,
+        track,
+        password_hash: await sha256(password),
+        password_plain: password,
+        is_center_student: true,
+        center_code: centerCode,
+        branches: BRANCHES,
+        unlocked_lectures: Array.isArray(existingSt?.unlocked_lectures) ? existingSt.unlocked_lectures : [],
+        locked_lectures: Array.isArray(existingSt?.locked_lectures) ? existingSt.locked_lectures : [],
+        active_session_id: newSessionId,
+        created_at: existingSt?.created_at || new Date().toISOString()
+      };
+      await fsSet(env, "students", phone, doc);
+
+      const tok = makeToken({ phone, session_id: newSessionId }, secret);
+      return redirectRes("/student", {
+        headers: [["Set-Cookie", setCookieHeader("nb_student_session", tok)]]
+      });
+    }
+
+    if (path === "/student/register" && req.method === "POST") {
+      const fd = await req.formData();
+      const fullName = String(fd.get("full_name") || "").trim();
+      const phone = String(fd.get("phone") || "").trim();
+      const grade = String(fd.get("grade") || GRADES[0]).trim();
+      const track = String(fd.get("track") || TRACKS[0]).trim();
+      const parentPhone = String(fd.get("parent_phone") || "").trim();
+      const governorate = String(fd.get("governorate") || "").trim();
+      const password = String(fd.get("password") || "");
+
+      if (!fullName || !phone || !parentPhone || !governorate || !password) {
+        return redirectRes(`/student?tab=register&error=${encodeURIComponent("أكمل جميع الحقول المطلوبة.")}`);
       }
       if (phone === parentPhone) {
-        return redirectRes(`/student?tab=register&step=1&error=${encodeURIComponent("يجب أن يكون رقم هاتف ولي الأمر مختلفاً عن رقم هاتف الطالب")}`);
+        return redirectRes(`/student?tab=register&step=2&full_name=${encodeURIComponent(fullName)}&phone=${encodeURIComponent(phone)}&error=${encodeURIComponent("يجب أن يكون رقم هاتف ولي الأمر مختلفاً عن رقم هاتف الطالب.")}`);
       }
       const existing = await fsGet(env, "students", phone);
       if (existing) {
-        return redirectRes(`/student?tab=login&error=${encodeURIComponent("رقم الهاتف مسجل بالفعل، سجل دخولك")}`);
+        return redirectRes(`/student?tab=login&error=${encodeURIComponent("هذا الرقم مسجل بالفعل، سجل الدخول.")}`);
       }
 
-      const nonce = crypto.randomUUID();
-      const stData = {
+      const newSessionId = "s_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
+      await fsSet(env, "students", phone, {
         full_name: fullName,
         phone,
-        grade: String(f.grade || GRADES[0]),
-        track: String(f.track || TRACKS[0]),
         parent_phone: parentPhone,
         governorate,
-        password_plain: password,
-        password_hash: await sha256(password),
-        branches: [],
-        unlocked_lectures: [],
-        is_center_student: false,
-        center_code: "",
-        active_session: nonce,
-        created_at: new Date().toISOString()
-      };
-      await fsSet(env, "students", phone, stData);
-      const token = makeToken({ phone, name: fullName, nonce }, secret);
-      return redirectRes("/student?section=dashboard", { "Set-Cookie": setCookieHeader("nb_st", token) });
-    }
-
-    if (path === "/student/login" && method === "POST") {
-      const f = await parseFormBody(req);
-      const phone = String(f.phone || "").trim();
-      const password = String(f.password || "");
-      const st = await fsGet(env, "students", phone);
-      if (!st || st.password_hash !== (await sha256(password))) {
-        return redirectRes(`/student?tab=login&error=${encodeURIComponent("رقم الهاتف أو كلمة السر غير صحيحة")}`);
-      }
-
-      const nonce = crypto.randomUUID();
-      await fsSet(env, "students", phone, {
-        ...st,
-        password_plain: password,
-        active_session: nonce
-      });
-
-      const token = makeToken({ phone, name: st.full_name, nonce }, secret);
-      return redirectRes("/student?section=dashboard", { "Set-Cookie": setCookieHeader("nb_st", token) });
-    }
-
-    if (path === "/student/center-login" && method === "POST") {
-      const f = await parseFormBody(req);
-      const code = String(f.center_code || "").trim().toUpperCase();
-      const name = String(f.name || "").trim();
-      const phone = String(f.phone || "").trim();
-      const password = String(f.password || "");
-      const grade = String(f.grade || GRADES[0]);
-      const track = String(f.track || TRACKS[0]);
-
-      if (!code || !name || !phone || !password) {
-        return redirectRes(`/student?tab=center&error=${encodeURIComponent("جميع الحقول بما فيها كلمة السر إجبارية")}`);
-      }
-
-      const codeDoc = await fsGet(env, "codes", code);
-      if (!codeDoc || codeDoc.type !== "center" || codeDoc.used) {
-        return redirectRes(`/student?tab=center&error=${encodeURIComponent("كود السنتر غير صحيح أو تم استخدامه مسبقاً")}`);
-      }
-
-      await fsSet(env, "codes", code, {
-        ...codeDoc,
-        used: true,
-        used_by: `${name} (${phone})`,
-        used_at: new Date().toISOString()
-      });
-
-      const existing = await fsGet(env, "students", phone);
-      const nonce = crypto.randomUUID();
-      const stData = {
-        full_name: name,
-        phone,
         grade,
         track,
-        parent_phone: existing?.parent_phone || "",
-        governorate: existing?.governorate || "الشرقية",
-        password_plain: password,
         password_hash: await sha256(password),
-        branches: [...BRANCHES],
-        unlocked_lectures: Array.isArray(existing?.unlocked_lectures) ? existing.unlocked_lectures : [],
-        is_center_student: true,
-        center_code: code,
-        active_session: nonce,
-        created_at: existing?.created_at || new Date().toISOString()
-      };
-      await fsSet(env, "students", phone, stData);
-      const token = makeToken({ phone, name, nonce }, secret);
-      return redirectRes(`/student?section=dashboard&notice=${encodeURIComponent("تم تفعيل حسابك بكود السنتر بنجاح")}`, {
-        "Set-Cookie": setCookieHeader("nb_st", token)
+        password_plain: password,
+        is_center_student: false,
+        branches: [],
+        unlocked_lectures: [],
+        locked_lectures: [],
+        active_session_id: newSessionId,
+        created_at: new Date().toISOString()
+      });
+
+      const tok = makeToken({ phone, session_id: newSessionId }, secret);
+      return redirectRes("/student", {
+        headers: [["Set-Cookie", setCookieHeader("nb_student_session", tok)]]
       });
     }
 
-    if (path === "/student/reset-password" && method === "POST") {
-      const f = await parseFormBody(req);
-      const phone = String(f.phone || "").trim();
-      const parentPhone = String(f.parent_phone || "").trim();
-      const newPass = String(f.new_password || "");
-      const st = await fsGet(env, "students", phone);
-      if (!st || String(st.parent_phone || "").trim() !== parentPhone || phone === parentPhone) {
-        return redirectRes(`/student?tab=forgot&error=${encodeURIComponent("بيانات الهاتف أو ولي الأمر غير مطابقة")}`);
+    if (path === "/student/reset-password" && req.method === "POST") {
+      const fd = await req.formData();
+      const phone = String(fd.get("phone") || "").trim();
+      const parentPhone = String(fd.get("parent_phone") || "").trim();
+      const newPassword = String(fd.get("new_password") || "");
+
+      if (!phone || !parentPhone || !newPassword) {
+        return redirectRes(`/student?tab=forgot&error=${encodeURIComponent("أدخل رقم الطالب ورقم ولي الأمر وكلمة السر الجديدة.")}`);
       }
+      if (phone === parentPhone) {
+        return redirectRes(`/student?tab=forgot&error=${encodeURIComponent("رقم هاتف ولي الأمر يجب أن يختلف عن رقم الطالب.")}`);
+      }
+      const st = await fsGet(env, "students", phone);
+      if (!st || String(st.parent_phone || "").trim() !== parentPhone) {
+        return redirectRes(`/student?tab=forgot&error=${encodeURIComponent("البيانات غير مطابقة لرقم الطالب ورقم ولي الأمر المسجل.")}`);
+      }
+
       await fsSet(env, "students", phone, {
         ...st,
-        password_plain: newPass,
-        password_hash: await sha256(newPass)
+        password_hash: await sha256(newPassword),
+        password_plain: newPassword
       });
-      return redirectRes(`/student?tab=login&notice=${encodeURIComponent("تم تحديث كلمة السر بنجاح")}`);
+
+      return redirectRes(`/student?tab=login&notice=${encodeURIComponent("تم تحديث كلمة السر بنجاح، سجل الدخول الآن.")}`);
     }
 
-    if (path === "/student/redeem-code" && method === "POST") {
+    if (path === "/student/redeem-code" && req.method === "POST") {
       if (!student) return redirectRes("/student?tab=login");
-      const f = await parseFormBody(req);
-      const code = String(f.code || "").trim().toUpperCase();
-      const codeDoc = await fsGet(env, "codes", code);
-      if (!codeDoc || codeDoc.used) {
-        return redirectRes(`/student?section=codes&error=${encodeURIComponent("الكود غير صحيح أو مستخدم من قبل")}`);
+      const fd = await req.formData();
+      const codeInput = String(fd.get("code") || "").trim().toUpperCase();
+      const codes = await fsList(env, "activation_codes");
+      const found = codes.find(c => String(c.code || "").toUpperCase() === codeInput && !c.used);
+
+      if (!found) {
+        return redirectRes(`/student?section=codes&error=${encodeURIComponent("كود التفعيل غير صحيح أو مستخدم من قبل.")}`);
       }
-      await fsSet(env, "codes", code, {
-        ...codeDoc,
+
+      await fsSet(env, "activation_codes", found.id, {
+        ...found,
         used: true,
-        used_by: `${student.full_name} (${student.phone})`,
-        used_at: new Date().toISOString()
+        used_by: `${student.full_name} (${student.phone})`
       });
+
       const currentBranches = new Set(student.branches || []);
-      let isCenter = Boolean(student.is_center_student);
-      let cCode = student.center_code || "";
-      if (codeDoc.type === "center") {
-        BRANCHES.forEach(b => currentBranches.add(b));
-        isCenter = true;
-        cCode = code;
-      } else if (codeDoc.branch) {
-        currentBranches.add(codeDoc.branch);
-      }
+      if (found.branch) currentBranches.add(found.branch);
+      if (found.type === "center") BRANCHES.forEach(b => currentBranches.add(b));
+
       await fsSet(env, "students", student.phone, {
         ...student,
-        branches: Array.from(currentBranches),
-        is_center_student: isCenter,
-        center_code: cCode
+        is_center_student: found.type === "center" ? true : Boolean(student.is_center_student),
+        branches: Array.from(currentBranches)
       });
-      return redirectRes(`/student?section=dashboard&notice=${encodeURIComponent("تم تفعيل الكود بنجاح")}`);
+
+      return redirectRes(`/student?section=codes&notice=${encodeURIComponent("تم تفعيل الكود وفتح الفرع بنجاح.")}`);
     }
 
-    if (path === "/student/consume-discount" && method === "POST") {
-      if (!student) {
-        return new Response(JSON.stringify({ ok: false }), {
-          status: 401,
-          headers: { "Content-Type": "application/json; charset=utf-8" }
-        });
+    if (path === "/student/consume-discount" && req.method === "POST") {
+      let payload = {};
+      try { payload = await req.json(); } catch {}
+      const codeStr = String(payload.code || "").trim().toUpperCase();
+      if (codeStr) {
+        const list = await fsList(env, "discount_codes");
+        const found = list.find(d => String(d.code || "").trim().toUpperCase() === codeStr && !d.used);
+        if (found) {
+          await fsSet(env, "discount_codes", found.id, {
+            ...found,
+            used: true,
+            used_at: new Date().toISOString()
+          });
+        }
       }
-      const f = await parseFormBody(req);
-      const code = String(f.code || "").trim().toUpperCase();
-      const discDoc = await fsGet(env, "discount_codes", code);
-      if (!discDoc || discDoc.used) {
-        return new Response(JSON.stringify({ ok: false }), {
-          status: 400,
-          headers: { "Content-Type": "application/json; charset=utf-8" }
-        });
-      }
-      await fsSet(env, "discount_codes", code, {
-        ...discDoc,
-        used: true,
-        used_by: `${student.full_name} (${student.phone})`,
-        used_at: new Date().toISOString()
-      });
       return new Response(JSON.stringify({ ok: true }), {
-        headers: { "Content-Type": "application/json; charset=utf-8" }
+        headers: { "Content-Type": "application/json" }
       });
     }
 
-    if (path === "/student/exam-action" && method === "POST") {
+    if (path === "/student/exam-action" && req.method === "POST") {
       if (!student) return redirectRes("/student?tab=login");
-      const f = await parseFormBody(req);
-      const examId = String(f.exam_id || "");
-      const actionType = String(f.action_type || "finish");
+      const fd = await req.formData();
+      const examId = String(fd.get("exam_id") || "");
+      const actionType = String(fd.get("action_type") || "finish");
       const ex = await fsGet(env, "exams", examId);
       if (!ex) return redirectRes("/student?section=exams");
 
-      const subId = `${student.phone}_${examId}`;
-      const alreadySubmitted = await fsGet(env, "exam_submissions", subId);
-      if (alreadySubmitted) {
-        return redirectRes(`/student?section=results&notice=${encodeURIComponent("هذا الواجب مُسلّم مسبقاً")}`);
-      }
-
       const questions = Array.isArray(ex.questions) ? ex.questions : [];
-      const chosenArray = questions.map((_, i) => {
-        const raw = f[`q_${i}`];
-        return raw !== undefined && raw !== "" ? Number(raw) : -1;
+      const answers = questions.map((_, i) => {
+        const raw = fd.get(`q_${i}`);
+        return raw !== null && raw !== "" ? Number(raw) : -1;
       });
 
       if (actionType === "save") {
-        await fsSet(env, "exam_drafts", subId, {
+        await fsSet(env, "exam_drafts", `${student.phone}_${examId}`, {
           student_phone: student.phone,
           exam_id: examId,
-          answers: chosenArray,
-          saved_at: new Date().toISOString()
+          answers,
+          updated_at: new Date().toISOString()
         });
-        return redirectRes(`/student?section=exams&notice=${encodeURIComponent("تم حفظ إجاباتك لاستكمال الواجب لاحقاً")}`);
+        return redirectRes(`/student?section=exams&notice=${encodeURIComponent("تم حفظ الواجب كمسودة ويمكنك استكماله لاحقاً.")}`);
+      }
+
+      const existingSubs = await fsList(env, "submissions");
+      const alreadyDone = existingSubs.some(s => String(s.student_phone) === String(student.phone) && String(s.exam_id) === String(examId));
+      if (alreadyDone) {
+        return redirectRes(`/student?section=results&error=${encodeURIComponent("تم تسليم هذا الواجب مسبقاً.")}`);
       }
 
       let score = 0;
-      const details = [];
-      questions.forEach((q, i) => {
-        const chosen = chosenArray[i];
+      const details = questions.map((q, i) => {
+        const chosenIdx = answers[i];
         const correctIdx = Number(q.correct_idx ?? 0);
-        const isCorrect = chosen === correctIdx;
+        const isCorrect = chosenIdx === correctIdx;
         if (isCorrect) score++;
-        details.push({
+        return {
           question: q.text || `سؤال ${i + 1}`,
-          student_answer: chosen >= 0 && q.options?.[chosen] ? q.options[chosen] : "لم تُجب",
-          correct_answer: q.options?.[correctIdx] || "",
+          student_answer: chosenIdx >= 0 && Array.isArray(q.options) ? (q.options[chosenIdx] || "") : "لم تُجب",
+          correct_answer: Array.isArray(q.options) ? (q.options[correctIdx] || "") : "",
           is_correct: isCorrect
-        });
+        };
       });
 
-      const total = questions.length;
+      const total = Math.max(1, questions.length);
       const wrongCount = Math.max(0, total - score);
-      const pct = total > 0 ? Math.round((score / total) * 100) : 0;
+      const pct = Math.round((score / total) * 100);
 
-      await fsSet(env, "exam_submissions", subId, {
+      await fsDelete(env, "exam_drafts", `${student.phone}_${examId}`);
+      await fsSet(env, "submissions", `${student.phone}_${examId}_${Date.now()}`, {
         student_phone: student.phone,
         student_name: student.full_name,
         exam_id: examId,
@@ -5090,202 +5139,337 @@ export default {
         submitted_at: new Date().toISOString()
       });
 
-      await fsDelete(env, "exam_drafts", subId);
-
-      return redirectRes(`/student?section=results&notice=${encodeURIComponent(`تم إنهاء الاختبار بنجاح! نسبتك: ${pct}% وعدد أخطائك: ${wrongCount}`)}`);
+      return redirectRes("/student?section=results");
     }
 
-    if (path === "/student/forum-post" && method === "POST") {
+    if (path === "/student/forum-post" && req.method === "POST") {
       if (!student) return redirectRes("/student?tab=login");
-      const f = await parseFormBody(req);
-      const branch = String(f.branch || BRANCHES[0]).trim();
-      const message = String(f.message || "").trim();
-      const imageUrl = String(f.image_url || "").trim();
-      if (!message && !imageUrl) {
-        return redirectRes(`/student?section=forum&forum_branch=${encodeURIComponent(branch)}&error=${encodeURIComponent("اكتب رسالتك أو أرفق صورة قبل النشر")}`);
+      const fd = await req.formData();
+      const branch = String(fd.get("branch") || BRANCHES[0]).trim();
+      const message = String(fd.get("message") || "").trim();
+      const imageUrl = String(fd.get("image_url") || "").trim();
+
+      if (message || imageUrl) {
+        await fsSet(env, "forum_posts", `fp_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, {
+          branch,
+          student_phone: student.phone,
+          student_name: student.full_name,
+          student_grade: student.grade,
+          message,
+          image_url: imageUrl,
+          reply: "",
+          created_at: new Date().toISOString()
+        });
       }
-      const postId = `frm_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-      await fsSet(env, "forum_posts", postId, {
-        student_name: student.full_name,
-        student_phone: student.phone,
-        student_grade: student.grade,
-        branch,
-        message,
-        image_url: imageUrl,
-        reply: "",
-        replied_by: "",
-        created_at: new Date().toISOString()
-      });
-
-      await fsSet(env, "staff_alerts", `al_${Date.now()}`, {
-        title: `رسالة جديدة في منتدى ${branch}`,
-        body: `أرسل الطالب ${student.full_name} مشاركة جديدة في منتدى ${branch}`,
-        at: new Date().toISOString()
-      });
-
-      return redirectRes(`/student?section=forum&forum_branch=${encodeURIComponent(branch)}&notice=${encodeURIComponent("تم نشر مشاركتك في المنتدى وسيتم الرد عليها من تيم الأدمن")}`);
+      return redirectRes(`/student?section=forum&forum_branch=${encodeURIComponent(branch)}`);
     }
 
-    if (path === "/admin" && method === "GET") {
-      const error = url.searchParams.get("error") || "";
+    if (path === "/team") {
+      const [forumPosts, lectures, students] = await Promise.all([
+        fsList(env, "forum_posts"),
+        fsList(env, "lectures"),
+        fsList(env, "students")
+      ]);
+      const teamSec = url.searchParams.get("section") || "forum";
+      const err = url.searchParams.get("error") || "";
       const notice = url.searchParams.get("notice") || "";
-      const section = url.searchParams.get("section") || "students";
+      return htmlRes(renderLayout(
+        "بوابة تيم الأدمن",
+        settings,
+        student,
+        isStaff,
+        renderTeamStandalonePage(teamSession, forumPosts, lectures, students, teamSec, err, notice),
+        commonLayoutOpts
+      ));
+    }
+
+    if (path === "/team/login" && req.method === "POST") {
+      const fd = await req.formData();
+      const teamName = String(fd.get("team_name") || "").trim();
+      const teamPhone = String(fd.get("team_phone") || "").trim();
+      const teamCode = String(fd.get("team_code") || "").trim();
+
+      const members = await fsList(env, "team_members");
+      const found = members.find(m =>
+        String(m.name || "").trim() === teamName &&
+        String(m.phone || "").trim() === teamPhone &&
+        String(m.code || "").trim() === teamCode
+      );
+
+      if (!found) {
+        return redirectRes(`/team?error=${encodeURIComponent("الاسم أو رقم الهاتف أو الكود غير صحيح.")}`);
+      }
+
+      const newSessionId = "tm_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
+      await fsSet(env, "team_members", found.id, {
+        ...found,
+        active_session_id: newSessionId
+      });
+
+      const tok = makeToken({
+        team_id: found.id,
+        team_name: found.name,
+        team_phone: found.phone,
+        session_id: newSessionId
+      }, secret);
+
+      return redirectRes("/team", {
+        headers: [["Set-Cookie", setCookieHeader("nb_team_session", tok)]]
+      });
+    }
+
+    if (path === "/team/confirm-absence-code" && req.method === "POST") {
+      if (!teamSession && !isAdmin) return redirectRes("/team");
+      const fd = await req.formData();
+      const lecId = String(fd.get("lecture_id") || "").trim();
+      const codeNormalized = normalizeMoCode(fd.get("center_code") || "");
+
+      if (!lecId || !codeNormalized) {
+        return redirectRes(`/team?section=absence&error=${encodeURIComponent("اختر المحاضرة واكتب كود الطالب.")}`);
+      }
+
+      const lec = await fsGet(env, "lectures", lecId);
+      if (!lec) {
+        return redirectRes(`/team?section=absence&error=${encodeURIComponent("المحاضرة غير موجودة.")}`);
+      }
+
+      const attended = Array.isArray(lec.attended_codes)
+        ? lec.attended_codes.map(c => String(c || "").trim().toUpperCase())
+        : [];
+      if (!attended.includes(codeNormalized)) {
+        attended.push(codeNormalized);
+      }
+
+      await fsSet(env, "lectures", lecId, {
+        ...lec,
+        requires_attendance: true,
+        attended_codes: attended
+      });
+
+      const allStudents = await fsList(env, "students");
+      const matchedStudent = allStudents.find(
+        st => String(st.center_code || "").trim().toUpperCase() === codeNormalized
+      );
+
+      if (matchedStudent) {
+        const unlockedList = Array.isArray(matchedStudent.unlocked_lectures)
+          ? matchedStudent.unlocked_lectures.map(String)
+          : [];
+        if (!unlockedList.includes(lecId)) unlockedList.push(lecId);
+
+        const lockedList = Array.isArray(matchedStudent.locked_lectures)
+          ? matchedStudent.locked_lectures.map(String).filter(id => id !== lecId)
+          : [];
+
+        await fsSet(env, "students", matchedStudent.phone, {
+          ...matchedStudent,
+          unlocked_lectures: unlockedList,
+          locked_lectures: lockedList
+        });
+      }
+
+      const msg = matchedStudent
+        ? `تم تأكيد حضور (${matchedStudent.full_name}) بكود (${codeNormalized}) وفتح المحاضرة له.`
+        : `تم تسجيل وتفعيل الكود (${codeNormalized}) للمحاضرة بنجاح.`;
+
+      return redirectRes(`/team?section=absence&notice=${encodeURIComponent(msg)}`);
+    }
+
+    if (path === "/team/revoke-student-lecture" && req.method === "POST") {
+      if (!teamSession && !isAdmin) return redirectRes("/team");
+      const fd = await req.formData();
+      const stPhone = String(fd.get("student_phone") || "").trim();
+      const lecId = String(fd.get("lecture_id") || "").trim();
+
+      if (!stPhone || !lecId) {
+        return redirectRes(`/team?section=absence&error=${encodeURIComponent("اختر الطالب والمحاضرة لإلغائها.")}`);
+      }
+
+      const st = await fsGet(env, "students", stPhone);
+      if (!st) {
+        return redirectRes(`/team?section=absence&error=${encodeURIComponent("الطالب غير موجود.")}`);
+      }
+
+      const unlockedList = Array.isArray(st.unlocked_lectures)
+        ? st.unlocked_lectures.map(String).filter(id => id !== lecId)
+        : [];
+      const lockedList = Array.isArray(st.locked_lectures)
+        ? st.locked_lectures.map(String)
+        : [];
+      if (!lockedList.includes(lecId)) lockedList.push(lecId);
+
+      await fsSet(env, "students", stPhone, {
+        ...st,
+        unlocked_lectures: unlockedList,
+        locked_lectures: lockedList
+      });
+
+      const lec = await fsGet(env, "lectures", lecId);
+      if (lec && st.center_code) {
+        const stCodeUpper = String(st.center_code).trim().toUpperCase();
+        const filteredCodes = Array.isArray(lec.attended_codes)
+          ? lec.attended_codes.filter(c => String(c || "").trim().toUpperCase() !== stCodeUpper)
+          : [];
+        await fsSet(env, "lectures", lecId, {
+          ...lec,
+          attended_codes: filteredCodes
+        });
+      }
+
+      return redirectRes(`/team?section=absence&notice=${encodeURIComponent(`تم إلغاء المحاضرة عن الطالب (${st.full_name}) وقفلها عنه.`)}`);
+    }
+
+    if (path === "/team/reply-forum" && req.method === "POST") {
+      if (!teamSession && !isAdmin) return redirectRes("/team");
+      const fd = await req.formData();
+      const postId = String(fd.get("post_id") || "");
+      const reply = String(fd.get("reply") || "").trim();
+      const p = await fsGet(env, "forum_posts", postId);
+      if (p) {
+        await fsSet(env, "forum_posts", postId, {
+          ...p,
+          reply,
+          replied_by: teamSession ? `${teamSession.team_name} (${teamSession.team_phone})` : "الأدمن"
+        });
+      }
+      return redirectRes("/team?section=forum");
+    }
+
+    if (path === "/team/delete-forum" && req.method === "POST") {
+      if (!teamSession && !isAdmin) return redirectRes("/team");
+      const fd = await req.formData();
+      const postId = String(fd.get("post_id") || "");
+      if (postId) await fsDelete(env, "forum_posts", postId);
+      return redirectRes("/team?section=forum");
+    }
+
+    if (path === "/admin") {
+      const sec = url.searchParams.get("section") || "students";
+      const err = url.searchParams.get("error") || "";
+      const notice = url.searchParams.get("notice") || "";
       const rankGrade = url.searchParams.get("rank_grade") || GRADES[0];
       const preselectLectureId = url.searchParams.get("lecture_id") || "";
-      const data = isAdmin
-        ? {
-            students: await fsList(env, "students"),
-            codes: await fsList(env, "codes"),
-            discounts: await fsList(env, "discount_codes"),
-            teamMembers: await fsList(env, "team_members"),
-            lectures: await fsList(env, "lectures"),
-            exams: await fsList(env, "exams"),
-            submissions: await fsList(env, "exam_submissions"),
-            watched: await fsList(env, "watched_lectures"),
-            forumPosts: await fsList(env, "forum_posts"),
-            supportThreads: await fsList(env, "support_chats"),
-            rankingGrade: rankGrade,
-            preselectLectureId
-          }
-        : {};
-      return htmlRes(
-        renderLayout("الأدمن", settings, null, isAdmin, renderAdminPage(settings, isAdmin, data, section, error, notice), {
-          showLandingAdminAvatar: false,
-          showSupportWidget: false
-        })
-      );
+
+      if (!isAdmin) {
+        return htmlRes(renderLayout("الأدمن", settings, student, isStaff, renderAdminPage(settings, false, {}, sec, err, notice), commonLayoutOpts));
+      }
+
+      const [students, codes, lectures, exams, submissions, watched, forumPosts, supportThreads, discounts, teamMembers] = await Promise.all([
+        fsList(env, "students"),
+        fsList(env, "activation_codes"),
+        fsList(env, "lectures"),
+        fsList(env, "exams"),
+        fsList(env, "submissions"),
+        fsList(env, "watched_lectures"),
+        fsList(env, "forum_posts"),
+        fsList(env, "support_threads"),
+        fsList(env, "discount_codes"),
+        fsList(env, "team_members")
+      ]);
+
+      return htmlRes(renderLayout("لوحة الأدمن", settings, student, isStaff, renderAdminPage(settings, true, {
+        students,
+        codes,
+        lectures,
+        exams,
+        submissions,
+        watched,
+        forumPosts,
+        supportThreads,
+        discounts,
+        teamMembers,
+        rankingGrade: rankGrade,
+        preselectLectureId
+      }, sec, err, notice), commonLayoutOpts));
     }
 
-    if (path === "/admin/login" && method === "POST") {
-      const f = await parseFormBody(req);
-      const email = String(f.email || "").trim().toLowerCase();
-      const pass = String(f.password || "");
-      const ok = await verifyAdminCredentials(env, settings, email, pass);
+    if (path === "/admin/login" && req.method === "POST") {
+      const fd = await req.formData();
+      const email = String(fd.get("email") || "").trim();
+      const password = String(fd.get("password") || "");
+      const ok = await verifyAdminCredentials(env, settings, email, password);
+
       if (!ok) {
-        return redirectRes(`/admin?error=${encodeURIComponent("بيانات دخول الأدمن غير صحيحة")}`);
+        return redirectRes(`/admin?error=${encodeURIComponent("بيانات دخول الأدمن غير صحيحة.")}`);
       }
-      const token = makeToken({ role: "admin", email }, secret);
-      return redirectRes("/admin", { "Set-Cookie": setCookieHeader("nb_adm", token) });
+
+      const tok = makeToken({ admin: true, email }, secret);
+      return redirectRes("/admin", {
+        headers: [["Set-Cookie", setCookieHeader("nb_admin_session", tok)]]
+      });
     }
 
-    if (path === "/admin/toggle-center-lecture" && method === "POST") {
+    if (path === "/admin/create-team" && req.method === "POST") {
       if (!isAdmin) return redirectRes("/admin");
-      const f = await parseFormBody(req);
-      const phone = String(f.phone || "").trim();
-      const lectureId = String(f.lecture_id || "").trim();
-      const mode = String(f.mode || "unlock").trim();
+      const fd = await req.formData();
+      const name = String(fd.get("team_name") || "").trim();
+      const phone = String(fd.get("team_phone") || "").trim();
+      const code = String(fd.get("team_code") || "").trim();
 
-      const st = await fsGet(env, "students", phone);
-      const lec = await fsGet(env, "lectures", lectureId);
-      if (!st || !lec) {
-        return redirectRes(`/admin?section=activate_center_lectures&error=${encodeURIComponent("الطالب أو المحاضرة غير موجودة")}`);
+      if (!name || !phone || !code) {
+        return redirectRes(`/admin?section=add_team&error=${encodeURIComponent("أدخل اسم عضو التيم ورقم هاتفه والكود.")}`);
       }
 
-      const currentUnlocked = new Set(Array.isArray(st.unlocked_lectures) ? st.unlocked_lectures.map(String) : []);
-      const stCode = String(st.center_code || "").trim().toUpperCase();
-
-      if (mode === "unlock") {
-        currentUnlocked.add(lectureId);
-        await fsSet(env, "students", phone, {
-          ...st,
-          unlocked_lectures: Array.from(currentUnlocked)
-        });
-        return redirectRes(`/admin?section=activate_center_lectures&notice=${encodeURIComponent(`تم فتح محاضرة (${lec.title}) للطالب ${st.full_name}`)}`);
-      } else {
-        currentUnlocked.delete(lectureId);
-        await fsSet(env, "students", phone, {
-          ...st,
-          unlocked_lectures: Array.from(currentUnlocked)
-        });
-
-        const currentAttended = Array.isArray(lec.attended_codes)
-          ? lec.attended_codes.map(c => String(c || "").trim().toUpperCase()).filter(c => c !== stCode)
-          : [];
-        await fsSet(env, "lectures", lectureId, {
-          ...lec,
-          requires_attendance: true,
-          attended_codes: currentAttended
-        });
-
-        return redirectRes(`/admin?section=activate_center_lectures&notice=${encodeURIComponent(`تم قفل محاضرة (${lec.title}) على الطالب ${st.full_name}`)}`);
-      }
-    }
-
-    if (path === "/admin/create-team" && method === "POST") {
-      if (!isAdmin) return redirectRes("/admin");
-      const f = await parseFormBody(req);
-      const tName = String(f.team_name || "").trim();
-      const tPhone = String(f.team_phone || "").trim();
-      const tCode = String(f.team_code || "").trim().toUpperCase();
-      if (!tName || !tPhone || !tCode) {
-        return redirectRes(`/admin?section=add_team&error=${encodeURIComponent("أدخل اسم عضو التيم ورقم هاتفه والكود")}`);
-      }
-      const tid = `tm_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-      await fsSet(env, "team_members", tid, {
-        name: tName,
-        phone: tPhone,
-        code: tCode,
-        active_session: "",
+      const tmId = `tm_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+      await fsSet(env, "team_members", tmId, {
+        name,
+        phone,
+        code,
+        active_session_id: "",
         created_at: new Date().toISOString()
       });
-      return redirectRes(`/admin?section=add_team&notice=${encodeURIComponent(`تم إضافة عضو التيم (${tName}) بنجاح`)}`);
+
+      return redirectRes(`/admin?section=add_team&notice=${encodeURIComponent(`تم إضافة عضو التيم (${name}) بنجاح.`)}`);
     }
 
-    if (path === "/admin/delete-team" && method === "POST") {
+    if (path === "/admin/delete-team" && req.method === "POST") {
       if (!isAdmin) return redirectRes("/admin");
-      const f = await parseFormBody(req);
-      const teamId = String(f.team_id || "").trim();
+      const fd = await req.formData();
+      const teamId = String(fd.get("team_id") || "");
       if (teamId) await fsDelete(env, "team_members", teamId);
-      return redirectRes(`/admin?section=add_team&notice=${encodeURIComponent("تم حذف عضو التيم")}`);
+      return redirectRes("/admin?section=add_team");
     }
 
-    if (path === "/admin/delete-student" && method === "POST") {
+    if (path === "/admin/support-reply" && req.method === "POST") {
       if (!isAdmin) return redirectRes("/admin");
-      const f = await parseFormBody(req);
-      const phone = String(f.phone || "").trim();
-      if (phone) await fsDelete(env, "students", phone);
-      return redirectRes(`/admin?section=students&notice=${encodeURIComponent("تم حذف الطالب من المنصة")}`);
-    }
-
-    if (path === "/admin/grant-branches" && method === "POST") {
-      if (!isAdmin) return redirectRes("/admin");
-      const f = await parseFormBody(req);
-      const phone = String(f.phone || "").trim();
-      const rawBranches = Array.isArray(f.branches) ? f.branches : (f.branches ? [f.branches] : []);
-      const validBranches = rawBranches.filter(b => BRANCHES.includes(String(b)));
-      const st = await fsGet(env, "students", phone);
-      if (st) {
-        await fsSet(env, "students", phone, {
-          ...st,
-          branches: Array.from(new Set(validBranches))
-        });
+      const fd = await req.formData();
+      const sid = String(fd.get("session_id") || "").trim();
+      const replyText = String(fd.get("reply_text") || "").trim();
+      if (sid && replyText) {
+        const th = await fsGet(env, "support_threads", sid);
+        if (th) {
+          const msgs = Array.isArray(th.messages) ? [...th.messages] : [];
+          msgs.push({
+            id: "adm_" + Date.now(),
+            sender: "admin",
+            sender_name: "الدعم الفني • أ. محمد يوسف",
+            text: replyText,
+            image_url: "",
+            at: new Date().toISOString()
+          });
+          await fsSet(env, "support_threads", sid, {
+            ...th,
+            messages: msgs,
+            updated_at: new Date().toISOString()
+          });
+        }
       }
-      return redirectRes(`/admin?section=students&notice=${encodeURIComponent("تم تحديث اشتراك الفروع للطالب")}`);
+      return redirectRes("/admin?section=support");
     }
 
-    if (path === "/admin/revoke-branch" && method === "POST") {
+    if (path === "/admin/generate-codes" && req.method === "POST") {
       if (!isAdmin) return redirectRes("/admin");
-      const f = await parseFormBody(req);
-      const phone = String(f.phone || "").trim();
-      const branch = String(f.branch || "").trim();
-      const st = await fsGet(env, "students", phone);
-      if (st) {
-        const updatedBranches = (st.branches || []).filter(b => String(b) !== branch);
-        await fsSet(env, "students", phone, { ...st, branches: updatedBranches });
-      }
-      return redirectRes(`/admin?section=students&notice=${encodeURIComponent(`تم إلغاء تفعيل فرع (${branch}) للطالب`)}`);
-    }
+      const fd = await req.formData();
+      const codeType = String(fd.get("code_type") || "center");
+      const branch = String(fd.get("branch") || BRANCHES[0]);
+      const count = Math.min(50, Math.max(1, Number(fd.get("count") || 1)));
 
-    if (path === "/admin/generate-codes" && method === "POST") {
-      if (!isAdmin) return redirectRes("/admin");
-      const f = await parseFormBody(req);
-      const codeType = String(f.code_type || "center");
-      const branch = String(f.branch || BRANCHES[0]);
-      const count = Math.min(50, Math.max(1, Number(f.count || 1)));
       for (let i = 0; i < count; i++) {
-        const prefix = codeType === "center" ? "CTR-" : "BR-";
-        const code = prefix + crypto.randomUUID().replaceAll("-", "").slice(0, 6).toUpperCase();
-        await fsSet(env, "codes", code, {
+        const code = codeType === "center"
+          ? generateCenterCodeMO()
+          : `BR-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+        const id = `${code}_${Date.now()}_${i}`;
+        await fsSet(env, "activation_codes", id, {
           code,
           type: codeType,
           branch: codeType === "branch" ? branch : "",
@@ -5294,190 +5478,254 @@ export default {
           created_at: new Date().toISOString()
         });
       }
-      return redirectRes(`/admin?section=codes&notice=${encodeURIComponent(`تم توليد ${count} كود بنجاح`)}`);
+      return redirectRes(`/admin?section=codes&notice=${encodeURIComponent(`تم توليد ${count} كود بنجاح.`)}`);
     }
 
-    if (path === "/admin/delete-code" && method === "POST") {
+    if (path === "/admin/delete-code" && req.method === "POST") {
       if (!isAdmin) return redirectRes("/admin");
-      const f = await parseFormBody(req);
-      const codeId = String(f.code_id || "").trim();
-      if (codeId) await fsDelete(env, "codes", codeId);
-      return redirectRes(`/admin?section=codes&notice=${encodeURIComponent("تم حذف الكود")}`);
+      const fd = await req.formData();
+      const codeId = String(fd.get("code_id") || "");
+      if (codeId) await fsDelete(env, "activation_codes", codeId);
+      return redirectRes("/admin?section=codes");
     }
 
-    if (path === "/admin/create-discount" && method === "POST") {
+    if (path === "/admin/create-discount" && req.method === "POST") {
       if (!isAdmin) return redirectRes("/admin");
-      const f = await parseFormBody(req);
-      const rawCode = String(f.discount_code || "").trim().toUpperCase();
-      const code = rawCode || ("DISC-" + crypto.randomUUID().replaceAll("-", "").slice(0, 5).toUpperCase());
-      const amount = Math.min(COURSE_PRICE_EGP, Math.max(1, Number(f.discount_amount || 50)));
-      await fsSet(env, "discount_codes", code, {
+      const fd = await req.formData();
+      const rawCode = String(fd.get("discount_code") || "").trim().toUpperCase();
+      const amount = Math.min(COURSE_PRICE_EGP, Math.max(1, Number(fd.get("discount_amount") || 0)));
+      const code = rawCode || `DISC-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+      const id = `dc_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+
+      await fsSet(env, "discount_codes", id, {
         code,
         amount,
         used: false,
-        used_by: "",
         created_at: new Date().toISOString()
       });
-      return redirectRes(`/admin?section=codes&notice=${encodeURIComponent(`تم إنشاء كود الخصم (${code}) بقيمة ${amount} ج لمرة واحدة`)}`);
+      return redirectRes(`/admin?section=codes&notice=${encodeURIComponent(`تم إنشاء كود الخصم (${code}) بقيمة ${amount} ج (يُستخدم مرة واحدة).`)}`);
     }
 
-    if (path === "/admin/delete-discount" && method === "POST") {
+    if (path === "/admin/delete-discount" && req.method === "POST") {
       if (!isAdmin) return redirectRes("/admin");
-      const f = await parseFormBody(req);
-      const discountId = String(f.discount_id || "").trim();
-      if (discountId) await fsDelete(env, "discount_codes", discountId);
-      return redirectRes(`/admin?section=codes&notice=${encodeURIComponent("تم حذف كود الخصم")}`);
+      const fd = await req.formData();
+      const dId = String(fd.get("discount_id") || "");
+      if (dId) await fsDelete(env, "discount_codes", dId);
+      return redirectRes("/admin?section=codes");
     }
 
-    if (path === "/admin/add-lecture" && method === "POST") {
+    if (path === "/admin/add-lecture" && req.method === "POST") {
       if (!isAdmin) return redirectRes("/admin");
-      const f = await parseFormBody(req);
+      const fd = await req.formData();
+      const title = String(fd.get("title") || "").trim();
+      const branch = String(fd.get("branch") || BRANCHES[0]).trim();
+      const grade = String(fd.get("grade") || GRADES[0]).trim();
+      const track = String(fd.get("track") || TRACKS[0]).trim();
+      const orderNum = Number(fd.get("order_num") || 1);
+      const videoUrl = String(fd.get("video_url") || "").trim();
+      const customItemsRaw = String(fd.get("custom_items_json") || "[]");
+
       let customItems = [];
       try {
-        const parsed = JSON.parse(String(f.custom_items_json || "[]"));
+        const parsed = JSON.parse(customItemsRaw);
         if (Array.isArray(parsed)) customItems = parsed;
       } catch {}
 
-      const id = `lec_${Date.now()}`;
-      await fsSet(env, "lectures", id, {
-        title: String(f.title || ""),
-        branch: String(f.branch || BRANCHES[0]),
-        grade: String(f.grade || GRADES[0]),
-        track: String(f.track || TRACKS[0]),
-        order_num: Number(f.order_num || 1),
-        video_url: String(f.video_url || ""),
-        custom_items: customItems,
-        requires_attendance: false,
-        attended_codes: [],
-        created_at: new Date().toISOString()
-      });
-      return redirectRes(`/admin?section=lectures&notice=${encodeURIComponent("تمت إضافة المحاضرة وعناصرها بنجاح")}`);
+      if (title) {
+        const id = `lec_${Date.now()}`;
+        await fsSet(env, "lectures", id, {
+          title,
+          branch,
+          grade,
+          track,
+          order_num: orderNum,
+          video_url: videoUrl,
+          custom_items: customItems,
+          requires_attendance: false,
+          attended_codes: [],
+          created_at: new Date().toISOString()
+        });
+      }
+      return redirectRes("/admin?section=lectures");
     }
 
-    if (path === "/admin/delete-lecture" && method === "POST") {
+    if (path === "/admin/delete-lecture" && req.method === "POST") {
       if (!isAdmin) return redirectRes("/admin");
-      const f = await parseFormBody(req);
-      await fsDelete(env, "lectures", String(f.lecture_id || ""));
-      return redirectRes(`/admin?section=lectures&notice=${encodeURIComponent("تم حذف المحاضرة")}`);
+      const fd = await req.formData();
+      const lecId = String(fd.get("lecture_id") || "");
+      if (lecId) await fsDelete(env, "lectures", lecId);
+      return redirectRes("/admin?section=lectures");
     }
 
-    if (path === "/admin/add-exam" && method === "POST") {
+    if (path === "/admin/add-exam" && req.method === "POST") {
       if (!isAdmin) return redirectRes("/admin");
-      const f = await parseFormBody(req);
+      const fd = await req.formData();
+      const title = String(fd.get("title") || "").trim();
+      const branch = String(fd.get("branch") || BRANCHES[0]).trim();
+      const lectureId = String(fd.get("lecture_id") || "").trim();
+      const questionsJson = String(fd.get("questions_json") || "[]");
+
       let questions = [];
       try {
-        questions = JSON.parse(String(f.questions_json || "[]"));
+        const parsed = JSON.parse(questionsJson);
+        if (Array.isArray(parsed)) questions = parsed;
       } catch {}
-      const validQuestions = Array.isArray(questions)
-        ? questions.filter(q => (q && (q.text || q.image_url)) && Array.isArray(q.options) && q.options.length >= 2)
-        : [];
-      if (!validQuestions.length) {
-        return redirectRes(`/admin?section=exams&error=${encodeURIComponent("يرجى إضافة سؤال واحد على الأقل")}`);
+
+      if (title && questions.length > 0) {
+        const id = `ex_${Date.now()}`;
+        await fsSet(env, "exams", id, {
+          title,
+          branch,
+          lecture_id: lectureId,
+          questions,
+          created_at: new Date().toISOString()
+        });
       }
-      const id = `ex_${Date.now()}`;
-      await fsSet(env, "exams", id, {
-        title: String(f.title || ""),
-        branch: String(f.branch || BRANCHES[0]),
-        lecture_id: String(f.lecture_id || ""),
-        questions: validQuestions,
-        created_at: new Date().toISOString()
-      });
-      return redirectRes(`/admin?section=exams&notice=${encodeURIComponent("تم نشر الواجب / الاختبار بنجاح")}`);
+      return redirectRes("/admin?section=exams");
     }
 
-    if (path === "/admin/delete-exam" && method === "POST") {
+    if (path === "/admin/delete-exam" && req.method === "POST") {
       if (!isAdmin) return redirectRes("/admin");
-      const f = await parseFormBody(req);
-      await fsDelete(env, "exams", String(f.exam_id || ""));
-      return redirectRes(`/admin?section=exams&notice=${encodeURIComponent("تم حذف الاختبار")}`);
+      const fd = await req.formData();
+      const examId = String(fd.get("exam_id") || "");
+      if (examId) await fsDelete(env, "exams", examId);
+      return redirectRes("/admin?section=exams");
     }
 
-    if (path === "/admin/reply-forum" && method === "POST") {
+    if (path === "/admin/grant-branches" && req.method === "POST") {
       if (!isAdmin) return redirectRes("/admin");
-      const f = await parseFormBody(req);
-      const postId = String(f.post_id || "").trim();
-      const reply = String(f.reply || "").trim();
-      const doc = await fsGet(env, "forum_posts", postId);
-      if (doc) {
+      const fd = await req.formData();
+      const phone = String(fd.get("phone") || "").trim();
+      const chosen = fd.getAll("branches").map(String);
+      const st = await fsGet(env, "students", phone);
+      if (st) {
+        await fsSet(env, "students", phone, {
+          ...st,
+          branches: Array.from(new Set(chosen))
+        });
+      }
+      return redirectRes("/admin?section=students");
+    }
+
+    if (path === "/admin/revoke-branch" && req.method === "POST") {
+      if (!isAdmin) return redirectRes("/admin");
+      const fd = await req.formData();
+      const phone = String(fd.get("phone") || "").trim();
+      const branchToRemove = String(fd.get("branch") || "").trim();
+      const st = await fsGet(env, "students", phone);
+      if (st) {
+        const updated = (st.branches || []).filter(b => String(b) !== branchToRemove);
+        await fsSet(env, "students", phone, {
+          ...st,
+          branches: updated
+        });
+      }
+      return redirectRes("/admin?section=students");
+    }
+
+    if (path === "/admin/toggle-center-lecture" && req.method === "POST") {
+      if (!isAdmin) return redirectRes("/admin");
+      const fd = await req.formData();
+      const phone = String(fd.get("phone") || "").trim();
+      const lecId = String(fd.get("lecture_id") || "").trim();
+      const mode = String(fd.get("mode") || "unlock").trim();
+
+      const st = await fsGet(env, "students", phone);
+      if (st && lecId) {
+        let unlockedList = Array.isArray(st.unlocked_lectures) ? st.unlocked_lectures.map(String) : [];
+        let lockedList = Array.isArray(st.locked_lectures) ? st.locked_lectures.map(String) : [];
+
+        if (mode === "unlock") {
+          if (!unlockedList.includes(lecId)) unlockedList.push(lecId);
+          lockedList = lockedList.filter(id => id !== lecId);
+        } else {
+          unlockedList = unlockedList.filter(id => id !== lecId);
+          if (!lockedList.includes(lecId)) lockedList.push(lecId);
+
+          const lec = await fsGet(env, "lectures", lecId);
+          if (lec && st.center_code) {
+            const stCodeUpper = String(st.center_code).trim().toUpperCase();
+            const filteredCodes = Array.isArray(lec.attended_codes)
+              ? lec.attended_codes.filter(c => String(c || "").trim().toUpperCase() !== stCodeUpper)
+              : [];
+            await fsSet(env, "lectures", lecId, {
+              ...lec,
+              attended_codes: filteredCodes
+            });
+          }
+        }
+
+        await fsSet(env, "students", phone, {
+          ...st,
+          unlocked_lectures: unlockedList,
+          locked_lectures: lockedList
+        });
+      }
+      return redirectRes(`/admin?section=activate_center_lectures&notice=${encodeURIComponent(mode === "unlock" ? "تم فتح المحاضرة للطالب بنجاح." : "تم قفل المحاضرة عن الطالب بنجاح.")}`);
+    }
+
+    if (path === "/admin/delete-student" && req.method === "POST") {
+      if (!isAdmin) return redirectRes("/admin");
+      const fd = await req.formData();
+      const phone = String(fd.get("phone") || "").trim();
+      if (phone) await fsDelete(env, "students", phone);
+      return redirectRes("/admin?section=students");
+    }
+
+    if (path === "/admin/reply-forum" && req.method === "POST") {
+      if (!isAdmin) return redirectRes("/admin");
+      const fd = await req.formData();
+      const postId = String(fd.get("post_id") || "");
+      const reply = String(fd.get("reply") || "").trim();
+      const p = await fsGet(env, "forum_posts", postId);
+      if (p) {
         await fsSet(env, "forum_posts", postId, {
-          ...doc,
+          ...p,
           reply,
-          replied_by: "الأدمن",
-          replied_at: new Date().toISOString()
-        });
-        await fsSet(env, "staff_alerts", `al_${Date.now()}`, {
-          title: `تم الرد على رسالة منتدى ${doc.branch || ""}`,
-          body: `قام الأدمن بالرد على رسالة الطالب ${doc.student_name || ""}`,
-          at: new Date().toISOString()
+          replied_by: "الأدمن"
         });
       }
-      return redirectRes(`/admin?section=forum&notice=${encodeURIComponent("تم نشر الرد في المنتدى")}`);
+      return redirectRes("/admin?section=forum");
     }
 
-    if (path === "/admin/delete-forum" && method === "POST") {
+    if (path === "/admin/delete-forum" && req.method === "POST") {
       if (!isAdmin) return redirectRes("/admin");
-      const f = await parseFormBody(req);
-      const postId = String(f.post_id || "").trim();
+      const fd = await req.formData();
+      const postId = String(fd.get("post_id") || "");
       if (postId) await fsDelete(env, "forum_posts", postId);
-      return redirectRes(`/admin?section=forum&notice=${encodeURIComponent("تم حذف رسالة المنتدى")}`);
+      return redirectRes("/admin?section=forum");
     }
 
-    if (path === "/admin/support-reply" && method === "POST") {
+    if (path === "/admin/settings" && req.method === "POST") {
       if (!isAdmin) return redirectRes("/admin");
-      const f = await parseFormBody(req);
-      const sid = String(f.session_id || "").trim();
-      const replyText = String(f.reply_text || "").trim();
-      if (sid && replyText) {
-        const existing = (await fsGet(env, "support_chats", sid)) || {
-          visitor_name: "طالب",
-          messages: [],
-          read_admin_ids: []
-        };
-        const msgs = Array.isArray(existing.messages) ? [...existing.messages] : [];
-        msgs.push({
-          id: "adm_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6),
-          sender: "admin",
-          sender_name: "تيم الدعم",
-          text: replyText,
-          image_url: "",
-          at: new Date().toISOString()
-        });
-        await fsSet(env, "support_chats", sid, {
-          ...existing,
-          messages: msgs,
-          updated_at: new Date().toISOString()
-        });
-      }
-      return redirectRes(`/admin?section=support&notice=${encodeURIComponent("تم إرسال رد الدعم الفني")}`);
-    }
+      const fd = await req.formData();
+      const newAdminEmail = String(fd.get("admin_email") || settings.admin_email).trim();
+      const newAdminPass = String(fd.get("new_admin_password") || "").trim();
 
-    if (path === "/admin/settings" && method === "POST") {
-      if (!isAdmin) return redirectRes("/admin");
-      const f = await parseFormBody(req);
-      const newEmail = String(f.admin_email || settings.admin_email).trim().toLowerCase();
-      const newPassRaw = String(f.new_admin_password || "").trim();
       const updated = {
         ...settings,
-        admin_email: newEmail,
-        vodafone_number: String(f.vodafone_number || settings.vodafone_number).trim(),
-        admin_whatsapp: String(f.admin_whatsapp || settings.admin_whatsapp).trim(),
-        facebook_url: String(f.facebook_url || "").trim(),
-        tiktok_url: String(f.tiktok_url || "").trim(),
-        youtube_url: String(f.youtube_url || "").trim(),
-        teacher_image: String(f.teacher_image || settings.teacher_image).trim() || TEACHER_MAIN_PHOTO,
-        global_notice: String(f.global_notice || "").trim()
+        admin_email: newAdminEmail,
+        admin_password_hash: newAdminPass ? (await sha256(newAdminPass)) : settings.admin_password_hash,
+        admin_password: newAdminPass ? newAdminPass : "",
+        vodafone_number: String(fd.get("vodafone_number") || "").trim(),
+        admin_whatsapp: String(fd.get("admin_whatsapp") || "").trim(),
+        teacher_image: String(fd.get("teacher_image") || TEACHER_MAIN_PHOTO).trim() || TEACHER_MAIN_PHOTO,
+        global_notice: String(fd.get("global_notice") || "").trim(),
+        youtube_url: String(fd.get("youtube_url") || "").trim(),
+        tiktok_url: String(fd.get("tiktok_url") || "").trim(),
+        facebook_url: String(fd.get("facebook_url") || "").trim()
       };
-      if (newPassRaw) {
-        updated.admin_password = newPassRaw;
-        updated.admin_password_hash = await sha256(newPassRaw);
-      }
       await fsSet(env, "settings", "main", updated);
-      const newAdminToken = makeToken({ role: "admin", email: newEmail }, secret);
-      return redirectRes(`/admin?section=settings&notice=${encodeURIComponent("تم حفظ الإعدادات بنجاح في Firebase")}`, {
-        "Set-Cookie": setCookieHeader("nb_adm", newAdminToken)
-      });
+      return redirectRes("/admin?section=settings");
     }
 
-    return redirectRes("/");
+    return htmlRes(renderLayout(
+      "الصفحة غير موجودة",
+      settings,
+      student,
+      isStaff,
+      `<div class="card" style="max-width:520px; margin:32px auto;"><h2>الصفحة غير موجودة</h2><a class="btn btn-blue" href="/">الرئيسية</a></div>`,
+      commonLayoutOpts
+    ), 404);
   }
 };
