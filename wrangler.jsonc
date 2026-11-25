@@ -1,12 +1,10 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "arabic",
+  "name": "platform-worker",
   "main": "src/index.js",
-  "compatibility_date": "2026-04-01",
+  "compatibility_date": "2026-11-01",
   "vars": {
-    "FIREBASE_PROJECT_ID": "mr-mohmed",
-    "FIREBASE_API_KEY": "AIzaSyDmCu9lIUv7LDCw4VTwrhpA1PrIN7pa6Po",
-    "ADMIN_EMAIL": "mr@mohmed.com",
-    "ADMIN_PASSWORD": "2026"
+    "FIREBASE_PROJECT_ID": "YOUR_FIREBASE_PROJECT_ID",
+    "FIREBASE_API_KEY": "YOUR_FIREBASE_WEB_API_KEY"
   }
 }
