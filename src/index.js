@@ -4539,1224 +4539,1091 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
   </script>`;
 }
 
-export default {
-  async fetch(req, env) {
-    const url = new URL(req.url);
-    const path = url.pathname;
-    const secret = env.SESSION_SECRET || "jakh-secret-2026";
-    const settings = await getSettings(env);
+async function handleRequest(req, env) {
+  const safeEnv = env || {};
+  const url = new URL(req.url);
+  const path = url.pathname;
+  const secret = safeEnv.SESSION_SECRET || "jakh-secret-2026";
+  const settings = await getSettings(safeEnv);
 
-    const adminCookie = getCookie(req, "nb_admin_session");
-    const adminSession = parseToken(adminCookie, secret);
-    let isAdmin = Boolean(adminSession && adminSession.role === "admin");
+  const adminToken = getCookie(req, "nb_admin");
+  const adminSession = parseToken(adminToken, secret);
+  const isAdminAuthed = Boolean(adminSession && adminSession.role === "admin");
 
-    const teamCookie = getCookie(req, "nb_team_session");
-    const teamSessionRaw = parseToken(teamCookie, secret);
-    let teamSession = (teamSessionRaw && teamSessionRaw.role === "team") ? teamSessionRaw : null;
+  const teamToken = getCookie(req, "nb_team");
+  const teamSessionParsed = parseToken(teamToken, secret);
+  let teamSession = null;
+  if (teamSessionParsed && teamSessionParsed.role === "team" && teamSessionParsed.team_id) {
+    const memberDoc = await fsGet(safeEnv, "team_members", teamSessionParsed.team_id);
+    if (memberDoc && (!memberDoc.active_session_id || memberDoc.active_session_id === teamSessionParsed.sid)) {
+      teamSession = teamSessionParsed;
+    }
+  }
 
-    if (isAdmin && adminSession && adminSession.session_id) {
-      const adminDoc = await fsGet(env, "settings", "main");
-      if (adminDoc && adminDoc.active_session_id && String(adminDoc.active_session_id) !== String(adminSession.session_id)) {
-        isAdmin = false;
+  const isStaff = Boolean(isAdminAuthed || teamSession);
+
+  const studentToken = getCookie(req, "nb_student");
+  const studentSession = parseToken(studentToken, secret);
+  let student = null;
+  if (studentSession && studentSession.phone) {
+    const stDoc = await fsGet(safeEnv, "students", studentSession.phone);
+    if (stDoc && (!stDoc.active_session_id || stDoc.active_session_id === studentSession.sid)) {
+      student = stDoc;
+    }
+  }
+
+  if (path === "/api/session/check") {
+    let kicked = false;
+    let redirect = "/student?tab=login";
+    if (studentSession && studentSession.phone) {
+      const stDoc = await fsGet(safeEnv, "students", studentSession.phone);
+      if (!stDoc || (stDoc.active_session_id && stDoc.active_session_id !== studentSession.sid)) {
+        kicked = true;
+        redirect = "/student?tab=login";
+      }
+    } else if (teamSessionParsed && teamSessionParsed.team_id) {
+      const mDoc = await fsGet(safeEnv, "team_members", teamSessionParsed.team_id);
+      if (!mDoc || (mDoc.active_session_id && mDoc.active_session_id !== teamSessionParsed.sid)) {
+        kicked = true;
+        redirect = "/team";
       }
     }
+    return new Response(JSON.stringify({ kicked, redirect }), {
+      headers: { "Content-Type": "application/json" }
+    });
+  }
 
-    if (teamSession && teamSession.team_id) {
-      const memberDoc = await fsGet(env, "team_members", String(teamSession.team_id));
-      if (!memberDoc) {
-        teamSession = null;
-      } else if (memberDoc.active_session_id && teamSession.session_id && String(memberDoc.active_session_id) !== String(teamSession.session_id)) {
-        teamSession = null;
-      }
+  if (path === "/api/staff/alerts") {
+    if (!isStaff) {
+      return new Response(JSON.stringify({ ok: false }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" }
+      });
     }
-
-    const stCookie = getCookie(req, "nb_student_session");
-    const stSession = parseToken(stCookie, secret);
-    let student = null;
-    if (stSession && stSession.phone) {
-      const foundSt = await fsGet(env, "students", normalizePhone(stSession.phone));
-      if (foundSt && (!foundSt.active_session_id || !stSession.session_id || String(foundSt.active_session_id) === String(stSession.session_id))) {
-        student = foundSt;
-      }
+    const posts = await fsList(safeEnv, "forum_posts");
+    posts.sort((a, b) => String(b.created_at || "").localeCompare(String(a.created_at || "")));
+    const latest = posts[0];
+    if (!latest) {
+      return new Response(JSON.stringify({ latest_key: "" }), {
+        headers: { "Content-Type": "application/json" }
+      });
     }
+    const hasReply = Boolean(latest.reply && String(latest.reply).trim());
+    const key = `${latest.id}_${hasReply ? "replied" : "new"}_${latest.created_at || ""}`;
+    return new Response(JSON.stringify({
+      latest_key: key,
+      title: hasReply ? `تم الرد في المنتدى (${latest.branch || ""})` : `رسالة جديدة في المنتدى (${latest.branch || ""})`,
+      body: hasReply
+        ? `تم الرد على مشاركة الطالب ${latest.student_name || ""}`
+        : `${latest.student_name || "طالب"}: ${String(latest.message || "").slice(0, 70)}`
+    }), { headers: { "Content-Type": "application/json" } });
+  }
 
-    if (path === "/api/session/check") {
-      if (stSession && stSession.phone) {
-        const curSt = await fsGet(env, "students", normalizePhone(stSession.phone));
-        if (!curSt || (curSt.active_session_id && stSession.session_id && String(curSt.active_session_id) !== String(stSession.session_id))) {
-          return new Response(JSON.stringify({ kicked: true, redirect: "/student?tab=login" }), {
-            headers: { "Content-Type": "application/json" }
-          });
-        }
-      }
-      if (teamSession && teamSession.team_id) {
-        const curTm = await fsGet(env, "team_members", String(teamSession.team_id));
-        if (!curTm || (curTm.active_session_id && teamSession.session_id && String(curTm.active_session_id) !== String(teamSession.session_id))) {
-          return new Response(JSON.stringify({ kicked: true, redirect: "/team" }), {
-            headers: { "Content-Type": "application/json" }
-          });
-        }
-      }
-      return new Response(JSON.stringify({ kicked: false }), {
+  if (path === "/api/support/thread" && req.method === "GET") {
+    const sid = String(url.searchParams.get("session_id") || "").trim();
+    if (!sid) {
+      return new Response(JSON.stringify({ messages: [] }), {
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+    const thread = await fsGet(safeEnv, "support_threads", sid);
+    return new Response(JSON.stringify({
+      visitor_name: thread?.visitor_name || "",
+      messages: Array.isArray(thread?.messages) ? thread.messages : [],
+      read_admin_ids: Array.isArray(thread?.read_admin_ids) ? thread.read_admin_ids : []
+    }), { headers: { "Content-Type": "application/json" } });
+  }
+
+  if (path === "/api/support/mark-read" && req.method === "POST") {
+    let body = {};
+    try { body = await req.json(); } catch {}
+    const sid = String(body.session_id || "").trim();
+    const incomingIds = Array.isArray(body.read_admin_ids) ? body.read_admin_ids.map(String) : [];
+    if (!sid) {
+      return new Response(JSON.stringify({ ok: false }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+    const existing = (await fsGet(safeEnv, "support_threads", sid)) || {
+      id: sid,
+      visitor_name: "",
+      student_phone: "",
+      messages: [],
+      read_admin_ids: [],
+      updated_at: new Date().toISOString()
+    };
+    const merged = Array.from(new Set([
+      ...(Array.isArray(existing.read_admin_ids) ? existing.read_admin_ids.map(String) : []),
+      ...incomingIds
+    ]));
+    existing.read_admin_ids = merged;
+    await fsSet(safeEnv, "support_threads", sid, existing);
+    return new Response(JSON.stringify({ ok: true, read_admin_ids: merged }), {
+      headers: { "Content-Type": "application/json" }
+    });
+  }
+
+  if (path === "/api/support/send" && req.method === "POST") {
+    let body = {};
+    try { body = await req.json(); } catch {}
+    const sid = String(body.session_id || "").trim();
+    const visitorName = String(body.visitor_name || "").trim();
+    const studentPhone = normalizePhone(body.student_phone || "");
+    const text = String(body.text || "").trim();
+    const imageUrl = String(body.image_url || "").trim();
+    const msgId = String(body.msg_id || ("m_" + Date.now()));
+    const registerNameOnly = Boolean(body.register_name_only);
+
+    if (!sid) {
+      return new Response(JSON.stringify({ ok: false }), {
+        status: 400,
         headers: { "Content-Type": "application/json" }
       });
     }
 
-    if (path === "/api/staff/alerts") {
-      if (!isAdmin && !teamSession) {
-        return new Response(JSON.stringify({ ok: false }), { status: 401, headers: { "Content-Type": "application/json" } });
-      }
-      const posts = await fsList(env, "forum_posts");
-      posts.sort((a, b) => String(b.created_at || "").localeCompare(String(a.created_at || "")));
-      const latest = posts[0];
-      if (!latest) {
-        return new Response(JSON.stringify({ ok: true, latest_key: "" }), { headers: { "Content-Type": "application/json" } });
-      }
-      const key = `${latest.id}_${latest.created_at || ""}_${latest.reply || ""}`;
-      const title = latest.reply ? "تم الرد على رسالة في المنتدى" : "رسالة جديدة من طالب في المنتدى";
-      const body = latest.reply
-        ? `تم الرد على رسالة (${latest.student_name || "طالب"}) في فرع ${latest.branch || ""}`
-        : `أرسل (${latest.student_name || "طالب"}) رسالة جديدة في فرع ${latest.branch || ""}`;
-      return new Response(JSON.stringify({ ok: true, latest_key: key, title, body }), {
-        headers: { "Content-Type": "application/json" }
+    const existing = (await fsGet(safeEnv, "support_threads", sid)) || {
+      id: sid,
+      visitor_name: visitorName || "مستخدم",
+      student_phone: studentPhone,
+      messages: [],
+      read_admin_ids: [],
+      updated_at: new Date().toISOString()
+    };
+
+    if (visitorName) existing.visitor_name = visitorName;
+    if (studentPhone) existing.student_phone = studentPhone;
+    existing.updated_at = new Date().toISOString();
+
+    if (!registerNameOnly && (text || imageUrl)) {
+      const msgs = Array.isArray(existing.messages) ? existing.messages : [];
+      msgs.push({
+        id: msgId,
+        sender: "user",
+        sender_name: existing.visitor_name || "مستخدم",
+        text,
+        image_url: imageUrl,
+        at: new Date().toISOString()
       });
+      existing.messages = msgs;
     }
 
-    if (path === "/api/support/thread") {
-      const sid = String(url.searchParams.get("session_id") || "").trim();
-      if (!sid) {
-        return new Response(JSON.stringify({ messages: [] }), { headers: { "Content-Type": "application/json" } });
-      }
-      const doc = await fsGet(env, "support_threads", sid);
-      return new Response(JSON.stringify({
-        session_id: sid,
-        visitor_name: doc?.visitor_name || "",
-        messages: Array.isArray(doc?.messages) ? doc.messages : [],
-        read_admin_ids: Array.isArray(doc?.read_admin_ids) ? doc.read_admin_ids : []
-      }), {
-        headers: { "Content-Type": "application/json" }
-      });
+    await fsSet(safeEnv, "support_threads", sid, existing);
+    return new Response(JSON.stringify({ ok: true, messages: existing.messages || [] }), {
+      headers: { "Content-Type": "application/json" }
+    });
+  }
+
+  if (path === "/logout") {
+    const headers = new Headers();
+    headers.append("Set-Cookie", clearCookieHeader("nb_student"));
+    headers.append("Set-Cookie", clearCookieHeader("nb_admin"));
+    headers.append("Set-Cookie", clearCookieHeader("nb_team"));
+    headers.set("Location", "/");
+    return new Response(null, { status: 302, headers });
+  }
+
+  if (path === "/about") {
+    return htmlRes(
+      renderLayout("من نحن", settings, student, isStaff, renderAboutStandalonePage(settings), {
+        showLandingAdminAvatar: false
+      })
+    );
+  }
+
+  if (path === "/privacy") {
+    return htmlRes(
+      renderLayout("سياسة الخصوصية", settings, student, isStaff, renderPrivacyStandalonePage(), {
+        showLandingAdminAvatar: false
+      })
+    );
+  }
+
+  if (path === "/") {
+    return htmlRes(
+      renderLayout("الرئيسية", settings, student, isStaff, renderLanding(settings), {
+        showLandingAdminAvatar: true
+      })
+    );
+  }
+
+  if (path === "/team") {
+    const teamSec = url.searchParams.get("section") || "forum";
+    const notice = url.searchParams.get("notice") || "";
+    const error = url.searchParams.get("error") || "";
+    const posts = teamSession ? await fsList(safeEnv, "forum_posts") : [];
+    const lectures = teamSession ? await fsList(safeEnv, "lectures") : [];
+    const students = teamSession ? await fsList(safeEnv, "students") : [];
+    return htmlRes(
+      renderLayout("بوابة تيم الأدمن", settings, student, isStaff, renderTeamStandalonePage(teamSession, posts, lectures, students, teamSec, error, notice), {
+        showLandingAdminAvatar: false,
+        showSupportWidget: false
+      })
+    );
+  }
+
+  if (path === "/team/login" && req.method === "POST") {
+    let fd;
+    try { fd = await req.formData(); } catch { return redirectRes("/team?error=" + encodeURIComponent("تعذر قراءة بيانات النموذج.")); }
+    const nameInput = String(fd.get("team_name") || "").trim();
+    const phoneInput = normalizePhone(fd.get("team_phone") || "");
+    const codeInput = String(fd.get("team_code") || "").trim();
+
+    if (!nameInput || !phoneInput || !codeInput) {
+      return redirectRes("/team?error=" + encodeURIComponent("يرجى إدخال الاسم ورقم الهاتف والكود."));
     }
 
-    if (path === "/api/support/mark-read" && req.method === "POST") {
-      try {
-        const body = await req.json();
-        const sid = String(body.session_id || "").trim();
-        const readIds = Array.isArray(body.read_admin_ids) ? body.read_admin_ids.map(String) : [];
-        if (sid) {
-          const existing = (await fsGet(env, "support_threads", sid)) || {
-            id: sid,
-            visitor_name: "",
-            student_phone: "",
-            messages: [],
-            updated_at: new Date().toISOString()
-          };
-          const mergedRead = Array.from(new Set([...(Array.isArray(existing.read_admin_ids) ? existing.read_admin_ids : []), ...readIds]));
-          await fsSet(env, "support_threads", sid, {
-            ...existing,
-            read_admin_ids: mergedRead
-          });
-        }
-        return new Response(JSON.stringify({ ok: true }), { headers: { "Content-Type": "application/json" } });
-      } catch {
-        return new Response(JSON.stringify({ ok: false }), { status: 400, headers: { "Content-Type": "application/json" } });
-      }
+    const members = await fsList(safeEnv, "team_members");
+    const matched = members.find(m =>
+      String(m.name || "").trim() === nameInput &&
+      normalizePhone(m.phone || "") === phoneInput &&
+      String(m.code || "").trim() === codeInput
+    );
+
+    if (!matched) {
+      return redirectRes("/team?error=" + encodeURIComponent("بيانات عضو التيم غير صحيحة."));
     }
 
-    if (path === "/api/support/send" && req.method === "POST") {
-      try {
-        const body = await req.json();
-        const sid = String(body.session_id || "").trim();
-        const vName = String(body.visitor_name || "").trim();
-        const stPhone = String(body.student_phone || "").trim();
-        const text = String(body.text || "").trim();
-        const imgUrl = String(body.image_url || "").trim();
-        const msgId = String(body.msg_id || ("m_" + Date.now()));
-        const nameOnly = Boolean(body.register_name_only);
+    const newSid = "t_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
+    matched.active_session_id = newSid;
+    await fsSet(safeEnv, "team_members", matched.id, matched);
 
-        if (!sid) {
-          return new Response(JSON.stringify({ error: "missing session_id" }), { status: 400, headers: { "Content-Type": "application/json" } });
-        }
+    const token = makeToken({
+      role: "team",
+      team_id: matched.id,
+      team_name: matched.name,
+      team_phone: matched.phone,
+      sid: newSid
+    }, secret);
+    return redirectRes("/team?section=forum", { "Set-Cookie": setCookieHeader("nb_team", token) });
+  }
 
-        const existing = (await fsGet(env, "support_threads", sid)) || {
-          id: sid,
-          visitor_name: vName,
-          student_phone: stPhone,
-          messages: [],
-          read_admin_ids: []
-        };
+  if (path === "/team/reply-forum" && req.method === "POST") {
+    if (!teamSession) return redirectRes("/team");
+    let fd;
+    try { fd = await req.formData(); } catch { return redirectRes("/team?error=" + encodeURIComponent("تعذر قراءة الرد.")); }
+    const postId = String(fd.get("post_id") || "");
+    const reply = String(fd.get("reply") || "").trim();
+    const post = await fsGet(safeEnv, "forum_posts", postId);
+    if (post) {
+      post.reply = reply;
+      post.replied_by = `${teamSession.team_name} (${teamSession.team_phone})`;
+      await fsSet(safeEnv, "forum_posts", postId, post);
+    }
+    return redirectRes("/team?section=forum&notice=" + encodeURIComponent("تم حفظ الرد في المنتدى."));
+  }
 
-        const msgs = Array.isArray(existing.messages) ? [...existing.messages] : [];
-        if (!nameOnly && (text || imgUrl)) {
-          msgs.push({
-            id: msgId,
-            sender: "user",
-            sender_name: vName || existing.visitor_name || "طالب",
-            text,
-            image_url: imgUrl,
-            at: new Date().toISOString()
-          });
-        }
+  if (path === "/team/delete-forum" && req.method === "POST") {
+    if (!teamSession) return redirectRes("/team");
+    let fd;
+    try { fd = await req.formData(); } catch { return redirectRes("/team?error=" + encodeURIComponent("تعذر قراءة الطلب.")); }
+    const postId = String(fd.get("post_id") || "");
+    if (postId) await fsDelete(safeEnv, "forum_posts", postId);
+    return redirectRes("/team?section=forum&notice=" + encodeURIComponent("تم حذف الرسالة من المنتدى."));
+  }
 
-        const updatedThread = {
-          visitor_name: vName || existing.visitor_name || "",
-          student_phone: stPhone || existing.student_phone || "",
-          messages: msgs,
-          read_admin_ids: Array.isArray(existing.read_admin_ids) ? existing.read_admin_ids : [],
-          updated_at: new Date().toISOString()
-        };
+  if (path === "/team/confirm-absence-code" && req.method === "POST") {
+    if (!teamSession) return redirectRes("/team");
+    let fd;
+    try { fd = await req.formData(); } catch { return redirectRes("/team?section=absence&error=" + encodeURIComponent("تعذر قراءة البيانات.")); }
+    const lecId = String(fd.get("lecture_id") || "").trim();
+    const rawCode = String(fd.get("center_code") || "").trim();
+    const normCode = normalizeMoCode(rawCode);
 
-        await fsSet(env, "support_threads", sid, updatedThread);
-        return new Response(JSON.stringify({ ok: true, messages: msgs }), {
-          headers: { "Content-Type": "application/json" }
-        });
-      } catch {
-        return new Response(JSON.stringify({ error: "bad json" }), { status: 400, headers: { "Content-Type": "application/json" } });
-      }
+    if (!lecId || !normCode) {
+      return redirectRes("/team?section=absence&error=" + encodeURIComponent("يرجى اختيار المحاضرة وإدخال الكود."));
     }
 
-    if (path === "/student/consume-discount" && req.method === "POST") {
-      try {
-        const body = await req.json();
-        const codeStr = String(body.code || "").trim().toUpperCase();
-        if (codeStr) {
-          const allDiscounts = await fsList(env, "discount_codes");
-          const target = allDiscounts.find(d => String(d.code || "").trim().toUpperCase() === codeStr && !d.used);
-          if (target) {
-            await fsSet(env, "discount_codes", target.id, {
-              ...target,
-              used: true,
-              used_by: student?.phone || "guest",
-              used_at: new Date().toISOString()
-            });
-          }
-        }
-        return new Response(JSON.stringify({ ok: true }), { headers: { "Content-Type": "application/json" } });
-      } catch {
-        return new Response(JSON.stringify({ ok: false }), { status: 400, headers: { "Content-Type": "application/json" } });
-      }
+    const lec = await fsGet(safeEnv, "lectures", lecId);
+    if (!lec) {
+      return redirectRes("/team?section=absence&error=" + encodeURIComponent("المحاضرة غير موجودة."));
     }
 
-    let academicUnreadCount = 0;
-    const academicUnreadItems = [];
-    if (student && !isAdmin && !teamSession) {
-      const postsAll = await fsList(env, "forum_posts");
-      const myRepliedPosts = postsAll.filter(
-        p => String(p.student_phone || "") === String(student.phone || "") && p.reply && String(p.reply).trim()
-      );
-      myRepliedPosts.forEach(p => {
-        academicUnreadCount++;
-        academicUnreadItems.push({
-          key: `forum_${p.id}_${p.reply}`,
-          kind: "رد المنتدى",
-          title: `تم الرد على سؤالك في منتدى ${p.branch || "الفروع"}`,
-          preview: String(p.reply).slice(0, 75),
-          href: `/student?section=forum&forum_branch=${encodeURIComponent(p.branch || BRANCHES[0])}`
-        });
-      });
+    const codes = Array.isArray(lec.attended_codes) ? lec.attended_codes.map(c => String(c || "").trim().toUpperCase()) : [];
+    if (!codes.includes(normCode)) {
+      codes.push(normCode);
+    }
+    lec.requires_attendance = true;
+    lec.attended_codes = codes;
+    await fsSet(safeEnv, "lectures", lecId, lec);
+
+    const allSt = await fsList(safeEnv, "students");
+    const matchedStudent = allSt.find(s => String(s.center_code || "").trim().toUpperCase() === normCode);
+    if (matchedStudent) {
+      const unlockedList = Array.isArray(matchedStudent.unlocked_lectures) ? matchedStudent.unlocked_lectures.map(String) : [];
+      if (!unlockedList.includes(lecId)) unlockedList.push(lecId);
+      const lockedList = Array.isArray(matchedStudent.locked_lectures) ? matchedStudent.locked_lectures.map(String).filter(id => id !== lecId) : [];
+      matchedStudent.unlocked_lectures = unlockedList;
+      matchedStudent.locked_lectures = lockedList;
+      await fsSet(safeEnv, "students", matchedStudent.id, matchedStudent);
     }
 
-    const isStaffLoggedIn = Boolean(isAdmin || teamSession);
+    const stInfoText = matchedStudent ? ` (${matchedStudent.full_name})` : "";
+    return redirectRes("/team?section=absence&notice=" + encodeURIComponent(`تم تأكيد الكود ${normCode}${stInfoText} وفتح المحاضرة له.`));
+  }
 
-    if (path === "/about") {
-      return htmlRes(
-        renderLayout(
-          "من نحن",
-          settings,
-          student,
-          isStaffLoggedIn,
-          renderAboutStandalonePage(settings),
-          { showLandingAdminAvatar: false, showSupportWidget: !isStaffLoggedIn, academicUnreadCount, academicUnreadItems }
-        )
-      );
+  if (path === "/team/revoke-student-lecture" && req.method === "POST") {
+    if (!teamSession) return redirectRes("/team");
+    let fd;
+    try { fd = await req.formData(); } catch { return redirectRes("/team?section=absence&error=" + encodeURIComponent("تعذر قراءة البيانات.")); }
+    const phone = normalizePhone(fd.get("student_phone") || "");
+    const lecId = String(fd.get("lecture_id") || "").trim();
+    if (!phone || !lecId) {
+      return redirectRes("/team?section=absence&error=" + encodeURIComponent("اختر الطالب والمحاضرة."));
     }
 
-    if (path === "/privacy") {
-      return htmlRes(
-        renderLayout(
-          "سياسة الخصوصية",
-          settings,
-          student,
-          isStaffLoggedIn,
-          renderPrivacyStandalonePage(),
-          { showLandingAdminAvatar: false, showSupportWidget: !isStaffLoggedIn, academicUnreadCount, academicUnreadItems }
-        )
-      );
+    const st = await fsGet(safeEnv, "students", phone);
+    if (!st) {
+      return redirectRes("/team?section=absence&error=" + encodeURIComponent("الطالب غير موجود."));
     }
 
-    if (path === "/") {
-      return htmlRes(
-        renderLayout(
-          "الرئيسية",
-          settings,
-          student,
-          isStaffLoggedIn,
-          renderLanding(settings),
-          { showLandingAdminAvatar: true, showSupportWidget: !isStaffLoggedIn, academicUnreadCount, academicUnreadItems }
-        )
-      );
+    const unlockedList = Array.isArray(st.unlocked_lectures) ? st.unlocked_lectures.map(String).filter(id => id !== lecId) : [];
+    const lockedList = Array.isArray(st.locked_lectures) ? st.locked_lectures.map(String) : [];
+    if (!lockedList.includes(lecId)) lockedList.push(lecId);
+
+    st.unlocked_lectures = unlockedList;
+    st.locked_lectures = lockedList;
+    await fsSet(safeEnv, "students", phone, st);
+
+    const lec = await fsGet(safeEnv, "lectures", lecId);
+    if (lec && st.center_code) {
+      const stCodeUp = String(st.center_code).trim().toUpperCase();
+      lec.attended_codes = (Array.isArray(lec.attended_codes) ? lec.attended_codes : [])
+        .map(c => String(c || "").trim().toUpperCase())
+        .filter(c => c !== stCodeUp);
+      await fsSet(safeEnv, "lectures", lecId, lec);
     }
 
-    if (path === "/logout") {
-      return redirectRes("/", {
-        "Set-Cookie": [
-          clearCookieHeader("nb_student_session"),
-          clearCookieHeader("nb_admin_session"),
-          clearCookieHeader("nb_team_session")
-        ].join(", ")
-      });
-    }
+    return redirectRes("/team?section=absence&notice=" + encodeURIComponent(`تم إلغاء المحاضرة عن الطالب ${st.full_name} وقفلها عليه.`));
+  }
 
-    if (path === "/team") {
-      const teamSec = url.searchParams.get("section") || "forum";
-      const err = url.searchParams.get("error") || "";
-      const ntc = url.searchParams.get("notice") || "";
-      let forumPosts = [];
-      let lectures = [];
-      let students = [];
-      if (teamSession) {
-        forumPosts = await fsList(env, "forum_posts");
-        lectures = await fsList(env, "lectures");
-        students = await fsList(env, "students");
-      }
-      return htmlRes(
-        renderLayout(
-          "بوابة تيم الأدمن",
-          settings,
-          student,
-          true,
-          renderTeamStandalonePage(teamSession, forumPosts, lectures, students, teamSec, err, ntc),
-          { showLandingAdminAvatar: false, showSupportWidget: false }
-        )
-      );
-    }
-
-    if (path === "/team/login" && req.method === "POST") {
-      const fd = await req.formData();
-      const tName = String(fd.get("team_name") || "").trim();
-      const tPhone = normalizePhone(fd.get("team_phone") || "");
-      const tCode = String(fd.get("team_code") || "").trim();
-
-      const members = await fsList(env, "team_members");
-      const matched = members.find(
-        m => String(m.name || "").trim() === tName &&
-          normalizePhone(m.phone || "") === tPhone &&
-          String(m.code || "").trim() === tCode
-      );
-      if (!matched) {
-        return redirectRes(`/team?error=${encodeURIComponent("بيانات عضو التيم أو الكود غير صحيحة.")}`);
-      }
-
-      const newSid = "tm_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7);
-      await fsSet(env, "team_members", matched.id, {
-        ...matched,
-        active_session_id: newSid
-      });
-
-      const tok = makeToken({
-        role: "team",
-        team_id: matched.id,
-        team_name: matched.name,
-        team_phone: matched.phone,
-        session_id: newSid
-      }, secret);
-      return redirectRes("/team?section=forum", {
-        "Set-Cookie": setCookieHeader("nb_team_session", tok)
-      });
-    }
-
-    if (path === "/team/reply-forum" && req.method === "POST") {
-      if (!teamSession) return redirectRes("/team");
-      const fd = await req.formData();
-      const postId = String(fd.get("post_id") || "").trim();
-      const reply = String(fd.get("reply") || "").trim();
-      const post = await fsGet(env, "forum_posts", postId);
-      if (post) {
-        await fsSet(env, "forum_posts", postId, {
-          ...post,
-          reply,
-          replied_by: `${teamSession.team_name} (${teamSession.team_phone})`,
-          replied_at: new Date().toISOString()
-        });
-      }
-      return redirectRes(`/team?section=forum&notice=${encodeURIComponent("تم إرسال الرد في المنتدى.")}`);
-    }
-
-    if (path === "/team/delete-forum" && req.method === "POST") {
-      if (!teamSession) return redirectRes("/team");
-      const fd = await req.formData();
-      const postId = String(fd.get("post_id") || "").trim();
-      if (postId) await fsDelete(env, "forum_posts", postId);
-      return redirectRes(`/team?section=forum&notice=${encodeURIComponent("تم حذف الرسالة من المنتدى.")}`);
-    }
-
-    if (path === "/team/confirm-absence-code" && req.method === "POST") {
-      if (!teamSession) return redirectRes("/team");
-      const fd = await req.formData();
-      const grade = String(fd.get("grade") || "").trim();
-      const lectureId = String(fd.get("lecture_id") || "").trim();
-      const rawCode = String(fd.get("center_code") || "").trim();
-      const normCode = normalizeMoCode(rawCode);
-
-      if (!lectureId || !normCode) {
-        return redirectRes(`/team?section=absence&error=${encodeURIComponent("اختر المحاضرة وأدخل كود الطالب.")}`);
-      }
-
-      const lec = await fsGet(env, "lectures", lectureId);
-      if (!lec) {
-        return redirectRes(`/team?section=absence&error=${encodeURIComponent("المحاضرة غير موجودة.")}`);
-      }
-
-      const prevCodes = Array.isArray(lec.attended_codes) ? lec.attended_codes.map(c => String(c || "").trim().toUpperCase()) : [];
-      if (!prevCodes.includes(normCode)) {
-        prevCodes.push(normCode);
-      }
-      await fsSet(env, "lectures", lectureId, {
-        ...lec,
-        requires_attendance: true,
-        attended_codes: prevCodes
-      });
-
-      const allSts = await fsList(env, "students");
-      const matchedStudent = allSts.find(
-        st => String(st.center_code || "").trim().toUpperCase() === normCode ||
-          String(st.center_code || "").trim().toUpperCase() === rawCode.toUpperCase()
-      );
-
-      if (matchedStudent) {
-        const curUnlocked = Array.isArray(matchedStudent.unlocked_lectures) ? matchedStudent.unlocked_lectures.map(String) : [];
-        if (!curUnlocked.includes(String(lectureId))) curUnlocked.push(String(lectureId));
-        const curLocked = Array.isArray(matchedStudent.locked_lectures) ? matchedStudent.locked_lectures.map(String).filter(id => id !== String(lectureId)) : [];
-        await fsSet(env, "students", matchedStudent.id, {
-          ...matchedStudent,
-          is_center_student: true,
-          unlocked_lectures: curUnlocked,
-          locked_lectures: curLocked
-        });
-        return redirectRes(`/team?section=absence&notice=${encodeURIComponent(`تم تأكيد الكود (${normCode}) للطالب (${matchedStudent.full_name}) وفتح المحاضرة له (${grade}).`)}`);
-      }
-
-      return redirectRes(`/team?section=absence&notice=${encodeURIComponent(`تم تسجيل وتأكيد الكود (${normCode}) للمحاضرة (${grade}).`)}`);
-    }
-
-    if (path === "/team/revoke-student-lecture" && req.method === "POST") {
-      if (!teamSession) return redirectRes("/team");
-      const fd = await req.formData();
-      const stPhone = normalizePhone(fd.get("student_phone") || "");
-      const lectureId = String(fd.get("lecture_id") || "").trim();
-
-      if (!stPhone || !lectureId) {
-        return redirectRes(`/team?section=absence&error=${encodeURIComponent("اختر الطالب والمحاضرة.")}`);
-      }
-
-      const st = await fsGet(env, "students", stPhone);
-      if (!st) {
-        return redirectRes(`/team?section=absence&error=${encodeURIComponent("الطالب غير موجود.")}`);
-      }
-
-      const stCode = String(st.center_code || "").trim().toUpperCase();
-      const curUnlocked = Array.isArray(st.unlocked_lectures) ? st.unlocked_lectures.map(String).filter(id => id !== String(lectureId)) : [];
-      const curLocked = Array.isArray(st.locked_lectures) ? st.locked_lectures.map(String) : [];
-      if (!curLocked.includes(String(lectureId))) curLocked.push(String(lectureId));
-
-      await fsSet(env, "students", st.id, {
-        ...st,
-        unlocked_lectures: curUnlocked,
-        locked_lectures: curLocked
-      });
-
-      const lec = await fsGet(env, "lectures", lectureId);
-      if (lec && stCode) {
-        const nextCodes = (Array.isArray(lec.attended_codes) ? lec.attended_codes : []).filter(
-          c => String(c || "").trim().toUpperCase() !== stCode
-        );
-        await fsSet(env, "lectures", lectureId, {
-          ...lec,
-          attended_codes: nextCodes
-        });
-      }
-
-      return redirectRes(`/team?section=absence&notice=${encodeURIComponent(`تم إلغاء وقفل المحاضرة عن الطالب (${st.full_name}).`)}`);
-    }
-
-    if (path === "/student") {
-      const authTab = url.searchParams.get("tab") || "login";
-      const step = Number(url.searchParams.get("step") || "1");
-      const draft = {
-        first_name: url.searchParams.get("first_name") || "",
-        second_name: url.searchParams.get("second_name") || "",
-        third_name: url.searchParams.get("third_name") || "",
-        fourth_name: url.searchParams.get("fourth_name") || "",
-        phone: url.searchParams.get("phone") || ""
-      };
+  if (path === "/student") {
+    const forceAuthMode = url.searchParams.has("tab");
+    if (student && !forceAuthMode) {
+      const section = url.searchParams.get("section") || "dashboard";
+      const branch = url.searchParams.get("branch") || "";
+      const forumBranch = url.searchParams.get("forum_branch") || BRANCHES[0];
+      const lectureId = url.searchParams.get("lecture_id") || "";
+      const examId = url.searchParams.get("exam_id") || "";
       const error = url.searchParams.get("error") || "";
       const notice = url.searchParams.get("notice") || "";
+      const lectures = await fsList(safeEnv, "lectures");
+      const exams = await fsList(safeEnv, "exams");
+      const submissions = await fsList(safeEnv, "submissions");
+      const drafts = await fsList(safeEnv, "exam_drafts");
+      const watched = await fsList(safeEnv, "watched");
+      const discounts = await fsList(safeEnv, "discounts");
+      const forumPosts = await fsList(safeEnv, "forum_posts");
 
-      if (student) {
-        const [lectures, exams, submissions, drafts, watched, discounts, forumPosts] = await Promise.all([
-          fsList(env, "lectures"),
-          fsList(env, "exams"),
-          fsList(env, "exam_submissions"),
-          fsList(env, "exam_drafts"),
-          fsList(env, "watched_lectures"),
-          fsList(env, "discount_codes"),
-          fsList(env, "forum_posts")
-        ]);
-        const mySubs = submissions.filter(s => s.student_phone === student.phone);
-        const myDrafts = drafts.filter(d => d.student_phone === student.phone);
-        const myWatched = watched.filter(w => w.student_phone === student.phone);
+      const myPosts = forumPosts.filter(p => String(p.student_phone || "") === String(student.phone || ""));
+      const academicUnreadItems = myPosts
+        .filter(p => p.reply && String(p.reply).trim())
+        .slice(0, 8)
+        .map(p => ({
+          key: `forum_${p.id}_${String(p.reply).slice(0, 18)}`,
+          kind: "رد المنتدى",
+          title: `تم الرد على مشاركتك في ${p.branch || "المنتدى"}`,
+          preview: String(p.reply).slice(0, 75),
+          href: `/student?section=forum&forum_branch=${encodeURIComponent(p.branch || BRANCHES[0])}`
+        }));
 
-        const dashState = {
-          section: url.searchParams.get("section") || "dashboard",
-          branch: url.searchParams.get("branch") || "",
-          forumBranch: url.searchParams.get("forum_branch") || BRANCHES[0],
-          lectureId: url.searchParams.get("lecture_id") || "",
-          examId: url.searchParams.get("exam_id") || "",
-          lectures,
-          exams,
-          submissions: mySubs,
-          drafts: myDrafts,
-          watched: myWatched,
-          discounts,
-          forumPosts,
-          error,
-          notice
-        };
-        return htmlRes(
-          renderLayout(
-            "بوابة الطالب",
-            settings,
-            student,
-            isStaffLoggedIn,
-            renderStudentDash(settings, student, dashState),
-            { showLandingAdminAvatar: false, showSupportWidget: !isStaffLoggedIn, academicUnreadCount, academicUnreadItems }
-          )
-        );
-      }
-
+      const myDrafts = drafts.filter(d => String(d.student_phone || "") === String(student.phone || ""));
+      const body = renderStudentDash(settings, student, {
+        section, branch, forumBranch, lectureId, examId, error, notice,
+        lectures, exams, submissions, drafts: myDrafts, watched, discounts, forumPosts
+      });
       return htmlRes(
-        renderLayout(
-          "دخول الطالب",
-          settings,
-          null,
-          isStaffLoggedIn,
-          renderStudentAuth(settings, authTab, step, draft, error, notice),
-          { showLandingAdminAvatar: false, showSupportWidget: !isStaffLoggedIn, academicUnreadCount, academicUnreadItems }
-        )
+        renderLayout("بوابة الطالب", settings, student, isStaff, body, {
+          academicUnreadCount: academicUnreadItems.length,
+          academicUnreadItems
+        })
       );
     }
 
-    if (path === "/student/login" && req.method === "POST") {
-      const fd = await req.formData();
-      const phone = normalizePhone(fd.get("phone") || "");
-      const password = String(fd.get("password") || "");
-      const existing = await fsGet(env, "students", phone);
-      if (!existing) {
-        return redirectRes(`/student?tab=login&error=${encodeURIComponent("لا يوجد حساب مسجل بهذا الرقم.")}`);
-      }
-      const h = await sha256(password);
-      const validPass = (existing.password_hash === h) || (existing.password_plain && existing.password_plain === password);
-      if (!validPass) {
-        return redirectRes(`/student?tab=login&error=${encodeURIComponent("كلمة السر غير صحيحة.")}`);
-      }
+    const tab = url.searchParams.get("tab") || "login";
+    const step = Number(url.searchParams.get("step") || "1");
+    const draft = {
+      first_name: url.searchParams.get("first_name") || "",
+      second_name: url.searchParams.get("second_name") || "",
+      third_name: url.searchParams.get("third_name") || "",
+      fourth_name: url.searchParams.get("fourth_name") || "",
+      phone: url.searchParams.get("phone") || ""
+    };
+    const error = url.searchParams.get("error") || "";
+    const notice = url.searchParams.get("notice") || "";
+    return htmlRes(renderLayout("بوابة الطالب", settings, student, isStaff, renderStudentAuth(settings, tab, step, draft, error, notice)));
+  }
 
-      const newSid = "st_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7);
-      await fsSet(env, "students", phone, {
-        ...existing,
-        password_hash: h,
-        password_plain: password,
-        active_session_id: newSid
-      });
+  if (path === "/student/register" && req.method === "POST") {
+    let fd;
+    try { fd = await req.formData(); } catch { return redirectRes("/student?tab=register&step=1&error=" + encodeURIComponent("تعذر قراءة بيانات التسجيل.")); }
+    const fullName = String(fd.get("full_name") || "").trim();
+    const phone = normalizePhone(fd.get("phone") || "");
+    const grade = String(fd.get("grade") || GRADES[0]).trim();
+    const track = String(fd.get("track") || TRACKS[0]).trim();
+    const parentPhone = normalizePhone(fd.get("parent_phone") || "");
+    const governorate = String(fd.get("governorate") || EGYPT_GOVERNORATES[0]).trim();
+    const password = String(fd.get("password") || "");
 
-      const tok = makeToken({ role: "student", phone, session_id: newSid }, secret);
-      return redirectRes("/student?section=dashboard", {
-        "Set-Cookie": setCookieHeader("nb_student_session", tok)
-      });
+    if (!fullName || !phone || !parentPhone || !password) {
+      return redirectRes("/student?tab=register&step=1&error=" + encodeURIComponent("يرجى إكمال جميع الحقول المطلوبة."));
+    }
+    if (parentPhone === phone) {
+      return redirectRes("/student?tab=register&step=2&phone=" + encodeURIComponent(phone) + "&error=" + encodeURIComponent("يجب أن يكون رقم هاتف ولي الأمر مختلفاً عن رقم هاتف الطالب."));
+    }
+    const existing = await fsGet(safeEnv, "students", phone);
+    if (existing) {
+      return redirectRes("/student?tab=login&error=" + encodeURIComponent("رقم الهاتف مسجل بالفعل، سجل الدخول."));
+    }
+    const newSid = "s_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
+    const studentDoc = {
+      full_name: fullName,
+      phone,
+      grade,
+      track,
+      parent_phone: parentPhone,
+      governorate,
+      password_plain: password,
+      password_hash: await sha256(password),
+      branches: [],
+      is_center_student: false,
+      center_code: "",
+      unlocked_lectures: [],
+      locked_lectures: [],
+      active_session_id: newSid
+    };
+    await fsSet(safeEnv, "students", phone, studentDoc);
+    const token = makeToken({ phone, sid: newSid }, secret);
+    return redirectRes("/student", { "Set-Cookie": setCookieHeader("nb_student", token) });
+  }
+
+  if (path === "/student/login" && req.method === "POST") {
+    let fd;
+    try { fd = await req.formData(); } catch { return redirectRes("/student?tab=login&error=" + encodeURIComponent("تعذر قراءة بيانات الدخول.")); }
+    const phone = normalizePhone(fd.get("phone") || "");
+    const password = String(fd.get("password") || "");
+    const st = await fsGet(safeEnv, "students", phone);
+    if (!st) {
+      return redirectRes("/student?tab=login&error=" + encodeURIComponent("رقم الهاتف غير مسجل."));
+    }
+    const inputHash = await sha256(password);
+    const validPwd = (st.password_plain && String(st.password_plain) === password) ||
+                     (st.password_hash && String(st.password_hash) === inputHash);
+    if (!validPwd) {
+      return redirectRes("/student?tab=login&error=" + encodeURIComponent("كلمة السر غير صحيحة."));
+    }
+    const newSid = "s_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
+    st.active_session_id = newSid;
+    await fsSet(safeEnv, "students", phone, st);
+
+    const token = makeToken({ phone, sid: newSid }, secret);
+    return redirectRes("/student", { "Set-Cookie": setCookieHeader("nb_student", token) });
+  }
+
+  if (path === "/student/center-login" && req.method === "POST") {
+    let fd;
+    try { fd = await req.formData(); } catch { return redirectRes("/student?tab=center&error=" + encodeURIComponent("تعذر قراءة بيانات الكود.")); }
+    const centerCode = normalizeMoCode(fd.get("center_code") || "");
+    const name = String(fd.get("name") || "").trim();
+    const phone = normalizePhone(fd.get("phone") || "");
+    const grade = String(fd.get("grade") || GRADES[0]).trim();
+    const track = String(fd.get("track") || TRACKS[0]).trim();
+    const password = String(fd.get("password") || "");
+
+    if (!centerCode || !name || !phone || !password) {
+      return redirectRes("/student?tab=center&error=" + encodeURIComponent("يرجى إدخال كود السنتر والاسم والهاتف وكلمة السر."));
     }
 
-    if (path === "/student/center-login" && req.method === "POST") {
-      const fd = await req.formData();
-      const rawCenterCode = String(fd.get("center_code") || "").trim();
-      const centerCode = normalizeMoCode(rawCenterCode);
-      const fullName = String(fd.get("name") || "").trim();
-      const phone = normalizePhone(fd.get("phone") || "");
-      const grade = String(fd.get("grade") || GRADES[0]);
-      const track = String(fd.get("track") || TRACKS[0]);
-      const password = String(fd.get("password") || "");
-
-      if (!centerCode || !fullName || !phone || password.length < 4) {
-        return redirectRes(`/student?tab=center&error=${encodeURIComponent("من فضلك أدخل كود السنتر والاسم الرباعي والرقم وكلمة السر.")}`);
-      }
-
-      const allCodes = await fsList(env, "activation_codes");
-      const matchedCode = allCodes.find(
-        c => c.type === "center" &&
-          (String(c.code || "").trim().toUpperCase() === centerCode || String(c.code || "").trim().toUpperCase() === rawCenterCode.toUpperCase())
-      );
-
-      if (!matchedCode) {
-        return redirectRes(`/student?tab=center&error=${encodeURIComponent("كود السنتر غير صحيح.")}`);
-      }
-      if (matchedCode.used) {
-        return redirectRes(`/student?tab=center&error=${encodeURIComponent("تم استخدام كود السنتر من قبل.")}`);
-      }
-
-      const existing = (await fsGet(env, "students", phone)) || {};
-      const pwHash = await sha256(password);
-      const newSid = "st_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7);
-
-      const studentDoc = {
-        full_name: fullName,
-        phone,
-        parent_phone: existing.parent_phone || "",
-        governorate: existing.governorate || "",
-        grade,
-        track,
-        password_hash: pwHash,
-        password_plain: password,
-        is_center_student: true,
-        center_code: matchedCode.code,
-        branches: [...BRANCHES],
-        unlocked_lectures: Array.isArray(existing.unlocked_lectures) ? existing.unlocked_lectures : [],
-        locked_lectures: Array.isArray(existing.locked_lectures) ? existing.locked_lectures : [],
-        active_session_id: newSid,
-        created_at: existing.created_at || new Date().toISOString()
-      };
-
-      await fsSet(env, "students", phone, studentDoc);
-      await fsSet(env, "activation_codes", matchedCode.id, {
-        ...matchedCode,
-        used: true,
-        used_by: phone,
-        used_at: new Date().toISOString()
-      });
-
-      const tok = makeToken({ role: "student", phone, session_id: newSid }, secret);
-      return redirectRes("/student?section=dashboard", {
-        "Set-Cookie": setCookieHeader("nb_student_session", tok)
-      });
+    const codes = await fsList(safeEnv, "codes");
+    const matchedCode = codes.find(c =>
+      c.type === "center" &&
+      String(c.code || "").trim().toUpperCase() === centerCode &&
+      !c.used
+    );
+    if (!matchedCode) {
+      return redirectRes("/student?tab=center&error=" + encodeURIComponent("كود السنتر غير صحيح أو تم استخدامه من قبل."));
     }
 
-    if (path === "/student/register" && req.method === "POST") {
-      const fd = await req.formData();
-      const fullName = String(fd.get("full_name") || "").trim();
-      const phone = normalizePhone(fd.get("phone") || "");
-      const parentPhone = normalizePhone(fd.get("parent_phone") || "");
-      const grade = String(fd.get("grade") || GRADES[0]);
-      const track = String(fd.get("track") || TRACKS[0]);
-      const governorate = String(fd.get("governorate") || EGYPT_GOVERNORATES[0]);
-      const password = String(fd.get("password") || "");
+    matchedCode.used = true;
+    matchedCode.used_by = phone;
+    await fsSet(safeEnv, "codes", matchedCode.id, matchedCode);
 
-      if (!fullName || !phone || !parentPhone || !password) {
-        return redirectRes(`/student?tab=register&step=2&error=${encodeURIComponent("من فضلك أكمل جميع البيانات المطلوبة.")}`);
-      }
-      if (phone === parentPhone) {
-        return redirectRes(`/student?tab=register&step=2&error=${encodeURIComponent("يجب أن يكون رقم هاتف ولي الأمر مختلفاً عن رقم هاتف الطالب.")}`);
-      }
+    const newSid = "s_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
+    const existing = (await fsGet(safeEnv, "students", phone)) || {};
+    const stDoc = {
+      full_name: name,
+      phone,
+      grade,
+      track,
+      parent_phone: existing.parent_phone || "",
+      governorate: existing.governorate || "",
+      password_plain: password,
+      password_hash: await sha256(password),
+      branches: Array.from(new Set([...(existing.branches || []), ...BRANCHES])),
+      is_center_student: true,
+      center_code: centerCode,
+      unlocked_lectures: Array.isArray(existing.unlocked_lectures) ? existing.unlocked_lectures : [],
+      locked_lectures: Array.isArray(existing.locked_lectures) ? existing.locked_lectures : [],
+      active_session_id: newSid
+    };
+    await fsSet(safeEnv, "students", phone, stDoc);
 
-      const existing = await fsGet(env, "students", phone);
-      if (existing) {
-        return redirectRes(`/student?tab=login&error=${encodeURIComponent("هذا الرقم مسجل بالفعل، يمكنك تسجيل الدخول.")}`);
-      }
+    const token = makeToken({ phone, sid: newSid }, secret);
+    return redirectRes("/student", { "Set-Cookie": setCookieHeader("nb_student", token) });
+  }
 
-      const newSid = "st_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7);
-      const pwHash = await sha256(password);
-      await fsSet(env, "students", phone, {
-        full_name: fullName,
-        phone,
-        parent_phone: parentPhone,
-        governorate,
-        grade,
-        track,
-        password_hash: pwHash,
-        password_plain: password,
-        is_center_student: false,
-        branches: [],
-        active_session_id: newSid,
-        created_at: new Date().toISOString()
-      });
+  if (path === "/student/reset-password" && req.method === "POST") {
+    let fd;
+    try { fd = await req.formData(); } catch { return redirectRes("/student?tab=forgot&error=" + encodeURIComponent("تعذر قراءة البيانات.")); }
+    const phone = normalizePhone(fd.get("phone") || "");
+    const parentPhone = normalizePhone(fd.get("parent_phone") || "");
+    const newPassword = String(fd.get("new_password") || "");
 
-      const tok = makeToken({ role: "student", phone, session_id: newSid }, secret);
-      return redirectRes("/student?section=dashboard", {
-        "Set-Cookie": setCookieHeader("nb_student_session", tok)
-      });
+    if (!phone || !parentPhone || !newPassword) {
+      return redirectRes("/student?tab=forgot&error=" + encodeURIComponent("يرجى إدخال جميع الحقول."));
+    }
+    if (parentPhone === phone) {
+      return redirectRes("/student?tab=forgot&error=" + encodeURIComponent("يجب أن يختلف رقم ولي الأمر عن رقم الطالب."));
     }
 
-    if (path === "/student/reset-password" && req.method === "POST") {
-      const fd = await req.formData();
-      const phone = normalizePhone(fd.get("phone") || "");
-      const parentPhone = normalizePhone(fd.get("parent_phone") || "");
-      const newPassword = String(fd.get("new_password") || "");
-
-      if (!phone || !parentPhone || newPassword.length < 4) {
-        return redirectRes(`/student?tab=forgot&error=${encodeURIComponent("أدخل رقم الطالب ورقم ولي الأمر وكلمة السر الجديدة.")}`);
-      }
-      if (phone === parentPhone) {
-        return redirectRes(`/student?tab=forgot&error=${encodeURIComponent("يجب أن يكون رقم ولي الأمر مختلفاً عن رقم الطالب.")}`);
-      }
-
-      const st = await fsGet(env, "students", phone);
-      if (!st) {
-        return redirectRes(`/student?tab=forgot&error=${encodeURIComponent("رقم هاتف الطالب غير مسجل.")}`);
-      }
-      if (!st.parent_phone || normalizePhone(st.parent_phone) !== parentPhone) {
-        return redirectRes(`/student?tab=forgot&error=${encodeURIComponent("رقم هاتف ولي الأمر غير مطابق للمسجل.")}`);
-      }
-
-      const pwHash = await sha256(newPassword);
-      await fsSet(env, "students", phone, {
-        ...st,
-        password_hash: pwHash,
-        password_plain: newPassword
-      });
-
-      return redirectRes(`/student?tab=login&notice=${encodeURIComponent("تم تعيين كلمة السر الجديدة وتحديثها بنجاح.")}`);
+    const st = await fsGet(safeEnv, "students", phone);
+    if (!st) {
+      return redirectRes("/student?tab=forgot&error=" + encodeURIComponent("رقم هاتف الطالب غير مسجل."));
+    }
+    if (!st.parent_phone || normalizePhone(st.parent_phone) !== parentPhone) {
+      return redirectRes("/student?tab=forgot&error=" + encodeURIComponent("رقم هاتف ولي الأمر غير مطابق للمسجل في الحساب."));
     }
 
-    if (path === "/student/redeem-code" && req.method === "POST") {
-      if (!student) return redirectRes("/student?tab=login");
-      const fd = await req.formData();
-      const codeVal = String(fd.get("code") || "").trim().toUpperCase();
-      const allCodes = await fsList(env, "activation_codes");
-      const matched = allCodes.find(c => String(c.code || "").trim().toUpperCase() === codeVal);
-      if (!matched) {
-        return redirectRes(`/student?section=codes&error=${encodeURIComponent("كود التفعيل غير صحيح.")}`);
-      }
-      if (matched.used) {
-        return redirectRes(`/student?section=codes&error=${encodeURIComponent("هذا الكود تم استخدامه من قبل.")}`);
-      }
+    st.password_plain = newPassword;
+    st.password_hash = await sha256(newPassword);
+    await fsSet(safeEnv, "students", phone, st);
 
-      if (matched.type === "center") {
-        await fsSet(env, "students", student.phone, {
-          ...student,
-          is_center_student: true,
-          center_code: matched.code,
-          branches: [...BRANCHES]
-        });
-      } else {
-        const curBranches = new Set(student.branches || []);
-        if (matched.branch) curBranches.add(matched.branch);
-        await fsSet(env, "students", student.phone, {
-          ...student,
-          branches: Array.from(curBranches)
-        });
-      }
+    return redirectRes("/student?tab=login&notice=" + encodeURIComponent("تم تغيير كلمة السر بنجاح وتحديثها في ملفك."));
+  }
 
-      await fsSet(env, "activation_codes", matched.id, {
-        ...matched,
-        used: true,
-        used_by: student.phone,
-        used_at: new Date().toISOString()
-      });
-
-      return redirectRes(`/student?section=codes&notice=${encodeURIComponent("تم تفعيل الكود بنجاح!")}`);
+  if (path === "/student/redeem-code" && req.method === "POST") {
+    if (!student) return redirectRes("/student?tab=login");
+    let fd;
+    try { fd = await req.formData(); } catch { return redirectRes("/student?section=codes&error=" + encodeURIComponent("تعذر قراءة الكود.")); }
+    const codeVal = String(fd.get("code") || "").trim().toUpperCase();
+    const codes = await fsList(safeEnv, "codes");
+    const found = codes.find(c => String(c.code || "").toUpperCase() === codeVal && !c.used);
+    if (!found) {
+      return redirectRes("/student?section=codes&error=" + encodeURIComponent("الكود غير صحيح أو مستخدم من قبل."));
     }
+    found.used = true;
+    found.used_by = student.phone;
+    await fsSet(safeEnv, "codes", found.id, found);
 
-    if (path === "/student/forum-post" && req.method === "POST") {
-      if (!student) return redirectRes("/student?tab=login");
-      const fd = await req.formData();
-      const branch = String(fd.get("branch") || BRANCHES[0]);
-      const message = String(fd.get("message") || "").trim();
-      const imageUrl = String(fd.get("image_url") || "").trim();
+    const setB = new Set(student.branches || []);
+    if (found.type === "center") {
+      BRANCHES.forEach(b => setB.add(b));
+      student.is_center_student = true;
+      student.center_code = normalizeMoCode(found.code);
+    } else if (found.branch) {
+      setB.add(found.branch);
+    }
+    student.branches = Array.from(setB);
+    await fsSet(safeEnv, "students", student.phone, student);
 
-      if (!message && !imageUrl) {
-        return redirectRes(`/student?section=forum&forum_branch=${encodeURIComponent(branch)}&error=${encodeURIComponent("اكتب مشاركتك أو أرفق صورة.")}`);
-      }
+    return redirectRes("/student?section=codes&notice=" + encodeURIComponent("تم تفعيل الكود بنجاح!"));
+  }
 
-      const postId = "fp_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6);
-      await fsSet(env, "forum_posts", postId, {
-        branch,
-        message,
-        image_url: imageUrl,
-        student_name: student.full_name,
+  if (path === "/student/consume-discount" && req.method === "POST") {
+    if (!student) {
+      return new Response(JSON.stringify({ ok: false }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+    let body = {};
+    try { body = await req.json(); } catch {}
+    const codeUpper = String(body.code || "").trim().toUpperCase();
+    const discounts = await fsList(safeEnv, "discounts");
+    const matched = discounts.find(d => String(d.code || "").trim().toUpperCase() === codeUpper && !d.used);
+    if (matched) {
+      matched.used = true;
+      matched.used_by = student.phone;
+      await fsSet(safeEnv, "discounts", matched.id, matched);
+      return new Response(JSON.stringify({ ok: true, amount: Number(matched.amount || 0) }), {
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+    return new Response(JSON.stringify({ ok: false }), {
+      headers: { "Content-Type": "application/json" }
+    });
+  }
+
+  if (path === "/student/forum-post" && req.method === "POST") {
+    if (!student) return redirectRes("/student?tab=login");
+    let fd;
+    try { fd = await req.formData(); } catch { return redirectRes("/student?section=forum&error=" + encodeURIComponent("تعذر قراءة المشاركة.")); }
+    const branch = String(fd.get("branch") || BRANCHES[0]).trim();
+    const message = String(fd.get("message") || "").trim();
+    const imageUrl = String(fd.get("image_url") || "").trim();
+    if (!message && !imageUrl) {
+      return redirectRes(`/student?section=forum&forum_branch=${encodeURIComponent(branch)}&error=` + encodeURIComponent("اكتب مشاركتك أو أرفق صورة."));
+    }
+    const id = "fp_" + Date.now();
+    await fsSet(safeEnv, "forum_posts", id, {
+      branch,
+      student_name: student.full_name,
+      student_phone: student.phone,
+      student_grade: student.grade,
+      message,
+      image_url: imageUrl,
+      reply: "",
+      replied_by: "",
+      created_at: new Date().toISOString()
+    });
+    return redirectRes(`/student?section=forum&forum_branch=${encodeURIComponent(branch)}&notice=` + encodeURIComponent("تم نشر مشاركتك في المنتدى بنجاح."));
+  }
+
+  if (path === "/student/exam-action" && req.method === "POST") {
+    if (!student) return redirectRes("/student?tab=login");
+    let fd;
+    try { fd = await req.formData(); } catch { return redirectRes("/student?section=exams&error=" + encodeURIComponent("تعذر قراءة إجابات الواجب.")); }
+    const examId = String(fd.get("exam_id") || "");
+    const actionType = String(fd.get("action_type") || "finish");
+    const ex = await fsGet(safeEnv, "exams", examId);
+    if (!ex) return redirectRes("/student?section=exams&error=" + encodeURIComponent("الواجب غير موجود."));
+
+    const questions = Array.isArray(ex.questions) ? ex.questions : [];
+    const answers = questions.map((_, i) => {
+      const raw = fd.get(`q_${i}`);
+      return raw === null || raw === undefined || raw === "" ? -1 : Number(raw);
+    });
+
+    const draftId = `${student.phone}_${examId}`;
+
+    if (actionType === "save") {
+      await fsSet(safeEnv, "exam_drafts", draftId, {
         student_phone: student.phone,
-        student_grade: student.grade,
-        reply: "",
-        created_at: new Date().toISOString()
-      });
-
-      return redirectRes(`/student?section=forum&forum_branch=${encodeURIComponent(branch)}&notice=${encodeURIComponent("تم نشر مشاركتك في المنتدى.")}`);
-    }
-
-    if (path === "/student/exam-action" && req.method === "POST") {
-      if (!student) return redirectRes("/student?tab=login");
-      const fd = await req.formData();
-      const examId = String(fd.get("exam_id") || "");
-      const actionType = String(fd.get("action_type") || "finish");
-      const ex = await fsGet(env, "exams", examId);
-      if (!ex) {
-        return redirectRes(`/student?section=exams&error=${encodeURIComponent("الاختبار غير موجود.")}`);
-      }
-
-      const existingSubList = await fsList(env, "exam_submissions");
-      const alreadyDone = existingSubList.find(
-        s => String(s.exam_id) === String(examId) && String(s.student_phone) === String(student.phone)
-      );
-      if (alreadyDone) {
-        return redirectRes(`/student?section=results&notice=${encodeURIComponent("تم تسليم هذا الاختبار مسبقاً ولا يمكن إعادة حله.")}`);
-      }
-
-      const questions = Array.isArray(ex.questions) ? ex.questions : [];
-      const answersArr = [];
-      for (let i = 0; i < questions.length; i++) {
-        const rawVal = fd.get(`q_${i}`);
-        answersArr.push(rawVal !== null && rawVal !== "" ? Number(rawVal) : -1);
-      }
-
-      const draftId = `${student.phone}__${examId}`;
-
-      if (actionType === "save") {
-        await fsSet(env, "exam_drafts", draftId, {
-          student_phone: student.phone,
-          exam_id: examId,
-          answers: answersArr,
-          updated_at: new Date().toISOString()
-        });
-        return redirectRes(`/student?section=exams&notice=${encodeURIComponent("تم حفظ الواجب كمسودة؛ يمكنك استكماله لاحقاً.")}`);
-      }
-
-      let score = 0;
-      const details = questions.map((q, idx) => {
-        const chosenIdx = answersArr[idx];
-        const correctIdx = Number(q.correct_idx ?? 0);
-        const opts = Array.isArray(q.options) ? q.options : [];
-        const isCorrect = chosenIdx === correctIdx;
-        if (isCorrect) score++;
-        return {
-          question: q.text || `سؤال ${idx + 1}`,
-          student_answer: chosenIdx >= 0 && opts[chosenIdx] !== undefined ? opts[chosenIdx] : "لم تُجب",
-          correct_answer: opts[correctIdx] !== undefined ? opts[correctIdx] : "",
-          is_correct: isCorrect
-        };
-      });
-
-      const total = questions.length;
-      const wrongCount = Math.max(0, total - score);
-      const pct = total > 0 ? Math.round((score / total) * 100) : 0;
-
-      const subId = `${student.phone}__${examId}__${Date.now()}`;
-      await fsSet(env, "exam_submissions", subId, {
-        student_phone: student.phone,
-        student_name: student.full_name,
-        student_grade: student.grade,
         exam_id: examId,
-        exam_title: ex.title,
-        branch: ex.branch || "عام",
-        score,
-        wrong_count: wrongCount,
-        total,
-        pct,
-        details,
-        submitted_at: new Date().toISOString()
+        answers,
+        updated_at: new Date().toISOString()
       });
-
-      await fsDelete(env, "exam_drafts", draftId);
-
-      return redirectRes(`/student?section=results&notice=${encodeURIComponent(`تم تسليم الاختبار بنجاح! نسبتك: ${pct}% (${score} من ${total})`)}`);
+      return redirectRes("/student?section=exams&notice=" + encodeURIComponent("تم حفظ الواجب كمسودة. يمكنك استكماله في أي وقت."));
     }
 
-    if (path === "/admin") {
-      const sec = url.searchParams.get("section") || "students";
-      const err = url.searchParams.get("error") || "";
-      const ntc = url.searchParams.get("notice") || "";
-      const rankGrade = url.searchParams.get("rank_grade") || GRADES[0];
-      const preselectLectureId = url.searchParams.get("lecture_id") || "";
+    const existingSubs = await fsList(safeEnv, "submissions");
+    const alreadySubmitted = existingSubs.some(s => String(s.student_phone) === String(student.phone) && String(s.exam_id) === String(examId));
+    if (alreadySubmitted) {
+      return redirectRes("/student?section=results&error=" + encodeURIComponent("تم تسليم هذا الواجب مسبقاً ولا يمكن حله مرة أخرى."));
+    }
 
-      let adminData = {};
-      if (isAdmin) {
-        const [students, codes, discounts, lectures, exams, submissions, watched, forumPosts, supportThreads, teamMembers] = await Promise.all([
-          fsList(env, "students"),
-          fsList(env, "activation_codes"),
-          fsList(env, "discount_codes"),
-          fsList(env, "lectures"),
-          fsList(env, "exams"),
-          fsList(env, "exam_submissions"),
-          fsList(env, "watched_lectures"),
-          fsList(env, "forum_posts"),
-          fsList(env, "support_threads"),
-          fsList(env, "team_members")
-        ]);
-        adminData = {
-          students,
-          codes,
-          discounts,
-          lectures,
-          exams,
-          submissions,
-          watched,
-          forumPosts,
-          supportThreads,
-          teamMembers,
-          rankingGrade: rankGrade,
-          preselectLectureId
-        };
+    let score = 0;
+    const details = questions.map((q, i) => {
+      const chosenIdx = answers[i];
+      const correctIdx = Number(q.correct_idx ?? 0);
+      const isCorrect = chosenIdx === correctIdx;
+      if (isCorrect) score++;
+      const opts = Array.isArray(q.options) ? q.options : [];
+      return {
+        question: q.text || "",
+        student_answer: chosenIdx >= 0 && chosenIdx < opts.length ? opts[chosenIdx] : "لم تُجب",
+        correct_answer: opts[correctIdx] || "",
+        is_correct: isCorrect
+      };
+    });
+
+    const total = Math.max(1, questions.length);
+    const wrongCount = total - score;
+    const pct = Math.round((score / total) * 100);
+
+    await fsSet(safeEnv, "submissions", `${student.phone}_${examId}_${Date.now()}`, {
+      student_phone: student.phone,
+      student_name: student.full_name,
+      exam_id: examId,
+      exam_title: ex.title,
+      branch: ex.branch || "عام",
+      score,
+      wrong_count: wrongCount,
+      total,
+      pct,
+      details,
+      submitted_at: new Date().toISOString()
+    });
+
+    await fsDelete(safeEnv, "exam_drafts", draftId);
+    return redirectRes("/student?section=results&notice=" + encodeURIComponent(`تم تسليم الواجب! نسبتك ${pct}% وعدد أخطائك ${wrongCount}.`));
+  }
+
+  if (path === "/admin") {
+    const section = url.searchParams.get("section") || "students";
+    const error = url.searchParams.get("error") || "";
+    const notice = url.searchParams.get("notice") || "";
+    const rankGrade = url.searchParams.get("rank_grade") || GRADES[0];
+    const preselectLectureId = url.searchParams.get("lecture_id") || "";
+
+    let data = {
+      students: [],
+      lectures: [],
+      exams: [],
+      submissions: [],
+      watched: [],
+      codes: [],
+      discounts: [],
+      teamMembers: [],
+      forumPosts: [],
+      supportThreads: [],
+      rankingGrade: rankGrade,
+      preselectLectureId
+    };
+    if (isAdminAuthed) {
+      data = {
+        students: await fsList(safeEnv, "students"),
+        lectures: await fsList(safeEnv, "lectures"),
+        exams: await fsList(safeEnv, "exams"),
+        submissions: await fsList(safeEnv, "submissions"),
+        watched: await fsList(safeEnv, "watched"),
+        codes: await fsList(safeEnv, "codes"),
+        discounts: await fsList(safeEnv, "discounts"),
+        teamMembers: await fsList(safeEnv, "team_members"),
+        forumPosts: await fsList(safeEnv, "forum_posts"),
+        supportThreads: await fsList(safeEnv, "support_threads"),
+        rankingGrade: rankGrade,
+        preselectLectureId
+      };
+    }
+    return htmlRes(
+      renderLayout("لوحة الأدمن", settings, student, isStaff, renderAdminPage(settings, isAdminAuthed, data, section, error, notice), {
+        showLandingAdminAvatar: false,
+        showSupportWidget: false
+      })
+    );
+  }
+
+  if (path === "/admin/login" && req.method === "POST") {
+    let fd;
+    try { fd = await req.formData(); } catch { return redirectRes("/admin?error=" + encodeURIComponent("تعذر قراءة بيانات الدخول.")); }
+    const emailInput = String(fd.get("email") || "").trim();
+    const passInput = String(fd.get("password") || "");
+    const ok = await verifyAdminCredentials(safeEnv, settings, emailInput, passInput);
+    if (!ok) {
+      return redirectRes("/admin?error=" + encodeURIComponent("بيانات دخول الأدمن غير صحيحة."));
+    }
+    const token = makeToken({ role: "admin", email: emailInput }, secret);
+    return redirectRes("/admin?section=students", { "Set-Cookie": setCookieHeader("nb_admin", token) });
+  }
+
+  if (!isAdminAuthed) return redirectRes("/admin");
+
+  if (path === "/admin/toggle-center-lecture" && req.method === "POST") {
+    let fd;
+    try { fd = await req.formData(); } catch { return redirectRes("/admin?section=activate_center_lectures&error=" + encodeURIComponent("تعذر قراءة البيانات.")); }
+    const phone = normalizePhone(fd.get("phone") || "");
+    const lecId = String(fd.get("lecture_id") || "").trim();
+    const mode = String(fd.get("mode") || "unlock");
+
+    const st = await fsGet(safeEnv, "students", phone);
+    if (!st) {
+      return redirectRes("/admin?section=activate_center_lectures&error=" + encodeURIComponent("الطالب غير موجود."));
+    }
+
+    let unlockedList = Array.isArray(st.unlocked_lectures) ? st.unlocked_lectures.map(String) : [];
+    let lockedList = Array.isArray(st.locked_lectures) ? st.locked_lectures.map(String) : [];
+
+    if (mode === "lock") {
+      unlockedList = unlockedList.filter(id => id !== lecId);
+      if (!lockedList.includes(lecId)) lockedList.push(lecId);
+      const lec = await fsGet(safeEnv, "lectures", lecId);
+      if (lec && st.center_code) {
+        const stCodeUp = String(st.center_code).trim().toUpperCase();
+        lec.attended_codes = (Array.isArray(lec.attended_codes) ? lec.attended_codes : [])
+          .map(c => String(c || "").trim().toUpperCase())
+          .filter(c => c !== stCodeUp);
+        await fsSet(safeEnv, "lectures", lecId, lec);
       }
-
-      return htmlRes(
-        renderLayout(
-          "لوحة الأدمن",
-          settings,
-          student,
-          isStaffLoggedIn,
-          renderAdminPage(settings, isAdmin, adminData, sec, err, ntc),
-          { showLandingAdminAvatar: false, showSupportWidget: false }
-        )
-      );
+    } else {
+      lockedList = lockedList.filter(id => id !== lecId);
+      if (!unlockedList.includes(lecId)) unlockedList.push(lecId);
     }
 
-    if (path === "/admin/login" && req.method === "POST") {
-      const fd = await req.formData();
-      const email = String(fd.get("email") || "").trim();
-      const password = String(fd.get("password") || "");
-      const ok = await verifyAdminCredentials(env, settings, email, password);
-      if (!ok) {
-        return redirectRes(`/admin?error=${encodeURIComponent("بيانات دخول الأدمن غير صحيحة.")}`);
-      }
-      const newAdminSid = "adm_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7);
-      const currentMain = (await fsGet(env, "settings", "main")) || {};
-      await fsSet(env, "settings", "main", {
-        ...currentMain,
-        active_session_id: newAdminSid
-      });
-      const tok = makeToken({ role: "admin", email, session_id: newAdminSid }, secret);
-      return redirectRes("/admin", {
-        "Set-Cookie": setCookieHeader("nb_admin_session", tok)
-      });
+    st.unlocked_lectures = unlockedList;
+    st.locked_lectures = lockedList;
+    await fsSet(safeEnv, "students", phone, st);
+
+    return redirectRes("/admin?section=activate_center_lectures&notice=" + encodeURIComponent(mode === "lock" ? `تم قفل المحاضرة عن الطالب ${st.full_name}.` : `تم فتح المحاضرة للطالب ${st.full_name}.`));
+  }
+
+  if (path === "/admin/create-team" && req.method === "POST") {
+    let fd;
+    try { fd = await req.formData(); } catch { return redirectRes("/admin?section=add_team&error=" + encodeURIComponent("تعذر قراءة البيانات.")); }
+    const teamName = String(fd.get("team_name") || "").trim();
+    const teamPhone = normalizePhone(fd.get("team_phone") || "");
+    const teamCode = String(fd.get("team_code") || "").trim();
+    if (!teamName || !teamPhone || !teamCode) {
+      return redirectRes("/admin?section=add_team&error=" + encodeURIComponent("يرجى إدخال اسم عضو التيم ورقم هاتفه والكود."));
     }
+    const id = "tm_" + Date.now();
+    await fsSet(safeEnv, "team_members", id, {
+      name: teamName,
+      phone: teamPhone,
+      code: teamCode,
+      active_session_id: "",
+      created_at: new Date().toISOString()
+    });
+    return redirectRes("/admin?section=add_team&notice=" + encodeURIComponent(`تم إضافة عضو التيم (${teamName}) بنجاح.`));
+  }
 
-    if (path === "/admin/create-team" && req.method === "POST") {
-      if (!isAdmin) return redirectRes("/admin");
-      const fd = await req.formData();
-      const tName = String(fd.get("team_name") || "").trim();
-      const tPhone = normalizePhone(fd.get("team_phone") || "");
-      const tCode = String(fd.get("team_code") || "").trim();
-      if (!tName || !tPhone || !tCode) {
-        return redirectRes(`/admin?section=add_team&error=${encodeURIComponent("أدخل اسم عضو التيم ورقم الهاتف والكود.")}`);
-      }
-      const id = "tm_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6);
-      await fsSet(env, "team_members", id, {
-        name: tName,
-        phone: tPhone,
-        code: tCode,
-        created_at: new Date().toISOString()
-      });
-      return redirectRes(`/admin?section=add_team&notice=${encodeURIComponent("تم إضافة عضو التيم وحفظ بياناته.")}`);
-    }
+  if (path === "/admin/delete-team" && req.method === "POST") {
+    let fd;
+    try { fd = await req.formData(); } catch { return redirectRes("/admin?section=add_team&error=" + encodeURIComponent("تعذر قراءة الطلب.")); }
+    const teamId = String(fd.get("team_id") || "");
+    if (teamId) await fsDelete(safeEnv, "team_members", teamId);
+    return redirectRes("/admin?section=add_team&notice=" + encodeURIComponent("تم حذف عضو التيم."));
+  }
 
-    if (path === "/admin/delete-team" && req.method === "POST") {
-      if (!isAdmin) return redirectRes("/admin");
-      const fd = await req.formData();
-      const teamId = String(fd.get("team_id") || "").trim();
-      if (teamId) await fsDelete(env, "team_members", teamId);
-      return redirectRes(`/admin?section=add_team&notice=${encodeURIComponent("تم حذف عضو التيم.")}`);
-    }
-
-    if (path === "/admin/toggle-center-lecture" && req.method === "POST") {
-      if (!isAdmin) return redirectRes("/admin");
-      const fd = await req.formData();
-      const phone = normalizePhone(fd.get("phone") || "");
-      const lectureId = String(fd.get("lecture_id") || "").trim();
-      const mode = String(fd.get("mode") || "unlock").trim();
-
-      const st = await fsGet(env, "students", phone);
-      if (!st || !lectureId) {
-        return redirectRes(`/admin?section=activate_center_lectures&error=${encodeURIComponent("تعذر العثور على الطالب أو المحاضرة.")}`);
-      }
-
-      const stCode = String(st.center_code || "").trim().toUpperCase();
-      let curUnlocked = Array.isArray(st.unlocked_lectures) ? st.unlocked_lectures.map(String) : [];
-      let curLocked = Array.isArray(st.locked_lectures) ? st.locked_lectures.map(String) : [];
-
-      if (mode === "lock") {
-        curUnlocked = curUnlocked.filter(id => id !== String(lectureId));
-        if (!curLocked.includes(String(lectureId))) curLocked.push(String(lectureId));
-        const lec = await fsGet(env, "lectures", lectureId);
-        if (lec && stCode) {
-          const nextCodes = (Array.isArray(lec.attended_codes) ? lec.attended_codes : []).filter(
-            c => String(c || "").trim().toUpperCase() !== stCode
-          );
-          await fsSet(env, "lectures", lectureId, { ...lec, attended_codes: nextCodes });
-        }
-      } else {
-        curLocked = curLocked.filter(id => id !== String(lectureId));
-        if (!curUnlocked.includes(String(lectureId))) curUnlocked.push(String(lectureId));
-        const lec = await fsGet(env, "lectures", lectureId);
-        if (lec && stCode) {
-          const nextCodes = Array.isArray(lec.attended_codes) ? lec.attended_codes.map(c => String(c || "").trim().toUpperCase()) : [];
-          if (!nextCodes.includes(stCode)) nextCodes.push(stCode);
-          await fsSet(env, "lectures", lectureId, { ...lec, attended_codes: nextCodes });
-        }
-      }
-
-      await fsSet(env, "students", phone, {
-        ...st,
-        is_center_student: true,
-        unlocked_lectures: curUnlocked,
-        locked_lectures: curLocked
-      });
-
-      return redirectRes(`/admin?section=activate_center_lectures&notice=${encodeURIComponent(mode === "lock" ? "تم قفل المحاضرة عن الطالب." : "تم فتح وتفعيل المحاضرة للطالب.")}`);
-    }
-
-    if (path === "/admin/generate-codes" && req.method === "POST") {
-      if (!isAdmin) return redirectRes("/admin");
-      const fd = await req.formData();
-      const codeType = String(fd.get("code_type") || "center");
-      const branch = String(fd.get("branch") || BRANCHES[0]);
-      const count = Math.min(50, Math.max(1, Number(fd.get("count") || 1)));
-
-      for (let i = 0; i < count; i++) {
-        const codeStr = codeType === "center"
-          ? generateCenterCodeMO()
-          : ("BR-" + Math.random().toString(36).slice(2, 8).toUpperCase());
-        const id = "cd_" + Date.now() + "_" + i + "_" + Math.random().toString(36).slice(2, 5);
-        await fsSet(env, "activation_codes", id, {
-          code: codeStr,
-          type: codeType,
-          branch: codeType === "branch" ? branch : "",
-          used: false,
-          created_at: new Date().toISOString()
-        });
-      }
-      return redirectRes(`/admin?section=codes&notice=${encodeURIComponent(`تم توليد ${count} كود بنجاح.`)}`);
-    }
-
-    if (path === "/admin/delete-code" && req.method === "POST") {
-      if (!isAdmin) return redirectRes("/admin");
-      const fd = await req.formData();
-      const codeId = String(fd.get("code_id") || "").trim();
-      if (codeId) await fsDelete(env, "activation_codes", codeId);
-      return redirectRes(`/admin?section=codes&notice=${encodeURIComponent("تم حذف الكود.")}`);
-    }
-
-    if (path === "/admin/create-discount" && req.method === "POST") {
-      if (!isAdmin) return redirectRes("/admin");
-      const fd = await req.formData();
-      let rawCode = String(fd.get("discount_code") || "").trim().toUpperCase();
-      if (!rawCode) {
-        rawCode = "DISC-" + Math.random().toString(36).slice(2, 7).toUpperCase();
-      }
-      const amount = Math.max(1, Math.min(COURSE_PRICE_EGP, Number(fd.get("discount_amount") || 0)));
-      const id = "dc_" + Date.now() + "_" + Math.random().toString(36).slice(2, 5);
-      await fsSet(env, "discount_codes", id, {
-        code: rawCode,
-        amount,
-        used: false,
-        created_at: new Date().toISOString()
-      });
-      return redirectRes(`/admin?section=codes&notice=${encodeURIComponent(`تم إنشاء كود الخصم (${rawCode}) بقيمة ${amount} ج (لمرة واحدة).`)}`);
-    }
-
-    if (path === "/admin/delete-discount" && req.method === "POST") {
-      if (!isAdmin) return redirectRes("/admin");
-      const fd = await req.formData();
-      const discId = String(fd.get("discount_id") || "").trim();
-      if (discId) await fsDelete(env, "discount_codes", discId);
-      return redirectRes(`/admin?section=codes&notice=${encodeURIComponent("تم حذف كود الخصم.")}`);
-    }
-
-    if (path === "/admin/add-lecture" && req.method === "POST") {
-      if (!isAdmin) return redirectRes("/admin");
-      const fd = await req.formData();
-      const title = String(fd.get("title") || "").trim();
-      const branch = String(fd.get("branch") || BRANCHES[0]);
-      const grade = String(fd.get("grade") || GRADES[0]);
-      const track = String(fd.get("track") || TRACKS[0]);
-      const orderNum = Number(fd.get("order_num") || 1);
-      const videoUrl = String(fd.get("video_url") || "").trim();
-      const customJsonRaw = String(fd.get("custom_items_json") || "[]");
-
-      let customItems = [];
-      try {
-        const parsed = JSON.parse(customJsonRaw);
-        if (Array.isArray(parsed)) customItems = parsed;
-      } catch {
-        customItems = [];
-      }
-
-      if (!title) {
-        return redirectRes(`/admin?section=lectures&error=${encodeURIComponent("أدخل عنوان المحاضرة.")}`);
-      }
-      const id = "lec_" + Date.now();
-      await fsSet(env, "lectures", id, {
-        title,
-        branch,
-        grade,
-        track,
-        order_num: orderNum,
-        video_url: videoUrl,
-        custom_items: customItems,
-        created_at: new Date().toISOString()
-      });
-      return redirectRes(`/admin?section=lectures&notice=${encodeURIComponent("تمت إضافة المحاضرة وعناصرها بنجاح.")}`);
-    }
-
-    if (path === "/admin/delete-lecture" && req.method === "POST") {
-      if (!isAdmin) return redirectRes("/admin");
-      const fd = await req.formData();
-      const lecId = String(fd.get("lecture_id") || "");
-      if (lecId) await fsDelete(env, "lectures", lecId);
-      return redirectRes(`/admin?section=lectures&notice=${encodeURIComponent("تم حذف المحاضرة.")}`);
-    }
-
-    if (path === "/admin/add-exam" && req.method === "POST") {
-      if (!isAdmin) return redirectRes("/admin");
-      const fd = await req.formData();
-      const title = String(fd.get("title") || "").trim();
-      const branch = String(fd.get("branch") || BRANCHES[0]);
-      const lectureId = String(fd.get("lecture_id") || "").trim();
-      const qJsonRaw = String(fd.get("questions_json") || "[]");
-
-      let questions = [];
-      try {
-        const parsed = JSON.parse(qJsonRaw);
-        if (Array.isArray(parsed)) questions = parsed;
-      } catch {
-        questions = [];
-      }
-
-      if (!title || !questions.length) {
-        return redirectRes(`/admin?section=exams&error=${encodeURIComponent("أدخل عنوان الاختبار وأضف سؤالاً واحداً على الأقل.")}`);
-      }
-      const id = "ex_" + Date.now();
-      await fsSet(env, "exams", id, {
-        title,
-        branch,
-        lecture_id: lectureId,
-        questions,
-        created_at: new Date().toISOString()
-      });
-      return redirectRes(`/admin?section=exams&notice=${encodeURIComponent("تم حفظ ونشر الواجب / الاختبار بنجاح.")}`);
-    }
-
-    if (path === "/admin/delete-exam" && req.method === "POST") {
-      if (!isAdmin) return redirectRes("/admin");
-      const fd = await req.formData();
-      const exId = String(fd.get("exam_id") || "");
-      if (exId) await fsDelete(env, "exams", exId);
-      return redirectRes(`/admin?section=exams&notice=${encodeURIComponent("تم حذف الاختبار.")}`);
-    }
-
-    if (path === "/admin/grant-branches" && req.method === "POST") {
-      if (!isAdmin) return redirectRes("/admin");
-      const fd = await req.formData();
-      const phone = normalizePhone(fd.get("phone") || "");
-      const selected = fd.getAll("branches").map(String);
-      const st = await fsGet(env, "students", phone);
-      if (st) {
-        await fsSet(env, "students", phone, { ...st, branches: selected });
-      }
-      return redirectRes(`/admin?section=students&notice=${encodeURIComponent("تم تحديث اشتراك الفروع للطالب.")}`);
-    }
-
-    if (path === "/admin/revoke-branch" && req.method === "POST") {
-      if (!isAdmin) return redirectRes("/admin");
-      const fd = await req.formData();
-      const phone = normalizePhone(fd.get("phone") || "");
-      const branchToRemove = String(fd.get("branch") || "").trim();
-      const st = await fsGet(env, "students", phone);
-      if (st) {
-        const nextBranches = (Array.isArray(st.branches) ? st.branches : []).filter(b => String(b) !== branchToRemove);
-        await fsSet(env, "students", phone, { ...st, branches: nextBranches });
-      }
-      return redirectRes(`/admin?section=students&notice=${encodeURIComponent(`تم إلغاء تفعيل فرع (${branchToRemove}) عن الطالب.`)}`);
-    }
-
-    if (path === "/admin/delete-student" && req.method === "POST") {
-      if (!isAdmin) return redirectRes("/admin");
-      const fd = await req.formData();
-      const phone = normalizePhone(fd.get("phone") || "");
-      if (phone) {
-        await fsDelete(env, "students", phone);
-      }
-      return redirectRes(`/admin?section=students&notice=${encodeURIComponent("تم حذف حساب الطالب نهائياً.")}`);
-    }
-
-    if (path === "/admin/reply-forum" && req.method === "POST") {
-      if (!isAdmin) return redirectRes("/admin");
-      const fd = await req.formData();
-      const postId = String(fd.get("post_id") || "").trim();
-      const reply = String(fd.get("reply") || "").trim();
-      const post = await fsGet(env, "forum_posts", postId);
-      if (post) {
-        await fsSet(env, "forum_posts", postId, {
-          ...post,
-          reply,
-          replied_by: "الأدمن",
-          replied_at: new Date().toISOString()
-        });
-      }
-      return redirectRes(`/admin?section=forum&notice=${encodeURIComponent("تم إرسال الرد في المنتدى.")}`);
-    }
-
-    if (path === "/admin/delete-forum" && req.method === "POST") {
-      if (!isAdmin) return redirectRes("/admin");
-      const fd = await req.formData();
-      const postId = String(fd.get("post_id") || "").trim();
-      if (postId) {
-        await fsDelete(env, "forum_posts", postId);
-      }
-      return redirectRes(`/admin?section=forum&notice=${encodeURIComponent("تم حذف الرسالة من المنتدى.")}`);
-    }
-
-    if (path === "/admin/support-reply" && req.method === "POST") {
-      if (!isAdmin) return redirectRes("/admin");
-      const fd = await req.formData();
-      const sid = String(fd.get("session_id") || "").trim();
-      const replyText = String(fd.get("reply_text") || "").trim();
-      if (sid && replyText) {
-        const th = (await fsGet(env, "support_threads", sid)) || {
-          visitor_name: "مستخدم",
-          student_phone: "",
-          messages: [],
-          read_admin_ids: []
-        };
-        const msgs = Array.isArray(th.messages) ? [...th.messages] : [];
+  if (path === "/admin/support-reply" && req.method === "POST") {
+    let fd;
+    try { fd = await req.formData(); } catch { return redirectRes("/admin?section=support&error=" + encodeURIComponent("تعذر قراءة الرد.")); }
+    const sid = String(fd.get("session_id") || "").trim();
+    const replyText = String(fd.get("reply_text") || "").trim();
+    if (sid && replyText) {
+      const th = await fsGet(safeEnv, "support_threads", sid);
+      if (th) {
+        const msgs = Array.isArray(th.messages) ? th.messages : [];
         msgs.push({
-          id: "adm_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6),
+          id: "adm_" + Date.now(),
           sender: "admin",
           sender_name: "الأدمن",
           text: replyText,
           image_url: "",
           at: new Date().toISOString()
         });
-        await fsSet(env, "support_threads", sid, {
-          ...th,
-          messages: msgs,
-          updated_at: new Date().toISOString()
-        });
+        th.messages = msgs;
+        th.updated_at = new Date().toISOString();
+        await fsSet(safeEnv, "support_threads", sid, th);
       }
-      return redirectRes(`/admin?section=support&notice=${encodeURIComponent("تم إرسال رد الدعم الفني.")}`);
     }
+    return redirectRes("/admin?section=support&notice=" + encodeURIComponent("تم إرسال رد الدعم الفني."));
+  }
 
-    if (path === "/admin/settings" && req.method === "POST") {
-      if (!isAdmin) return redirectRes("/admin");
-      const fd = await req.formData();
-      const currentSaved = (await fsGet(env, "settings", "main")) || {};
-      const adminEmail = String(fd.get("admin_email") || DEFAULT_ADMIN_EMAIL).trim();
-      const newAdminPassword = String(fd.get("new_admin_password") || "").trim();
-
-      const updatedObj = {
-        ...currentSaved,
-        admin_email: adminEmail,
-        vodafone_number: String(fd.get("vodafone_number") || "").trim(),
-        admin_whatsapp: String(fd.get("admin_whatsapp") || "").trim(),
-        facebook_url: String(fd.get("facebook_url") || "").trim(),
-        tiktok_url: String(fd.get("tiktok_url") || "").trim(),
-        youtube_url: String(fd.get("youtube_url") || "").trim(),
-        teacher_image: String(fd.get("teacher_image") || TEACHER_MAIN_PHOTO).trim(),
-        global_notice: String(fd.get("global_notice") || "").trim()
-      };
-
-      if (newAdminPassword) {
-        updatedObj.admin_password = newAdminPassword;
-        updatedObj.admin_password_hash = await sha256(newAdminPassword);
-      }
-
-      await fsSet(env, "settings", "main", updatedObj);
-      return redirectRes(`/admin?section=settings&notice=${encodeURIComponent("تم حفظ الإعدادات وبيانات الأدمن بنجاح في Firebase.")}`);
+  if (path === "/admin/reply-forum" && req.method === "POST") {
+    let fd;
+    try { fd = await req.formData(); } catch { return redirectRes("/admin?section=forum&error=" + encodeURIComponent("تعذر قراءة الرد.")); }
+    const postId = String(fd.get("post_id") || "");
+    const reply = String(fd.get("reply") || "").trim();
+    const post = await fsGet(safeEnv, "forum_posts", postId);
+    if (post) {
+      post.reply = reply;
+      post.replied_by = "الأدمن";
+      await fsSet(safeEnv, "forum_posts", postId, post);
     }
+    return redirectRes("/admin?section=forum&notice=" + encodeURIComponent("تم حفظ الرد في المنتدى."));
+  }
 
-    return redirectRes("/");
+  if (path === "/admin/delete-forum" && req.method === "POST") {
+    let fd;
+    try { fd = await req.formData(); } catch { return redirectRes("/admin?section=forum&error=" + encodeURIComponent("تعذر قراءة الطلب.")); }
+    const postId = String(fd.get("post_id") || "");
+    if (postId) await fsDelete(safeEnv, "forum_posts", postId);
+    return redirectRes("/admin?section=forum&notice=" + encodeURIComponent("تم حذف الرسالة من المنتدى."));
+  }
+
+  if (path === "/admin/generate-codes" && req.method === "POST") {
+    let fd;
+    try { fd = await req.formData(); } catch { return redirectRes("/admin?section=codes&error=" + encodeURIComponent("تعذر قراءة البيانات.")); }
+    const type = String(fd.get("code_type") || "center");
+    const branch = String(fd.get("branch") || BRANCHES[0]);
+    const count = Math.min(50, Math.max(1, Number(fd.get("count") || 1)));
+
+    for (let i = 0; i < count; i++) {
+      const codeStr = type === "center"
+        ? generateCenterCodeMO()
+        : ("BR-" + Math.random().toString(36).slice(2, 8).toUpperCase());
+      const id = `${codeStr}_${Date.now()}_${i}`;
+      await fsSet(safeEnv, "codes", id, {
+        code: codeStr,
+        type,
+        branch: type === "center" ? "ALL" : branch,
+        used: false,
+        used_by: ""
+      });
+    }
+    return redirectRes("/admin?section=codes&notice=" + encodeURIComponent(`تم توليد ${count} كود بنجاح.`));
+  }
+
+  if (path === "/admin/delete-code" && req.method === "POST") {
+    let fd;
+    try { fd = await req.formData(); } catch { return redirectRes("/admin?section=codes&error=" + encodeURIComponent("تعذر قراءة الطلب.")); }
+    const codeId = String(fd.get("code_id") || "");
+    if (codeId) await fsDelete(safeEnv, "codes", codeId);
+    return redirectRes("/admin?section=codes&notice=" + encodeURIComponent("تم حذف الكود."));
+  }
+
+  if (path === "/admin/create-discount" && req.method === "POST") {
+    let fd;
+    try { fd = await req.formData(); } catch { return redirectRes("/admin?section=codes&error=" + encodeURIComponent("تعذر قراءة البيانات.")); }
+    const rawCode = String(fd.get("discount_code") || "").trim().toUpperCase();
+    const amount = Math.min(COURSE_PRICE_EGP, Math.max(1, Number(fd.get("discount_amount") || 50)));
+    const codeStr = rawCode || ("DISC-" + Math.random().toString(36).slice(2, 7).toUpperCase());
+    const id = `disc_${codeStr}_${Date.now()}`;
+    await fsSet(safeEnv, "discounts", id, {
+      code: codeStr,
+      amount,
+      used: false,
+      used_by: "",
+      created_at: new Date().toISOString()
+    });
+    return redirectRes("/admin?section=codes&notice=" + encodeURIComponent(`تم إنشاء كود الخصم (${codeStr}) بقيمة ${amount} ج لمرة واحدة.`));
+  }
+
+  if (path === "/admin/delete-discount" && req.method === "POST") {
+    let fd;
+    try { fd = await req.formData(); } catch { return redirectRes("/admin?section=codes&error=" + encodeURIComponent("تعذر قراءة الطلب.")); }
+    const discountId = String(fd.get("discount_id") || "");
+    if (discountId) await fsDelete(safeEnv, "discounts", discountId);
+    return redirectRes("/admin?section=codes&notice=" + encodeURIComponent("تم حذف كود الخصم."));
+  }
+
+  if (path === "/admin/add-lecture" && req.method === "POST") {
+    let fd;
+    try { fd = await req.formData(); } catch { return redirectRes("/admin?section=lectures&error=" + encodeURIComponent("تعذر قراءة بيانات المحاضرة.")); }
+    const title = String(fd.get("title") || "").trim();
+    const branch = String(fd.get("branch") || BRANCHES[0]).trim();
+    const grade = String(fd.get("grade") || GRADES[0]).trim();
+    const track = String(fd.get("track") || TRACKS[0]).trim();
+    const orderNum = Math.max(1, Number(fd.get("order_num") || 1));
+    const videoUrl = String(fd.get("video_url") || "").trim();
+    const customJsonRaw = String(fd.get("custom_items_json") || "[]");
+
+    let customItems = [];
+    try {
+      const parsed = JSON.parse(customJsonRaw);
+      if (Array.isArray(parsed)) customItems = parsed;
+    } catch {}
+
+    if (title) {
+      const id = "lec_" + Date.now();
+      await fsSet(safeEnv, "lectures", id, {
+        title,
+        branch,
+        grade,
+        track,
+        order_num: orderNum,
+        video_url: videoUrl,
+        custom_items: customItems
+      });
+    }
+    return redirectRes("/admin?section=lectures&notice=" + encodeURIComponent("تمت إضافة المحاضرة وعناصرها بنجاح."));
+  }
+
+  if (path === "/admin/delete-lecture" && req.method === "POST") {
+    let fd;
+    try { fd = await req.formData(); } catch { return redirectRes("/admin?section=lectures&error=" + encodeURIComponent("تعذر قراءة الطلب.")); }
+    const id = String(fd.get("lecture_id") || "");
+    if (id) await fsDelete(safeEnv, "lectures", id);
+    return redirectRes("/admin?section=lectures&notice=" + encodeURIComponent("تم حذف المحاضرة."));
+  }
+
+  if (path === "/admin/add-exam" && req.method === "POST") {
+    let fd;
+    try { fd = await req.formData(); } catch { return redirectRes("/admin?section=exams&error=" + encodeURIComponent("تعذر قراءة بيانات الاختبار.")); }
+    const title = String(fd.get("title") || "").trim();
+    const branch = String(fd.get("branch") || BRANCHES[0]).trim();
+    const lectureId = String(fd.get("lecture_id") || "").trim();
+    const questionsJson = String(fd.get("questions_json") || "[]");
+
+    let questions = [];
+    try {
+      const parsed = JSON.parse(questionsJson);
+      if (Array.isArray(parsed)) questions = parsed;
+    } catch {}
+
+    if (title && questions.length > 0) {
+      const id = "ex_" + Date.now();
+      await fsSet(safeEnv, "exams", id, {
+        title,
+        branch,
+        lecture_id: lectureId,
+        questions
+      });
+    }
+    return redirectRes("/admin?section=exams&notice=" + encodeURIComponent("تم حفظ ونشر الواجب / الاختبار بنجاح."));
+  }
+
+  if (path === "/admin/delete-exam" && req.method === "POST") {
+    let fd;
+    try { fd = await req.formData(); } catch { return redirectRes("/admin?section=exams&error=" + encodeURIComponent("تعذر قراءة الطلب.")); }
+    const id = String(fd.get("exam_id") || "");
+    if (id) await fsDelete(safeEnv, "exams", id);
+    return redirectRes("/admin?section=exams&notice=" + encodeURIComponent("تم حذف الواجب / الاختبار."));
+  }
+
+  if (path === "/admin/grant-branches" && req.method === "POST") {
+    let fd;
+    try { fd = await req.formData(); } catch { return redirectRes("/admin?section=students&error=" + encodeURIComponent("تعذر قراءة البيانات.")); }
+    const phone = normalizePhone(fd.get("phone") || "");
+    const selectedBranches = fd.getAll("branches").map(String);
+    const st = await fsGet(safeEnv, "students", phone);
+    if (st) {
+      st.branches = Array.from(new Set([...(st.branches || []), ...selectedBranches]));
+      await fsSet(safeEnv, "students", phone, st);
+    }
+    return redirectRes("/admin?section=students&notice=" + encodeURIComponent("تم تفعيل اشتراك الفروع المحددة للطالب."));
+  }
+
+  if (path === "/admin/revoke-branch" && req.method === "POST") {
+    let fd;
+    try { fd = await req.formData(); } catch { return redirectRes("/admin?section=students&error=" + encodeURIComponent("تعذر قراءة البيانات.")); }
+    const phone = normalizePhone(fd.get("phone") || "");
+    const branchToRemove = String(fd.get("branch") || "").trim();
+    const st = await fsGet(safeEnv, "students", phone);
+    if (st && branchToRemove) {
+      st.branches = (Array.isArray(st.branches) ? st.branches : []).filter(b => String(b) !== branchToRemove);
+      await fsSet(safeEnv, "students", phone, st);
+    }
+    return redirectRes("/admin?section=students&notice=" + encodeURIComponent(`تم إلغاء تفعيل فرع (${branchToRemove}) عن الطالب.`));
+  }
+
+  if (path === "/admin/delete-student" && req.method === "POST") {
+    let fd;
+    try { fd = await req.formData(); } catch { return redirectRes("/admin?section=students&error=" + encodeURIComponent("تعذر قراءة البيانات.")); }
+    const phone = normalizePhone(fd.get("phone") || "");
+    if (phone) {
+      await fsDelete(safeEnv, "students", phone);
+    }
+    return redirectRes("/admin?section=students&notice=" + encodeURIComponent("تم حذف الطالب من المنصة."));
+  }
+
+  if (path === "/admin/settings" && req.method === "POST") {
+    let fd;
+    try { fd = await req.formData(); } catch { return redirectRes("/admin?section=settings&error=" + encodeURIComponent("تعذر قراءة الإعدادات.")); }
+    const newAdminEmail = String(fd.get("admin_email") || settings.admin_email || DEFAULT_ADMIN_EMAIL).trim();
+    const newAdminPass = String(fd.get("new_admin_password") || "").trim();
+
+    const updatedSettings = {
+      admin_email: newAdminEmail,
+      admin_password: newAdminPass ? newAdminPass : (settings.admin_password || ""),
+      admin_password_hash: newAdminPass ? (await sha256(newAdminPass)) : settings.admin_password_hash,
+      vodafone_number: String(fd.get("vodafone_number") || "").trim(),
+      admin_whatsapp: String(fd.get("admin_whatsapp") || "").trim(),
+      facebook_url: String(fd.get("facebook_url") || "").trim(),
+      tiktok_url: String(fd.get("tiktok_url") || "").trim(),
+      youtube_url: String(fd.get("youtube_url") || "").trim(),
+      teacher_image: String(fd.get("teacher_image") || TEACHER_MAIN_PHOTO).trim(),
+      global_notice: String(fd.get("global_notice") || "").trim()
+    };
+
+    await fsSet(safeEnv, "settings", "main", updatedSettings);
+    return redirectRes("/admin?section=settings&notice=" + encodeURIComponent("تم حفظ الإعدادات بنجاح."));
+  }
+
+  return htmlRes(renderLayout("غير موجود", settings, student, isStaff, `<div class="card" style="max-width:500px; margin:30px auto;"><h2>الصفحة غير موجودة</h2><a class="btn btn-blue" href="/">العودة للرئيسية</a></div>`), 404);
+}
+
+export default {
+  async fetch(req, env) {
+    try {
+      return await handleRequest(req, env);
+    } catch (err) {
+      const msg = err && err.message ? String(err.message) : "حدث خطأ غير متوقع في الخادم.";
+      return new Response(
+        `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>خطأ</title></head><body style="font-family:sans-serif;padding:24px;"><h3>حدث خطأ أثناء معالجة الطلب</h3><p>${esc(msg)}</p><a href="/">العودة للرئيسية</a></body></html>`,
+        { status: 500, headers: { "Content-Type": "text/html; charset=utf-8" } }
+      );
+    }
   }
 };
