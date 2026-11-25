@@ -36,7 +36,7 @@ const EGYPT_GOVERNORATES = [
 const TEACHER_MAIN_PHOTO = "https://www.mohammedyoussef2027.com/public/heroPhotos/teacher-photo.png";
 const DEFAULT_ADMIN_EMAIL = "mohmed@mr.com";
 const DEFAULT_ADMIN_PASS = "admin123456";
-const PLATFORM_NAME = "نور البيان";
+const PLATFORM_NAME = "منصة محمد يوسف";
 const COURSE_PRICE_EGP = 500;
 const ABSENCE_LESSON_PRICE_EGP = 70;
 
@@ -445,7 +445,7 @@ function renderPrivacyStandalonePage() {
     {
       enTitle: "Intellectual Property & Video Content Privacy",
       arTitle: "خصوصية المحتوى التعليمي والملكية الفكرية",
-      desc: "جميع المحاضرات والشروحات والملفات محفوظة لمنصة نور البيان والأستاذ محمد يوسف، ويُمنع تصوير الشاشة أو إعادة نشر المحتوى."
+      desc: "جميع المحاضرات والشروهات والملفات محفوظة لمنصة محمد يوسف والأستاذ محمد يوسف، ويُمنع تصوير الشاشة أو إعادة نشر المحتوى."
     },
     {
       enTitle: "Account & Single-Device Session Security",
@@ -508,14 +508,14 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Aref+Ruqaa:wght@700&display=swap" />
   <style>
     :root {
-      --bg: #f3f6fb;
-      --surface: #ffffff;
-      --surface-soft: #edf3f9;
-      --txt: #132238;
-      --muted: #667894;
-      --accent: #246bfd;
-      --accent-dark: #1647c6;
-      --accent-2: #6d4aff;
+      --bg: #f5efdf;
+      --surface: #fffaf0;
+      --surface-soft: #eee3c5;
+      --txt: #2f2a1f;
+      --muted: #766b56;
+      --accent: #5f6308;
+      --accent-dark: #3f4305;
+      --accent-2: #d4a72c;
       --err: #dc2626;
       --bdr: rgba(36, 107, 253, 0.15);
       --thuluth-color: rgba(36, 107, 253, 0.035);
@@ -697,7 +697,8 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
       backdrop-filter: blur(24px) saturate(140%);
       -webkit-backdrop-filter: blur(24px) saturate(140%);
       border-bottom: 1px solid var(--bdr);
-      padding: 12px clamp(16px, 3vw, 38px);
+      min-height: 92px;
+      padding: 20px clamp(16px, 3vw, 38px);
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -710,8 +711,8 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
     }
     .brand-box { display: flex; align-items: center; gap: 13px; }
     .brand-logo-badge {
-      width: 50px; height: 50px; border-radius: 15px;
-      background: linear-gradient(135deg, #5d6fe8 0%, #9c5cf1 100%);
+      width: 64px; height: 64px; border-radius: 18px;
+      background: linear-gradient(135deg, #5f6308 0%, #d4a72c 100%);
       color: #fff; font-weight: 900; display: grid; place-items: center; font-size: 0.88rem;
       box-shadow: 0 12px 28px rgba(93, 111, 232, 0.30);
       letter-spacing: -0.5px;
@@ -1217,8 +1218,23 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
       overflow: hidden;
     }
     .support-chat-window.open { display: flex; }
+    .support-office-status {
+      margin: 12px 16px 0;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #5f6308, #777b16);
+      color: #fff;
+      font-size: 0.86rem;
+      font-weight: 900;
+      text-align: center;
+      box-shadow: 0 7px 0 #3f4305, 0 12px 22px rgba(63, 67, 5, 0.18);
+    }
+    .support-office-status.closed {
+      background: linear-gradient(135deg, #74633a, #9d8a57);
+      box-shadow: 0 7px 0 #574a2c, 0 12px 22px rgba(87, 74, 44, 0.18);
+    }
     .support-chat-header {
-      background: linear-gradient(125deg, #0d47a1, #1976d2);
+      background: linear-gradient(125deg, #4d5107, #777b16);
       color: #ffffff;
       padding: 15px 18px;
       display: flex;
@@ -1258,7 +1274,7 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
       box-shadow: var(--shadow-sm);
     }
     .chat-bubble-user {
-      background: linear-gradient(135deg, #1565c0, #1976d2);
+      background: linear-gradient(135deg, #777b16, #a99b24);
       color: #ffffff;
       padding: 11px 14px;
       border-radius: 16px 16px 4px 16px;
@@ -1269,8 +1285,8 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
       box-shadow: var(--shadow-sm);
     }
     .chat-bubble-admin {
-      background: rgba(21, 101, 192, 0.14);
-      border: 1px solid rgba(21, 101, 192, 0.35);
+      background: rgba(95, 99, 8, 0.12);
+      border: 1px solid rgba(95, 99, 8, 0.32);
       color: var(--txt);
       padding: 11px 14px;
       border-radius: 16px 16px 16px 4px;
@@ -1766,6 +1782,7 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
         </div>
         <button type="button" class="support-chat-close" id="supportCloseBtn">✕</button>
       </div>
+      <div class="support-office-status" id="supportOfficeStatus">أوقات العمل من 10 صباحاً إلى 7 مساءً</div>
 
       <div class="support-chat-body" id="supportChatBody"></div>
 
@@ -2008,6 +2025,19 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
         localStorage.setItem("jakh_sup_sid", sessionId);
       }
 
+      function isSupportOfficeOpen() {
+        const nowParts = new Intl.DateTimeFormat("en-GB", {
+          timeZone: "Africa/Cairo",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false
+        }).formatToParts(new Date());
+        const hour = Number(nowParts.find(p => p.type === "hour")?.value || 0);
+        const minute = Number(nowParts.find(p => p.type === "minute")?.value || 0);
+        const totalMinutes = hour * 60 + minute;
+        return totalMinutes >= 10 * 60 && totalMinutes < 19 * 60;
+      }
+
       let visitorName = localStorage.getItem("jakh_sup_name") || ${safeJsonForScript(defaultChatName)} || "";
       let attachedSingleImage = "";
       let messages = [];
@@ -2161,6 +2191,14 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
       function renderChatMessages() {
         if (!bodyEl) return;
         const parts = [];
+        const officeOpen = isSupportOfficeOpen();
+        const statusElement = document.getElementById("supportOfficeStatus");
+        if (statusElement) {
+          statusElement.textContent = officeOpen
+            ? "نحن متاحون الآن • من 10 صباحاً إلى 7 مساءً"
+            : "خارج أوقات العمل • الساعة الآن خارج فترة الدعم من 10 صباحاً إلى 7 مساءً";
+          statusElement.classList.toggle("closed", !officeOpen);
+        }
         parts.push('<div class="chat-bubble-bot">أهلاً بك مع الدعم الفني لمستر محمد يوسف</div>');
         if (!visitorName) {
           parts.push('<div class="chat-bubble-bot">من فضلك ضع اسمك في الخانة بالأسفل لنبدأ.</div>');
@@ -2219,6 +2257,13 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
             localStorage.setItem("jakh_sup_read_ids", JSON.stringify(readAdminIds));
           }
           messages = Array.isArray(data.messages) ? data.messages : [];
+          const unreadAdmin = getUnreadAdminMessages();
+          if (unreadAdmin.length > 0 && "Notification" in window && Notification.permission === "granted") {
+            const latest = unreadAdmin[unreadAdmin.length - 1].msg;
+            new Notification("${PLATFORM_NAME} — تم الرد", {
+              body: latest.text ? latest.text.slice(0, 100) : "رد فريق الدعم الفني على رسالتك"
+            });
+          }
           if (winEl && winEl.classList.contains("open")) {
             markAllCurrentAdminMessagesAsRead();
           }
@@ -2231,6 +2276,9 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
         const willOpen = !winEl.classList.contains("open");
         winEl.classList.toggle("open", willOpen);
         if (willOpen) {
+          if ("Notification" in window && Notification.permission === "default") {
+            Notification.requestPermission().catch(function () {});
+          }
           markAllCurrentAdminMessagesAsRead();
         }
         renderChatMessages();
@@ -2300,6 +2348,14 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
 
       formEl?.addEventListener("submit", async function (e) {
         e.preventDefault();
+        if (!isSupportOfficeOpen()) {
+          const statusElement = document.getElementById("supportOfficeStatus");
+          if (statusElement) {
+            statusElement.textContent = "خارج أوقات العمل • احنا خارج اوقات العمل، ارجع من 10 صباحاً إلى 7 مساءً";
+            statusElement.classList.add("closed");
+          }
+          return;
+        }
         const textVal = (msgInput?.value || "").trim();
         if (!textVal && !attachedSingleImage) return;
         if (!visitorName) {
@@ -2336,7 +2392,15 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload)
           });
-          if (res.ok) {
+          if (res.status === 423) {
+            const statusElement = document.getElementById("supportOfficeStatus");
+            if (statusElement) {
+              statusElement.textContent = "خارج أوقات العمل • احنا خارج اوقات العمل، ارجع من 10 صباحاً إلى 7 مساءً";
+              statusElement.classList.add("closed");
+            }
+            messages = messages.filter(function (m) { return m.id !== msgId; });
+            renderChatMessages();
+          } else if (res.ok) {
             const data = await res.json();
             if (Array.isArray(data.messages)) {
               messages = data.messages;
@@ -4940,10 +5004,30 @@ async function handleRequest(req, env) {
     const posts = await fsList(safeEnv, "forum_posts");
     posts.sort((a, b) => String(b.created_at || "").localeCompare(String(a.created_at || "")));
     const latest = posts[0];
-    if (!latest) {
-      return new Response(JSON.stringify({ latest_key: "" }), {
-        headers: { "Content-Type": "application/json" }
-      });
+    const supportThreads = await fsList(safeEnv, "support_threads");
+    supportThreads.sort((a, b) => String(b.updated_at || "").localeCompare(String(a.updated_at || "")));
+    const latestSupport = supportThreads[0];
+    const latestSupportMessages = Array.isArray(latestSupport?.messages) ? latestSupport.messages : [];
+    const latestSupportMessage = latestSupportMessages[latestSupportMessages.length - 1] || null;
+    const forumTime = latest?.created_at || "";
+    const supportTime = latestSupport?.updated_at || "";
+
+    if (!latest && !latestSupport) {
+      return new Response(JSON.stringify({ latest_key: "" }), { headers: { "Content-Type": "application/json" } });
+    }
+
+    if (supportTime && (!forumTime || supportTime >= forumTime)) {
+      const supportKey = `${latestSupport.id}_${latestSupportMessage?.id || "thread"}_${supportTime}`;
+      const isAdminReply = latestSupportMessage?.sender === "admin";
+      return new Response(JSON.stringify({
+        latest_key: supportKey,
+        title: isAdminReply
+          ? `تم الرد على شات الدعم الفني`
+          : `رسالة دعم فني جديدة من ${latestSupport.visitor_name || "طالب"}`,
+        body: isAdminReply
+          ? `رد التيم/الأدمن: ${String(latestSupportMessage.text || "").slice(0, 70)}`
+          : String(latestSupportMessage?.text || "الطالب أرسل صورة أو سجل اسمه").slice(0, 70)
+      }), { headers: { "Content-Type": "application/json" } });
     }
     const hasReply = Boolean(latest.reply && String(latest.reply).trim());
     const key = `${latest.id}_${hasReply ? "replied" : "new"}_${latest.created_at || ""}`;
@@ -5011,6 +5095,28 @@ async function handleRequest(req, env) {
     const imageUrl = String(body.image_url || "").trim();
     const msgId = String(body.msg_id || ("m_" + Date.now()));
     const registerNameOnly = Boolean(body.register_name_only);
+
+    if (!registerNameOnly && (text || imageUrl)) {
+      const nowParts = new Intl.DateTimeFormat("en-GB", {
+        timeZone: "Africa/Cairo",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false
+      }).formatToParts(new Date());
+      const hour = Number(nowParts.find(p => p.type === "hour")?.value || 0);
+      const minute = Number(nowParts.find(p => p.type === "minute")?.value || 0);
+      const totalMinutes = hour * 60 + minute;
+      if (totalMinutes < 10 * 60 || totalMinutes >= 19 * 60) {
+        return new Response(JSON.stringify({
+          ok: false,
+          outside_hours: true,
+          message: "خارج أوقات العمل • احنا خارج اوقات العمل، ارجع من 10 صباحاً إلى 7 مساءً"
+        }), {
+          status: 423,
+          headers: { "Content-Type": "application/json" }
+        });
+      }
+    }
 
     if (!sid) {
       return new Response(JSON.stringify({ ok: false }), {
