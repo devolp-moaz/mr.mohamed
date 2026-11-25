@@ -1727,17 +1727,18 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
       const isLoggedStaff = ${isStaff ? "true" : "false"};
       if (!isLoggedStudent && !isLoggedStaff) return;
 
-      setInterval(async function () {
+      async function checkSingleStudentSession() {
         try {
           const res = await fetch("/api/session/check");
           if (!res.ok) return;
           const data = await res.json();
           if (data.kicked) {
-            alert("تم تسجيل الدخول إلى هذا الحساب من جهاز آخر (موبايل أو لابتوب). سيتم تسجيل الخروج الآن.");
             window.location.href = data.redirect || "/student?tab=login";
           }
         } catch {}
-      }, 1500);
+      }
+      checkSingleStudentSession();
+      setInterval(checkSingleStudentSession, 1000);
     })();
 
     (function initSupportAndBellNotifications() {
@@ -4620,9 +4621,11 @@ async function handleRequest(req, env) {
         redirect = "/team";
       }
     }
-    return new Response(JSON.stringify({ kicked, redirect }), {
-      headers: { "Content-Type": "application/json" }
-    });
+    const headers = { "Content-Type": "application/json" };
+    if (kicked) {
+      headers["Set-Cookie"] = clearCookieHeader(studentSession?.phone ? "nb_student" : "nb_team");
+    }
+    return new Response(JSON.stringify({ kicked, redirect }), { headers });
   }
 
   if (path === "/api/staff/alerts") {
