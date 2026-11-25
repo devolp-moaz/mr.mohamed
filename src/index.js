@@ -510,12 +510,12 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       color: var(--glyph);
       user-select: none;
       will-change: transform;
-      animation: letterRoam var(--dur, 3.2s) ease-in-out var(--delay, 0s) infinite alternate;
+      animation: letterRoam var(--dur, 2.8s) ease-in-out var(--delay, 0s) infinite alternate;
     }
     @keyframes letterRoam {
       0% { transform: translate(0px, 0px) rotate(-10deg) scale(1); }
-      50% { transform: translate(calc(var(--dx, 70px) * 0.65), calc(var(--dy, -65px) * 0.7)) rotate(8deg) scale(1.06); }
-      100% { transform: translate(var(--dx, 95px), var(--dy, -85px)) rotate(14deg) scale(0.96); }
+      50% { transform: translate(calc(var(--dx, 75px) * 0.7), calc(var(--dy, -70px) * 0.72)) rotate(8deg) scale(1.06); }
+      100% { transform: translate(var(--dx, 105px), var(--dy, -95px)) rotate(14deg) scale(0.96); }
     }
 
     .page-layer { position: relative; z-index: 1; }
@@ -1347,11 +1347,11 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
     .step-fill { height: 100%; background: linear-gradient(90deg, #1e3a8a, #f59e0b); }
 
     .secure-player-box {
-      position: relative; width: 100%; max-width: 860px; margin: 12px auto 0;
+      position: relative; width: 100%; max-width: 920px; aspect-ratio: 16 / 9; margin: 12px auto 0;
       border-radius: 16px; overflow: hidden; background: #000;
       border: 1px solid var(--bdr); user-select: none; box-shadow: var(--shadow-md);
     }
-    .secure-player-box video, .secure-player-box iframe { width: 100%; min-height: 360px; display: block; border: none; }
+    .secure-player-box video, .secure-player-box iframe { width: 100%; height: 100%; min-height: 100%; display: block; border: none; }
     .watermark-layer { position: absolute; inset: 0; pointer-events: none; z-index: 5; overflow: hidden; }
     .watermark-tag {
       position: absolute; color: rgba(255, 255, 255, 0.34); font-size: 0.84rem;
@@ -1497,7 +1497,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
   <div id="arabicBg" aria-hidden="true"></div>
 
   ${showLandingAdminAvatar ? `
-    <a class="floating-admin-avatar" href="/admin" title="دخول الأدمن" aria-label="Admin">
+    <a class="floating-admin-avatar" href="/admin" title="دخول الأدمن والأسيستانت" aria-label="Admin">
       <img src="${esc(settings.teacher_image)}" alt="أ. محمد يوسف" onerror="this.style.display='none';" />
     </a>
   ` : ""}
@@ -1701,17 +1701,17 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
       const container = document.getElementById("arabicBg");
       if (!container) return;
       const letters = "أبجدهوزحطيكلمنسعفصقرشتثخذضظغى".split("");
-      for (let i = 0; i < 42; i++) {
+      for (let i = 0; i < 48; i++) {
         const span = document.createElement("span");
         span.className = "ar-glyph";
         span.textContent = letters[i % letters.length];
-        const leftPct = (i * 17) % 92;
-        const topPct = (i * 23) % 90;
-        const size = 26 + ((i * 7) % 26);
-        const dur = 1.9 + ((i * 3) % 5) * 0.45;
-        const delay = -((i * 0.6) % 3);
-        const dx = (i % 2 === 0 ? 1 : -1) * (65 + (i % 55));
-        const dy = (i % 3 === 0 ? -1 : 1) * (60 + (i % 50));
+        const leftPct = (i * 19) % 93;
+        const topPct = (i * 29) % 91;
+        const size = 28 + ((i * 7) % 28);
+        const dur = 1.45 + ((i * 3) % 5) * 0.35;
+        const delay = -((i * 0.5) % 2.5);
+        const dx = (i % 2 === 0 ? 1 : -1) * (85 + (i % 65));
+        const dy = (i % 3 === 0 ? -1 : 1) * (80 + (i % 60));
         span.style.left = leftPct + "%";
         span.style.top = topPct + "%";
         span.style.fontSize = size + "px";
@@ -1949,9 +1949,10 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
 
         messages.forEach(function (m) {
           if (m.sender === "admin") {
+            const senderLbl = m.sender_name ? ("الدعم الفني • " + m.sender_name) : "الدعم الفني • مستر محمد يوسف";
             parts.push(
               '<div class="chat-bubble-admin">' +
-                '<div style="font-size:0.74rem; opacity:0.8; margin-bottom:2px;">الدعم الفني • مستر محمد يوسف</div>' +
+                '<div style="font-size:0.74rem; opacity:0.8; margin-bottom:2px;">' + escLocal(senderLbl) + '</div>' +
                 (m.text ? '<div>' + escLocal(m.text) + '</div>' : '') +
                 (m.image_url ? '<img class="chat-msg-img" src="' + escLocal(m.image_url) + '" alt="مرفق الدعم" />' : '') +
               '</div>'
@@ -2098,6 +2099,7 @@ function renderLayout(title, settings, student, isAdmin, bodyHtml, options = {})
         messages.push({
           id: msgId,
           sender: "user",
+          sender_name: visitorName,
           text: textVal,
           image_url: attachedSingleImage,
           at: new Date().toISOString()
@@ -2205,7 +2207,7 @@ function renderStudentAuth(settings, authTab, step, draft, error, notice) {
       <div class="promo-pane gold-mode">
         <div>
           <h2 style="font-size:1.32rem; font-weight:900;">دخول طلاب السنتر بكود التفعيل</h2>
-          <p style="margin-top:10px; font-size:0.92rem; opacity:0.95;">أدخل بياناتك وكلمة السر وكود السنتر المخصص لمرة واحدة ليتم فتح المنصة وكل الفروع لك مباشرة.</p>
+          <p style="margin-top:10px; font-size:0.92rem; opacity:0.95;">أدخل اسمك الرباعي وبياناتك وكلمة السر وكود السنتر لمرة واحدة ليتم فتح المنصة وكل الفروع لك مباشرة.</p>
         </div>
         <img class="promo-img" src="${esc(settings.teacher_image)}" alt="الأستاذ محمد يوسف" onerror="this.style.display='none';" />
       </div>
@@ -2216,7 +2218,7 @@ function renderStudentAuth(settings, authTab, step, draft, error, notice) {
         ${notice ? `<div class="msg-ok">${esc(notice)}</div>` : ""}
         <form method="post" action="/student/center-login" autocomplete="off">
           <div class="field"><label>كود السنتر (لمرة واحدة) *</label><input name="center_code" type="text" required autocomplete="off" placeholder="مثال: CTR-XXXXXX" /></div>
-          <div class="field"><label>اسم الطالب *</label><input name="name" type="text" required autocomplete="off" placeholder="الاسم الثلاثي" /></div>
+          <div class="field"><label>اسم الطالب رباعي *</label><input name="name" type="text" required autocomplete="off" placeholder="الاسم الرباعي بالكامل" /></div>
           <div class="field"><label>رقم هاتف الطالب *</label><input name="phone" type="tel" required autocomplete="off" placeholder="01xxxxxxxxx" /></div>
           <div class="grid2">
             <div class="field"><label>الصف الدراسي *</label><select name="grade">${gradeOpts}</select></div>
@@ -2250,13 +2252,13 @@ function renderStudentAuth(settings, authTab, step, draft, error, notice) {
   }
 
   const isStep2 = step === 2;
-  const fullName = `${draft.first_name || ""} ${draft.second_name || ""} ${draft.third_name || ""}`.trim();
+  const fullName = `${draft.first_name || ""} ${draft.second_name || ""} ${draft.third_name || ""} ${draft.fourth_name || ""}`.trim();
   return `
   <div class="split-auth">
     <div class="promo-pane gold-mode">
       <div>
         <h2 style="font-size:1.32rem; font-weight:900;">طلب إنشاء حساب طالب جديد</h2>
-        <p style="margin-top:10px; font-size:0.92rem; opacity:0.95;">أدخل بياناتك بدقة ورقم ولي الأمر يجب أن يكون مختلفاً عن رقم الطالب.</p>
+        <p style="margin-top:10px; font-size:0.92rem; opacity:0.95;">أدخل اسمك الرباعي وبياناتك بدقة ورقم ولي الأمر يجب أن يكون مختلفاً عن رقم الطالب.</p>
       </div>
       <img class="promo-img" src="${esc(settings.teacher_image)}" alt="الأستاذ محمد يوسف" onerror="this.style.display='none';" />
     </div>
@@ -2275,14 +2277,16 @@ function renderStudentAuth(settings, authTab, step, draft, error, notice) {
             <div class="field"><label>الاسم الأول *</label><input name="first_name" type="text" value="${esc(draft.first_name)}" autocomplete="off" required /></div>
             <div class="field"><label>الاسم الثاني *</label><input name="second_name" type="text" value="${esc(draft.second_name)}" autocomplete="off" required /></div>
             <div class="field"><label>الاسم الثالث *</label><input name="third_name" type="text" value="${esc(draft.third_name)}" autocomplete="off" required /></div>
-            <div class="field"><label>رقم هاتف الطالب *</label><input name="phone" type="tel" value="${esc(draft.phone)}" autocomplete="off" required placeholder="01xxxxxxxxx" /></div>
+            <div class="field"><label>الاسم الرابع *</label><input name="fourth_name" type="text" value="${esc(draft.fourth_name)}" autocomplete="off" required /></div>
           </div>
+          <div class="field"><label>رقم هاتف الطالب *</label><input name="phone" type="tel" value="${esc(draft.phone)}" autocomplete="off" required placeholder="01xxxxxxxxx" /></div>
           <button type="submit" class="btn btn-blue" style="width:100%;">التالي</button>
         </form>
       ` : `
         <form method="post" action="/student/register" id="registerStep2Form" autocomplete="off">
           <input type="hidden" name="full_name" value="${esc(fullName)}" />
           <input type="hidden" name="phone" value="${esc(draft.phone)}" />
+          <div class="field"><label>الاسم الرباعي</label><input type="text" value="${esc(fullName)}" readonly /></div>
           <div class="field"><label>الصف الدراسي *</label><select name="grade">${gradeOpts}</select></div>
           <div class="field"><label>الشعبة *</label><select name="track">${trackOpts}</select></div>
           <div class="field"><label>رقم هاتف ولي الأمر (يجب أن يختلف عن رقم الطالب) *</label><input name="parent_phone" id="regParentPhone" type="tel" required autocomplete="off" placeholder="01xxxxxxxxx" /></div>
@@ -2323,6 +2327,7 @@ function renderStudentDash(settings, student, state) {
 
   const section = state.section || "dashboard";
   const branchParam = state.branch || "";
+  const forumBranchParam = state.forumBranch || BRANCHES[0];
   const lectureId = state.lectureId || "";
   const examIdParam = state.examId || "";
   const error = state.error || "";
@@ -2334,6 +2339,9 @@ function renderStudentDash(settings, student, state) {
   const myDrafts = state.drafts || [];
   const myWatchedSet = new Set((state.watched || []).map(w => String(w.lecture_id)));
   const activeDiscounts = (state.discounts || []).filter(d => !d.used);
+  const allForumPosts = (state.forumPosts || []).slice().sort((a, b) =>
+    String(b.created_at || "").localeCompare(String(a.created_at || ""))
+  );
 
   const solvedExamIds = new Set(mySubmissions.map(s => String(s.exam_id)));
 
@@ -2689,15 +2697,34 @@ function renderStudentDash(settings, student, state) {
     `;
   }).join("") || `<div class="card"><p class="muted">لم تُسلّم أي واجب أو اختبار حتى الآن.</p></div>`;
 
+  const forumBranchPosts = allForumPosts.filter(p => String(p.branch || "") === String(forumBranchParam));
+  const forumPostsHtml = forumBranchPosts.map(p => `
+    <div class="row" style="display:block;">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+        <div>
+          <span class="pill pill-ok">${esc(p.branch)}</span>
+          <strong style="margin-right:6px;">${esc(p.student_name || "طالب")}</strong>
+        </div>
+        <span class="muted" style="font-size:0.78rem;">${esc((p.created_at || "").slice(0, 16).replace("T", " "))}</span>
+      </div>
+      <p style="margin:8px 0; font-size:0.92rem; font-weight:700;">${esc(p.message || "")}</p>
+      ${p.image_url ? `<img class="ticket-img-thumb" src="${esc(p.image_url)}" alt="صورة المنتدى" onerror="this.style.display='none';" />` : ""}
+      ${p.reply
+        ? `<div class="msg-ok" style="margin-top:10px; margin-bottom:0;">رد (${esc(p.replied_by || "الأدمن")}): ${esc(p.reply)}</div>`
+        : `<div class="muted" style="font-size:0.8rem; margin-top:8px;">بانتظار رد الأدمن / الأسيستانت...</div>`
+      }
+    </div>
+  `).join("") || `<p class="muted" style="margin-top:10px;">لا توجد منشورات في منتدى فرع (${esc(forumBranchParam)}) حتى الآن.</p>`;
+
   const ticketsHtml = (state.tickets || []).map(t => `
     <div class="row" style="display:block;">
       <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
         <strong>${esc(t.subject)}</strong>
-        <span class="pill ${t.reply ? "pill-ok" : "pill-warn"}">${t.reply ? "تم الرد" : "قيد المراجعة"}</span>
+        <span class="pill ${t.reply ? "pill-ok" : "pill-warn"}">${t.reply ? `تم الرد (${esc(t.replied_by || "الدعم العلمي")})` : "قيد المراجعة"}</span>
       </div>
       <p class="muted" style="font-size:0.88rem; margin-top:6px;">${esc(t.message)}</p>
       ${t.image_url ? `<img class="ticket-img-thumb" src="${esc(t.image_url)}" alt="صورة السؤال" onerror="this.style.display='none';" />` : ""}
-      ${t.reply ? `<div class="msg-ok" style="margin-top:8px; margin-bottom:0;">رد تيم الدعم العلمي: ${esc(t.reply)}</div>` : ""}
+      ${t.reply ? `<div class="msg-ok" style="margin-top:8px; margin-bottom:0;">رد ${esc(t.replied_by || "تيم الدعم العلمي")}: ${esc(t.reply)}</div>` : ""}
     </div>
   `).join("") || `<p class="muted" style="margin-top:10px;">لم ترسل أسئلة من قبل.</p>`;
 
@@ -2760,7 +2787,8 @@ function renderStudentDash(settings, student, state) {
           </div>
           <div style="display:flex; gap:8px; flex-wrap:wrap;">
             <a class="btn btn-teal btn-sm" href="/student?section=codes">تفعيل / طلب كود (${COURSE_PRICE_EGP} ج)</a>
-            <a class="btn btn-blue btn-sm" href="/student?section=results">عرض نتائجي</a>
+            <a class="btn btn-blue btn-sm" href="/student?section=forum&forum_branch=${encodeURIComponent(BRANCHES[0])}">منتدى الفروع</a>
+            <a class="btn btn-out btn-sm" href="/student?section=results">عرض نتائجي</a>
           </div>
         </div>
       </div>
@@ -2770,6 +2798,62 @@ function renderStudentDash(settings, student, state) {
     `;
   } else if (section === "branch") {
     mainContentHtml = branchDetailHtml;
+  } else if (section === "forum") {
+    mainContentHtml = `
+      <div class="card">
+        <h2 style="font-weight:900; margin-bottom:6px;">منتدى فروع اللغة العربية</h2>
+        <p class="muted" style="font-size:0.88rem; margin-bottom:14px;">اختر فرع اللغة العربية، ثم اكتب مشاركتك أو أرفق صورة ليظهر اسمك ويرد عليك الأدمن أو الأسيستانت.</p>
+
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;">
+          ${BRANCHES.map(br => `
+            <a class="btn ${br === forumBranchParam ? "btn-blue" : "btn-out"} btn-sm" href="/student?section=forum&forum_branch=${encodeURIComponent(br)}">منتدى ${esc(br)}</a>
+          `).join("")}
+        </div>
+
+        <form method="post" action="/student/forum-post" id="studentForumForm">
+          <input type="hidden" name="branch" value="${esc(forumBranchParam)}" />
+          <input type="hidden" name="image_url" id="forumImageData" />
+          <div class="field">
+            <label>مشاركتك أو سؤالك في منتدى ${esc(forumBranchParam)} *</label>
+            <textarea name="message" required placeholder="اكتب ما تريد مشاركته في منتدى ${esc(forumBranchParam)}..."></textarea>
+          </div>
+          <div class="field">
+            <label>إرفاق صورة (اختياري)</label>
+            <input type="file" id="forumImageFile" accept="image/*" />
+            <img id="forumImagePreview" class="ticket-img-thumb" style="display:none;" alt="معاينة صورة المنتدى" />
+          </div>
+          <button type="submit" class="btn btn-blue">نشر في منتدى ${esc(forumBranchParam)}</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3 style="font-weight:900;">مشاركات منتدى ${esc(forumBranchParam)}</h3>
+        ${forumPostsHtml}
+      </div>
+
+      <script>
+        (function () {
+          const fInput = document.getElementById("forumImageFile");
+          const hInput = document.getElementById("forumImageData");
+          const prev = document.getElementById("forumImagePreview");
+          fInput?.addEventListener("change", function () {
+            const file = fInput.files && fInput.files[0];
+            if (!file) {
+              if (hInput) hInput.value = "";
+              if (prev) { prev.src = ""; prev.style.display = "none"; }
+              return;
+            }
+            const r = new FileReader();
+            r.onload = function () {
+              const s = String(r.result || "");
+              if (hInput) hInput.value = s;
+              if (prev) { prev.src = s; prev.style.display = "block"; }
+            };
+            r.readAsDataURL(file);
+          });
+        })();
+      </script>
+    `;
   } else if (section === "codes") {
     mainContentHtml = `
       <div class="card">
@@ -2991,7 +3075,7 @@ function renderStudentDash(settings, student, state) {
     mainContentHtml = `
       <div class="card">
         <h2 style="font-weight:900; margin-bottom:12px;">بيانات الحساب</h2>
-        <div class="row"><span>الاسم الكامل</span><strong>${esc(student.full_name)}</strong></div>
+        <div class="row"><span>الاسم الرباعي</span><strong>${esc(student.full_name)}</strong></div>
         <div class="row"><span>رقم هاتف الطالب</span><strong>${esc(student.phone)}</strong></div>
         <div class="row"><span>رقم هاتف ولي الأمر</span><strong>${esc(student.parent_phone || "-")}</strong></div>
         <div class="row"><span>الصف الدراسي</span><strong>${esc(student.grade)}</strong></div>
@@ -3020,6 +3104,7 @@ function renderStudentDash(settings, student, state) {
       <a class="nav-item-link ${section === "dashboard" ? "active" : ""}" href="/student?section=dashboard"><span>🏠</span><span class="nav-label">الرئيسية</span></a>
       <a class="nav-item-link ${section === "branch" ? "active" : ""}" href="/student?section=branch&branch=${encodeURIComponent(branchParam || BRANCHES[0])}"><span>📖</span><span class="nav-label">فروع اللغة العربية</span></a>
       <div class="sub-nav">${branchSubLinks}</div>
+      <a class="nav-item-link ${section === "forum" ? "active" : ""}" href="/student?section=forum&forum_branch=${encodeURIComponent(forumBranchParam)}"><span>💬</span><span class="nav-label">المنتدى</span></a>
       <a class="nav-item-link ${section === "codes" ? "active" : ""}" href="/student?section=codes"><span>🔑</span><span class="nav-label">تفعيل وطلب كود</span></a>
       <a class="nav-item-link ${(section === "exams" || section === "solve-exam") ? "active" : ""}" href="/student?section=exams"><span>📝</span><span class="nav-label">الواجبات والامتحانات</span></a>
       <a class="nav-item-link ${section === "results" ? "active" : ""}" href="/student?section=results"><span>📊</span><span class="nav-label">نتائجي</span></a>
@@ -3035,28 +3120,52 @@ function renderStudentDash(settings, student, state) {
   </script>`;
 }
 
-function renderAdminPage(settings, isAuthed, data, section, error, notice) {
-  if (!isAuthed) {
+function renderAdminPage(settings, isAuthed, assistantSession, data, section, error, notice) {
+  const isAssistantOnly = Boolean(!isAuthed && assistantSession && assistantSession.role === "assistant");
+  const hasStaffAccess = Boolean(isAuthed || isAssistantOnly);
+  const currentActorName = isAuthed
+    ? "الأدمن"
+    : (assistantSession ? String(assistantSession.assistant_name || "أسيستانت") : "");
+
+  if (!hasStaffAccess) {
     return `
-    <div class="card" style="max-width:460px; margin:28px auto;">
-      <h2 style="font-weight:900; margin-bottom:8px;">دخول لوحة تحكم الأدمن</h2>
-      <p class="muted" style="font-size:0.86rem; margin-bottom:14px;">أدخل بيانات الإدارة لفتح اللوحة من أي جهاز وفي نفس الوقت.</p>
+    <div class="card" style="max-width:520px; margin:28px auto;">
+      <h2 style="font-weight:900; margin-bottom:8px;">دخول الأدمن والأسيستانت</h2>
+      <p class="muted" style="font-size:0.86rem; margin-bottom:14px;">يمكن للأدمن تسجيل الدخول بالبريد وكلمة المرور، أو للأسيستانت الدخول بالاسم والكود المخصص مباشرة إلى تيم الدعم العلمي والمنتدى.</p>
       ${error ? `<div class="msg-err">${esc(error)}</div>` : ""}
-      <form method="post" action="/admin/login" autocomplete="off">
+
+      <form method="post" action="/admin/login" autocomplete="off" style="margin-bottom:18px;">
+        <h3 style="font-weight:900; font-size:0.98rem; margin-bottom:8px;">دخول الأدمن</h3>
         <div class="field"><label>البريد الإلكتروني</label><input name="email" type="email" required autocomplete="off" placeholder="mohmed@mr.com" /></div>
         <div class="field"><label>كلمة المرور</label><input name="password" type="password" required autocomplete="new-password" placeholder="••••••••" /></div>
         <button type="submit" class="btn btn-blue" style="width:100%;">دخول الأدمن</button>
       </form>
+
+      <hr style="border:none; border-top:1px solid var(--bdr); margin:16px 0;" />
+
+      <form method="post" action="/assistant/login" autocomplete="off">
+        <h3 style="font-weight:900; font-size:0.98rem; margin-bottom:8px;">دخول الأسيستانت بالاسم والكود</h3>
+        <div class="field"><label>اسم الأسيستانت *</label><input name="assistant_name" type="text" required autocomplete="off" placeholder="اكتب اسمك..." /></div>
+        <div class="field"><label>كود الأسيستانت *</label><input name="assistant_code" type="text" required autocomplete="off" placeholder="مثال: AST-XXXXXX" /></div>
+        <button type="submit" class="btn btn-teal" style="width:100%;">دخول الأسيستانت إلى تيم الدعم العلمي</button>
+      </form>
     </div>`;
   }
 
-  const activeSec = section || "students";
+  const activeSec = isAssistantOnly
+    ? (["tickets", "forum", "support"].includes(section) ? section : "tickets")
+    : (section || "students");
+
   const allLectures = sortLectures(data.lectures || []);
   const allExams = data.exams || [];
   const allSubmissions = data.submissions || [];
   const allWatched = data.watched || [];
   const allStudents = data.students || [];
   const allDiscounts = data.discounts || [];
+  const allAssistants = data.assistants || [];
+  const allForumPosts = (data.forumPosts || []).slice().sort((a, b) =>
+    String(b.created_at || "").localeCompare(String(a.created_at || ""))
+  );
   const allSupportThreads = (data.supportThreads || []).slice().sort((a, b) =>
     String(b.updated_at || "").localeCompare(String(a.updated_at || ""))
   );
@@ -3076,6 +3185,22 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
       </div>
     </div>
   `).join("") || `<p class="muted">لا توجد أكواد مولدة بعد.</p>`;
+
+  const assistantRows = allAssistants.slice().reverse().map(a => `
+    <div class="row">
+      <div>
+        <strong>${esc(a.name)}</strong> — <span class="pill pill-ok">${esc(a.code)}</span>
+        <div class="muted" style="font-size:0.8rem;">يدخل بالاسم والكود إلى تيم الدعم العلمي والمنتدى وتظهر ردوده باسمه.</div>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button type="button" class="btn btn-out btn-sm copy-code-btn" data-code="${esc(a.code)}">نسخ الكود</button>
+        <form method="post" action="/admin/delete-assistant" style="margin:0;">
+          <input type="hidden" name="assistant_id" value="${esc(a.id)}" />
+          <button type="submit" class="btn btn-red btn-sm">حذف</button>
+        </form>
+      </div>
+    </div>
+  `).join("") || `<p class="muted">لا توجد أكواد أسيستانت مولدة بعد.</p>`;
 
   const discountsRows = allDiscounts.slice().reverse().map(d => `
     <div class="row">
@@ -3142,23 +3267,43 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
     <div class="row" style="display:block;">
       <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
         <strong>${esc(t.subject)}</strong>
-        <span class="muted" style="font-size:0.8rem;">${esc(t.student_name || "")} (${esc(t.student_phone || "")})</span>
+        <span class="pill pill-ok">الطالب: ${esc(t.student_name || "")} (${esc(t.student_phone || "")})</span>
       </div>
       <p style="margin:6px 0; font-size:0.88rem;">${esc(t.message)}</p>
       ${t.image_url ? `<img class="ticket-img-thumb" src="${esc(t.image_url)}" alt="صورة السؤال" onerror="this.style.display='none';" />` : ""}
       <form method="post" action="/admin/reply-ticket" style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
         <input type="hidden" name="ticket_id" value="${esc(t.id)}" />
-        <input name="reply" type="text" value="${esc(t.reply || "")}" placeholder="اكتب رد تيم الدعم العلمي هنا..." style="flex:1; min-width:220px;" />
-        <button type="submit" class="btn btn-teal btn-sm">حفظ الرد</button>
+        <input name="reply" type="text" value="${esc(t.reply || "")}" placeholder="اكتب رد ${esc(currentActorName)} هنا..." style="flex:1; min-width:220px;" />
+        <button type="submit" class="btn btn-teal btn-sm">حفظ الرد باسم (${esc(currentActorName)})</button>
       </form>
     </div>
   `).join("") || `<p class="muted">لا توجد أسئلة من الطلاب حالياً.</p>`;
+
+  const adminForumRows = allForumPosts.map(p => `
+    <div class="row" style="display:block;">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+        <div>
+          <span class="pill pill-ok">${esc(p.branch || "فرع")}</span>
+          <strong style="margin-right:6px;">الطالب: ${esc(p.student_name || "")}</strong>
+          <span class="muted" style="font-size:0.8rem;">(${esc(p.student_phone || "")})</span>
+        </div>
+        <span class="muted" style="font-size:0.78rem;">${esc((p.created_at || "").slice(0, 16).replace("T", " "))}</span>
+      </div>
+      <p style="margin:8px 0; font-size:0.9rem;">${esc(p.message || "")}</p>
+      ${p.image_url ? `<img class="ticket-img-thumb" src="${esc(p.image_url)}" alt="صورة المنتدى" onerror="this.style.display='none';" />` : ""}
+      <form method="post" action="/admin/reply-forum" style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
+        <input type="hidden" name="post_id" value="${esc(p.id)}" />
+        <input type="text" name="reply" value="${esc(p.reply || "")}" placeholder="اكتب ردك في المنتدى باسم ${esc(currentActorName)}..." style="flex:1; min-width:220px;" />
+        <button type="submit" class="btn btn-blue btn-sm">رد باسم (${esc(currentActorName)})</button>
+      </form>
+    </div>
+  `).join("") || `<p class="muted">لا توجد مشاركات في المنتدى حتى الآن.</p>`;
 
   const supportRows = allSupportThreads.map(th => {
     const msgs = Array.isArray(th.messages) ? th.messages : [];
     const msgsHtml = msgs.map(m => `
       <div class="${m.sender === "admin" ? "chat-bubble-admin" : "chat-bubble-user"}" style="margin-top:6px;">
-        <div style="font-size:0.72rem; opacity:0.82;">${m.sender === "admin" ? "رد الأدمن" : esc(th.visitor_name || "مستخدم")}</div>
+        <div style="font-size:0.72rem; opacity:0.82;">${m.sender === "admin" ? ("رد " + esc(m.sender_name || "الأدمن")) : esc(th.visitor_name || "مستخدم")}</div>
         ${m.text ? `<div>${esc(m.text)}</div>` : ""}
         ${m.image_url ? `<img class="chat-msg-img" src="${esc(m.image_url)}" alt="صورة مرفقة" />` : ""}
       </div>
@@ -3178,7 +3323,7 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
         </div>
         <form method="post" action="/admin/support-reply" style="display:flex; gap:8px; flex-wrap:wrap;">
           <input type="hidden" name="session_id" value="${esc(th.id)}" />
-          <input type="text" name="reply_text" required placeholder="اكتب رد الدعم الفني هنا..." style="flex:1; min-width:220px;" />
+          <input type="text" name="reply_text" required placeholder="اكتب رد الدعم الفني باسم ${esc(currentActorName)}..." style="flex:1; min-width:220px;" />
           <button type="submit" class="btn btn-blue btn-sm">إرسال الرد</button>
         </form>
       </div>
@@ -3190,12 +3335,29 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
     sectionHtml = `
       <div style="margin-bottom:10px;">
         <h3 style="font-weight:900;">الدعم الفني</h3>
-        <p class="muted" style="font-size:0.86rem;">رسائل وصور الدعم الفني الواردة من الشات المباشر والرد عليها.</p>
+        <p class="muted" style="font-size:0.86rem;">رسائل وصور الدعم الفني الواردة من الشات المباشر والرد عليها باسم (${esc(currentActorName)}).</p>
       </div>
       ${supportRows}
     `;
+  } else if (activeSec === "forum") {
+    sectionHtml = `
+      <div class="card">
+        <h3 style="font-weight:900; margin-bottom:10px;">منتدى فروع اللغة العربية — متابعة والرد باسم (${esc(currentActorName)})</h3>
+        ${adminForumRows}
+      </div>
+    `;
   } else if (activeSec === "codes") {
     sectionHtml = `
+      <div class="card">
+        <h3 style="font-weight:900; margin-bottom:10px;">إضافة اسم الأسيستانت وتوليد كود دخول له</h3>
+        <p class="muted" style="font-size:0.84rem; margin-bottom:12px;">اكتب اسم الأسيستانت ليُستخرج له كود خاص يدخل به إلى تيم الدعم العلمي وتظهر ردوده باسمه.</p>
+        <form method="post" action="/admin/create-assistant" class="grid2">
+          <div class="field"><label>اسم الأسيستانت *</label><input name="assistant_name" type="text" required placeholder="مثال: أستاذة آية / محمود" /></div>
+          <div class="field" style="display:flex; align-items:flex-end;"><button type="submit" class="btn btn-teal" style="width:100%;">استخراج كود للأسيستانت</button></div>
+        </form>
+        <div style="margin-top:12px;">${assistantRows}</div>
+      </div>
+
       <div class="card">
         <h3 style="font-weight:900; margin-bottom:10px;">توليد أكواد (سنتر لمرة واحدة / فروع)</h3>
         <form method="post" action="/admin/generate-codes" class="grid3">
@@ -3693,7 +3855,7 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
                   '<button type="button" class="btn btn-out btn-sm" id="closeStudentProfileBtn">إغلاق</button>' +
                 '</div>' +
               '</div>' +
-              '<div class="row"><span>الاسم</span><strong>' + escHtml(st.full_name) + '</strong></div>' +
+              '<div class="row"><span>الاسم الرباعي</span><strong>' + escHtml(st.full_name) + '</strong></div>' +
               '<div class="row"><span>رقمه</span><strong>' + escHtml(st.phone) + '</strong></div>' +
               '<div class="row"><span>رقم ولي أمره</span><strong>' + escHtml(st.parent_phone) + '</strong></div>' +
               '<div class="row"><span>محافظته</span><strong>' + escHtml(st.governorate) + '</strong></div>' +
@@ -3856,7 +4018,7 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
   } else if (activeSec === "tickets") {
     sectionHtml = `
       <div class="card">
-        <h3 style="font-weight:900; margin-bottom:10px;">تيم الدعم العلمي — أسئلة الطلاب والرد عليها</h3>
+        <h3 style="font-weight:900; margin-bottom:10px;">تيم الدعم العلمي — أسئلة الطلاب والرد عليها باسم (${esc(currentActorName)})</h3>
         ${ticketsRows}
       </div>
     `;
@@ -3892,12 +4054,22 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
       ${error ? `<div class="msg-err">${esc(error)}</div>` : ""}
       ${notice ? `<div class="msg-ok">${esc(notice)}</div>` : ""}
 
-      <div class="kpi-grid">
-        <div class="kpi-card"><div><div class="kpi-num">${allStudents.length}</div><div class="kpi-lbl">طلاب المنصة</div></div><div class="kpi-icon-box">👨‍🎓</div></div>
-        <div class="kpi-card teal-kpi"><div><div class="kpi-num">${allLectures.length}</div><div class="kpi-lbl">المحاضرات</div></div><div class="kpi-icon-box">🎥</div></div>
-        <div class="kpi-card gold-kpi"><div><div class="kpi-num">${allExams.length}</div><div class="kpi-lbl">الواجبات والاختبارات</div></div><div class="kpi-icon-box">📝</div></div>
-        <div class="kpi-card teal-kpi"><div><div class="kpi-num">${allSupportThreads.length}</div><div class="kpi-lbl">دعم فني</div></div><div class="kpi-icon-box">💬</div></div>
+      <div class="card" style="padding:14px 18px; display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+        <div>
+          <span class="pill pill-ok">${isAuthed ? "وضع الأدمن الكامل" : "وضع الأسيستانت"}</span>
+          <strong style="margin-right:8px;">المستخدم الحالي: ${esc(currentActorName)}</strong>
+        </div>
+        <button type="button" class="btn btn-gold btn-sm" id="enableStaffPushBtn">تفعيل إشعارات المتصفح الفورية</button>
       </div>
+
+      ${isAuthed ? `
+        <div class="kpi-grid">
+          <div class="kpi-card"><div><div class="kpi-num">${allStudents.length}</div><div class="kpi-lbl">طلاب المنصة</div></div><div class="kpi-icon-box">👨‍🎓</div></div>
+          <div class="kpi-card teal-kpi"><div><div class="kpi-num">${allLectures.length}</div><div class="kpi-lbl">المحاضرات</div></div><div class="kpi-icon-box">🎥</div></div>
+          <div class="kpi-card gold-kpi"><div><div class="kpi-num">${allExams.length}</div><div class="kpi-lbl">الواجبات والاختبارات</div></div><div class="kpi-icon-box">📝</div></div>
+          <div class="kpi-card teal-kpi"><div><div class="kpi-num">${allSupportThreads.length}</div><div class="kpi-lbl">دعم فني</div></div><div class="kpi-icon-box">💬</div></div>
+        </div>
+      ` : ""}
 
       ${sectionHtml}
     </div>
@@ -3907,17 +4079,60 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
         <span class="drawer-title" style="font-weight:900; font-size:0.92rem;">إدارة ${PLATFORM_NAME}</span>
         <button type="button" class="collapse-btn" onclick="document.getElementById('adminShell')?.classList.toggle('collapsed')">⇄</button>
       </div>
-      <a class="nav-item-link ${activeSec === "students" ? "active" : ""}" href="/admin?section=students"><span>👨‍🎓</span><span class="nav-label">طلاب المنصة</span></a>
-      <a class="nav-item-link ${activeSec === "center_students" ? "active" : ""}" href="/admin?section=center_students"><span>🏫</span><span class="nav-label">طلاب السنتر</span></a>
-      <a class="nav-item-link ${activeSec === "ranking" ? "active" : ""}" href="/admin?section=ranking"><span>🏆</span><span class="nav-label">ترتيب الطلاب</span></a>
-      <a class="nav-item-link ${activeSec === "lectures" ? "active" : ""}" href="/admin?section=lectures"><span>🎥</span><span class="nav-label">إضافة محاضرة</span></a>
-      <a class="nav-item-link ${activeSec === "codes" ? "active" : ""}" href="/admin?section=codes"><span>🔑</span><span class="nav-label">الأكواد والخصومات</span></a>
-      <a class="nav-item-link ${activeSec === "exams" ? "active" : ""}" href="/admin?section=exams"><span>📝</span><span class="nav-label">الواجبات والاختبارات</span></a>
+      ${isAuthed ? `
+        <a class="nav-item-link ${activeSec === "students" ? "active" : ""}" href="/admin?section=students"><span>👨‍🎓</span><span class="nav-label">طلاب المنصة</span></a>
+        <a class="nav-item-link ${activeSec === "center_students" ? "active" : ""}" href="/admin?section=center_students"><span>🏫</span><span class="nav-label">طلاب السنتر</span></a>
+        <a class="nav-item-link ${activeSec === "ranking" ? "active" : ""}" href="/admin?section=ranking"><span>🏆</span><span class="nav-label">ترتيب الطلاب</span></a>
+        <a class="nav-item-link ${activeSec === "lectures" ? "active" : ""}" href="/admin?section=lectures"><span>🎥</span><span class="nav-label">إضافة محاضرة</span></a>
+        <a class="nav-item-link ${activeSec === "codes" ? "active" : ""}" href="/admin?section=codes"><span>🔑</span><span class="nav-label">الأكواد والخصومات</span></a>
+        <a class="nav-item-link ${activeSec === "exams" ? "active" : ""}" href="/admin?section=exams"><span>📝</span><span class="nav-label">الواجبات والاختبارات</span></a>
+      ` : ""}
       <a class="nav-item-link ${activeSec === "tickets" ? "active" : ""}" href="/admin?section=tickets"><span>❓</span><span class="nav-label">تيم الدعم العلمي</span></a>
-      <a class="nav-item-link ${activeSec === "support" ? "active" : ""}" href="/admin?section=support"><span>💬</span><span class="nav-label">دعم فني</span></a>
-      <a class="nav-item-link ${activeSec === "settings" ? "active" : ""}" href="/admin?section=settings"><span>⚙️</span><span class="nav-label">الإعدادات والإشعار</span></a>
+      <a class="nav-item-link ${activeSec === "forum" ? "active" : ""}" href="/admin?section=forum"><span>💬</span><span class="nav-label">المنتدى</span></a>
+      <a class="nav-item-link ${activeSec === "support" ? "active" : ""}" href="/admin?section=support"><span>🎧</span><span class="nav-label">دعم فني</span></a>
+      ${isAuthed ? `
+        <a class="nav-item-link ${activeSec === "settings" ? "active" : ""}" href="/admin?section=settings"><span>⚙️</span><span class="nav-label">الإعدادات والإشعار</span></a>
+      ` : ""}
     </aside>
-  </div>`;
+  </div>
+
+  <script>
+    (function () {
+      const pushBtn = document.getElementById("enableStaffPushBtn");
+      pushBtn?.addEventListener("click", async function () {
+        if (!("Notification" in window)) {
+          alert("هذا المتصفح لا يدعم إشعارات الويب.");
+          return;
+        }
+        const perm = await Notification.requestPermission();
+        if (perm === "granted") {
+          new Notification("${PLATFORM_NAME} — تم تفعيل الإشعارات", {
+            body: "سيصلك تنبيه فوري عند وصول سؤال أو مشاركة جديدة من الطلاب."
+          });
+        }
+      });
+
+      let lastAlertKey = localStorage.getItem("nb_staff_last_alert") || "";
+      async function pollStaffAlerts() {
+        try {
+          const res = await fetch("/api/staff/alerts");
+          if (!res.ok) return;
+          const d = await res.json();
+          if (d.latest_key && d.latest_key !== lastAlertKey) {
+            lastAlertKey = d.latest_key;
+            localStorage.setItem("nb_staff_last_alert", lastAlertKey);
+            if ("Notification" in window && Notification.permission === "granted") {
+              new Notification(d.title || "رسالة جديدة من طالب", {
+                body: d.body || "يوجد سؤال أو رسالة جديدة من طالب."
+              });
+            }
+          }
+        } catch {}
+      }
+      pollStaffAlerts();
+      setInterval(pollStaffAlerts, 8000);
+    })();
+  </script>`;
 }
 
 async function parseFormBody(req) {
@@ -3967,7 +4182,11 @@ export default {
     const settings = await getSettings(env);
     const stCookie = parseToken(getCookie(req, "nb_st"), secret);
     const admCookie = parseToken(getCookie(req, "nb_adm"), secret);
+    const astCookie = parseToken(getCookie(req, "nb_ast"), secret);
     const isAdmin = Boolean(admCookie && admCookie.role === "admin");
+    const assistantSession = (!isAdmin && astCookie && astCookie.role === "assistant") ? astCookie : null;
+    const hasStaffAccess = Boolean(isAdmin || assistantSession);
+    const currentActorName = isAdmin ? "الأدمن" : (assistantSession ? String(assistantSession.assistant_name || "أسيستانت") : "");
 
     let student = null;
     if (stCookie && stCookie.phone) {
@@ -3986,6 +4205,22 @@ export default {
             href: "/student?section=tickets"
           }))
       : [];
+
+    if (path === "/api/staff/alerts" && method === "GET") {
+      if (!hasStaffAccess) {
+        return new Response(JSON.stringify({ latest_key: "" }), {
+          headers: { "Content-Type": "application/json; charset=utf-8" }
+        });
+      }
+      const alertDoc = await fsGet(env, "staff_alerts", "latest");
+      return new Response(JSON.stringify({
+        latest_key: alertDoc?.latest_key || "",
+        title: alertDoc?.title || "",
+        body: alertDoc?.body || ""
+      }), {
+        headers: { "Content-Type": "application/json; charset=utf-8" }
+      });
+    }
 
     if (path === "/api/support/thread" && method === "GET") {
       const sid = String(url.searchParams.get("session_id") || "").trim();
@@ -4047,9 +4282,15 @@ export default {
         msgs.push({
           id: msgId,
           sender: "user",
+          sender_name: visitorName || existing.visitor_name || "زائر",
           text,
           image_url: imageUrl,
           at: new Date().toISOString()
+        });
+        await fsSet(env, "staff_alerts", "latest", {
+          latest_key: `sup_${msgId}`,
+          title: `رسالة دعم فني من: ${visitorName || existing.visitor_name || "زائر"}`,
+          body: text || "أرسل صورة في الدعم الفني"
         });
       }
 
@@ -4094,12 +4335,12 @@ export default {
 
     if (path === "/logout") {
       return redirectRes("/student?tab=login", {
-        "Set-Cookie": `${clearCookieHeader("nb_st")}, ${clearCookieHeader("nb_adm")}`
+        "Set-Cookie": `${clearCookieHeader("nb_st")}, ${clearCookieHeader("nb_adm")}, ${clearCookieHeader("nb_ast")}`
       });
     }
 
     if (path === "/about" && method === "GET") {
-      return htmlRes(renderLayout("من نحن", settings, student, isAdmin, renderAboutStandalonePage(settings), {
+      return htmlRes(renderLayout("من نحن", settings, student, hasStaffAccess, renderAboutStandalonePage(settings), {
         showLandingAdminAvatar: false,
         showSupportWidget: true,
         academicUnreadCount: academicUnreadItems.length,
@@ -4108,7 +4349,7 @@ export default {
     }
 
     if (path === "/privacy" && method === "GET") {
-      return htmlRes(renderLayout("سياسة الخصوصية", settings, student, isAdmin, renderPrivacyStandalonePage(), {
+      return htmlRes(renderLayout("سياسة الخصوصية", settings, student, hasStaffAccess, renderPrivacyStandalonePage(), {
         showLandingAdminAvatar: false,
         showSupportWidget: true,
         academicUnreadCount: academicUnreadItems.length,
@@ -4117,7 +4358,7 @@ export default {
     }
 
     if (path === "/" && method === "GET") {
-      return htmlRes(renderLayout("الرئيسية", settings, student, isAdmin, renderLanding(settings), {
+      return htmlRes(renderLayout("الرئيسية", settings, student, hasStaffAccess, renderLanding(settings), {
         showLandingAdminAvatar: true,
         showSupportWidget: true,
         academicUnreadCount: academicUnreadItems.length,
@@ -4132,13 +4373,14 @@ export default {
         first_name: url.searchParams.get("first_name") || "",
         second_name: url.searchParams.get("second_name") || "",
         third_name: url.searchParams.get("third_name") || "",
+        fourth_name: url.searchParams.get("fourth_name") || "",
         phone: url.searchParams.get("phone") || ""
       };
       const error = url.searchParams.get("error") || "";
       const notice = url.searchParams.get("notice") || "";
 
       if (!student) {
-        return htmlRes(renderLayout("بوابة الطالب", settings, null, isAdmin, renderStudentAuth(settings, tab, step, draft, error, notice), {
+        return htmlRes(renderLayout("بوابة الطالب", settings, null, hasStaffAccess, renderStudentAuth(settings, tab, step, draft, error, notice), {
           showSupportWidget: true,
           academicUnreadCount: 0,
           academicUnreadItems: []
@@ -4154,13 +4396,14 @@ export default {
         });
       }
 
-      const [lectures, exams, submissions, drafts, watched, discounts] = await Promise.all([
+      const [lectures, exams, submissions, drafts, watched, discounts, forumPosts] = await Promise.all([
         fsList(env, "lectures"),
         fsList(env, "exams"),
         fsList(env, "submissions"),
         fsList(env, "exam_drafts"),
         fsList(env, "watched_lectures"),
-        fsList(env, "discount_codes")
+        fsList(env, "discount_codes"),
+        fsList(env, "forum_posts")
       ]);
 
       const myTickets = allTickets.filter(t => t.student_phone === student.phone);
@@ -4171,6 +4414,7 @@ export default {
       const dashHtml = renderStudentDash(settings, student, {
         section: url.searchParams.get("section") || "dashboard",
         branch: url.searchParams.get("branch") || "",
+        forumBranch: url.searchParams.get("forum_branch") || BRANCHES[0],
         lectureId: lectureIdParam,
         examId: url.searchParams.get("exam_id") || "",
         lectures,
@@ -4180,14 +4424,43 @@ export default {
         drafts: myDrafts,
         watched: myWatched,
         discounts,
+        forumPosts,
         error,
         notice
       });
-      return htmlRes(renderLayout("لوحة الطالب", settings, student, isAdmin, dashHtml, {
+      return htmlRes(renderLayout("لوحة الطالب", settings, student, hasStaffAccess, dashHtml, {
         showSupportWidget: true,
         academicUnreadCount: academicUnreadItems.length,
         academicUnreadItems
       }));
+    }
+
+    if (path === "/student/forum-post" && method === "POST") {
+      if (!student) return redirectRes("/student?tab=login");
+      const form = await parseFormBody(req);
+      const branch = String(form.branch || BRANCHES[0]);
+      const message = String(form.message || "").trim();
+      const imageUrl = String(form.image_url || "").trim();
+      if (!message && !imageUrl) {
+        return redirectRes(`/student?section=forum&forum_branch=${encodeURIComponent(branch)}&error=${encodeURIComponent("اكتب مشاركة أو أرفق صورة")}`);
+      }
+      const id = "fp_" + Date.now();
+      await fsSet(env, "forum_posts", id, {
+        branch,
+        student_phone: student.phone,
+        student_name: student.full_name,
+        message,
+        image_url: imageUrl,
+        reply: "",
+        replied_by: "",
+        created_at: new Date().toISOString()
+      });
+      await fsSet(env, "staff_alerts", "latest", {
+        latest_key: `fp_${id}`,
+        title: `منتدى ${branch} — من الطالب: ${student.full_name}`,
+        body: message || "أرسل صورة في المنتدى"
+      });
+      return redirectRes(`/student?section=forum&forum_branch=${encodeURIComponent(branch)}&notice=${encodeURIComponent("تم نشر مشاركتك في المنتدى")}`);
     }
 
     if (path === "/student/login" && method === "POST") {
@@ -4214,7 +4487,7 @@ export default {
       const rawPass = String(form.password || "").trim();
 
       if (!centerCode || !name || !phone || !rawPass) {
-        return redirectRes(`/student?tab=center&error=${encodeURIComponent("يرجى إدخال كود السنتر والاسم ورقم الهاتف وكلمة السر")}`);
+        return redirectRes(`/student?tab=center&error=${encodeURIComponent("يرجى إدخال كود السنتر والاسم الرباعي ورقم الهاتف وكلمة السر")}`);
       }
 
       const codeDoc = await fsGet(env, "codes", centerCode);
@@ -4312,12 +4585,24 @@ export default {
       const form = await parseFormBody(req);
       const code = String(form.code || "").trim();
       const codeDoc = await fsGet(env, "codes", code);
-      if (!codeDoc || codeDoc.type !== "branch" || codeDoc.used) {
-        return redirectRes(`/student?section=codes&error=${encodeURIComponent("كود الفرع غير صحيح أو مستخدم من قبل")}`);
+      if (!codeDoc || codeDoc.used) {
+        return redirectRes(`/student?section=codes&error=${encodeURIComponent("الكود غير صحيح أو مستخدم من قبل")}`);
       }
-      const branches = Array.from(new Set([...(student.branches || []), codeDoc.branch]));
-      await fsSet(env, "students", student.phone, { ...student, branches });
+
+      if (codeDoc.type === "center") {
+        await fsSet(env, "codes", code, { ...codeDoc, used: true, used_by: student.phone });
+        await fsSet(env, "students", student.phone, {
+          ...student,
+          branches: [...BRANCHES],
+          is_center_student: true,
+          center_code: code
+        });
+        return redirectRes(`/student?section=dashboard&notice=${encodeURIComponent("تم تفعيل المنصة وكل الفروع بكود السنتر")}`);
+      }
+
+      const nextBranches = Array.from(new Set([...(student.branches || []), codeDoc.branch]));
       await fsSet(env, "codes", code, { ...codeDoc, used: true, used_by: student.phone });
+      await fsSet(env, "students", student.phone, { ...student, branches: nextBranches });
       return redirectRes(`/student?section=branch&branch=${encodeURIComponent(codeDoc.branch)}&notice=${encodeURIComponent("تم تفعيل الفرع بنجاح")}`);
     }
 
@@ -4327,70 +4612,67 @@ export default {
       const examId = String(form.exam_id || "");
       const actionType = String(form.action_type || "finish");
       const exam = await fsGet(env, "exams", examId);
-      if (!exam) return redirectRes(`/student?section=exams&error=${encodeURIComponent("الواجب أو الاختبار غير موجود")}`);
+      if (!exam) return redirectRes(`/student?section=exams&error=${encodeURIComponent("الواجب غير موجود")}`);
 
-      const subDocId = `${student.phone}_${examId}`;
-      const alreadyDone = await fsGet(env, "submissions", subDocId);
-      if (alreadyDone) {
-        return redirectRes(`/student?section=results&notice=${encodeURIComponent("تم تسليم هذا الواجب مسبقاً")}`);
-      }
-
-      const qs = Array.isArray(exam.questions) ? exam.questions : [];
-      const answers = qs.map((_, idx) => {
-        const raw = form["q_" + idx];
-        return raw === undefined || raw === "" ? -1 : Number(raw);
+      const questions = Array.isArray(exam.questions) ? exam.questions : [];
+      const answers = questions.map((_, i) => {
+        const v = form[`q_${i}`];
+        return v !== undefined && v !== "" ? Number(v) : -1;
       });
 
+      const draftDocId = `${student.phone}_${examId}`;
+
       if (actionType === "save") {
-        await fsSet(env, "exam_drafts", subDocId, {
+        await fsSet(env, "exam_drafts", draftDocId, {
           student_phone: student.phone,
           exam_id: examId,
           answers,
           updated_at: new Date().toISOString()
         });
-        const backTarget = exam.branch
-          ? `/student?section=branch&branch=${encodeURIComponent(exam.branch)}&notice=${encodeURIComponent("تم حفظ إجاباتك لاستكمال الواجب لاحقاً")}`
-          : `/student?section=exams&notice=${encodeURIComponent("تم حفظ إجاباتك لاستكمال الواجب لاحقاً")}`;
-        return redirectRes(backTarget);
+        return redirectRes(`/student?section=exams&notice=${encodeURIComponent("تم حفظ تقدمك في الواجب، يمكنك استكماله لاحقاً")}`);
+      }
+
+      const existingSub = await fsGet(env, "submissions", draftDocId);
+      if (existingSub) {
+        return redirectRes(`/student?section=results&error=${encodeURIComponent("لقد قمت بتسليم هذا الواجب مسبقاً ولا يمكن حله مرة أخرى")}`);
       }
 
       let score = 0;
-      const details = qs.map((q, idx) => {
-        const chosenIdx = answers[idx];
-        const correctIdx = Number(q.correct_idx);
+      const details = questions.map((q, i) => {
         const opts = Array.isArray(q.options) ? q.options : [];
+        const chosenIdx = answers[i];
+        const correctIdx = Number(q.correct_idx ?? 0);
         const isCorrect = chosenIdx === correctIdx;
         if (isCorrect) score++;
         return {
           question: String(q.text || ""),
-          student_answer: chosenIdx >= 0 && opts[chosenIdx] !== undefined ? String(opts[chosenIdx]) : "لم تُجب",
-          correct_answer: opts[correctIdx] !== undefined ? String(opts[correctIdx]) : "",
+          student_answer: chosenIdx >= 0 && chosenIdx < opts.length ? String(opts[chosenIdx]) : "لم تُجب",
+          correct_answer: correctIdx >= 0 && correctIdx < opts.length ? String(opts[correctIdx]) : "",
           is_correct: isCorrect
         };
       });
 
-      const total = qs.length;
+      const total = questions.length;
       const wrongCount = Math.max(0, total - score);
-      const pct = total > 0 ? Math.round((score / total) * 100) : 0;
+      const pct = total > 0 ? Math.round((score / total) * 100) : 100;
 
-      await fsSet(env, "submissions", subDocId, {
+      await fsSet(env, "submissions", draftDocId, {
         student_phone: student.phone,
         student_name: student.full_name,
         exam_id: examId,
-        exam_title: exam.title || "واجب / اختبار",
+        exam_title: exam.title,
         branch: exam.branch || "عام",
-        lecture_id: exam.lecture_id || "",
         score,
         wrong_count: wrongCount,
         total,
         pct,
         details,
-        date: new Date().toISOString()
+        submitted_at: new Date().toISOString()
       });
 
-      await fsDelete(env, "exam_drafts", subDocId);
+      await fsDelete(env, "exam_drafts", draftDocId);
 
-      return redirectRes(`/student?section=results&notice=${encodeURIComponent(`تم تسليم الواجب بنجاح — نتيجتك: ${pct}% (${score} من ${total})`)}`);
+      return redirectRes(`/student?section=results&notice=${encodeURIComponent(`تم تسليم الواجب بنجاح (${score} من ${total} • ${pct}%)`)}`);
     }
 
     if (path === "/student/tickets" && method === "POST") {
@@ -4400,7 +4682,7 @@ export default {
       const message = String(form.message || "").trim();
       const imageUrl = String(form.image_url || "").trim();
       if (!subject || !message) {
-        return redirectRes(`/student?section=tickets&error=${encodeURIComponent("اكتب عنوان السؤال والتفاصيل")}`);
+        return redirectRes(`/student?section=tickets&error=${encodeURIComponent("اكتب عنوان السؤال وتفاصيله")}`);
       }
       const id = "t_" + Date.now();
       await fsSet(env, "tickets", id, {
@@ -4410,95 +4692,132 @@ export default {
         message,
         image_url: imageUrl,
         reply: "",
+        replied_by: "",
         created_at: new Date().toISOString()
       });
-      return redirectRes(`/student?section=tickets&notice=${encodeURIComponent("تم إرسال سؤالك إلى تيم الدعم العلمي بنجاح")}`);
+      await fsSet(env, "staff_alerts", "latest", {
+        latest_key: `t_${id}`,
+        title: `سؤال جديد في تيم الدعم العلمي من: ${student.full_name}`,
+        body: subject
+      });
+      return redirectRes(`/student?section=tickets&notice=${encodeURIComponent("تم إرسال سؤالك إلى تيم الدعم العلمي")}`);
     }
 
     if (path === "/admin" && method === "GET") {
-      const error = url.searchParams.get("error") || "";
+      const sec = url.searchParams.get("section") || (hasStaffAccess ? (isAdmin ? "students" : "tickets") : "");
+      const err = url.searchParams.get("error") || "";
       const notice = url.searchParams.get("notice") || "";
-      const section = url.searchParams.get("section") || "students";
-      const preselectLectureId = url.searchParams.get("lecture_id") || "";
-      const rankingGrade = url.searchParams.get("rank_grade") || GRADES[0];
       let data = {};
-
-      if (isAdmin) {
-        const [codes, lectures, exams, students, submissions, watched, supportThreads, discounts] = await Promise.all([
+      if (hasStaffAccess) {
+        const [students, codes, lectures, exams, submissions, watched, tickets, discounts, assistants, forumPosts, supportThreads] = await Promise.all([
+          fsList(env, "students"),
           fsList(env, "codes"),
           fsList(env, "lectures"),
           fsList(env, "exams"),
-          fsList(env, "students"),
           fsList(env, "submissions"),
           fsList(env, "watched_lectures"),
-          fsList(env, "support_chats"),
-          fsList(env, "discount_codes")
+          fsList(env, "tickets"),
+          fsList(env, "discount_codes"),
+          fsList(env, "assistants"),
+          fsList(env, "forum_posts"),
+          fsList(env, "support_chats")
         ]);
-        data = { codes, lectures, exams, students, tickets: allTickets, submissions, watched, supportThreads, discounts, preselectLectureId, rankingGrade };
+        data = {
+          students,
+          codes,
+          lectures,
+          exams,
+          submissions,
+          watched,
+          tickets,
+          discounts,
+          assistants,
+          forumPosts,
+          supportThreads,
+          preselectLectureId: url.searchParams.get("lecture_id") || "",
+          rankingGrade: url.searchParams.get("rank_grade") || GRADES[0]
+        };
       }
-
-      return htmlRes(renderLayout("لوحة الأدمن", settings, student, isAdmin, renderAdminPage(settings, isAdmin, data, section, error, notice), {
-        showLandingAdminAvatar: false,
-        showSupportWidget: false
+      return htmlRes(renderLayout("لوحة الأدمن والأسيستانت", settings, student, hasStaffAccess, renderAdminPage(settings, isAdmin, assistantSession, data, sec, err, notice), {
+        showSupportWidget: false,
+        academicUnreadCount: 0,
+        academicUnreadItems: []
       }));
     }
 
     if (path === "/admin/login" && method === "POST") {
       const form = await parseFormBody(req);
-      const email = String(form.email || "").trim();
-      const password = String(form.password || "");
-      const ok = await verifyAdminCredentials(env, settings, email, password);
-      if (!ok) {
+      const email = String(form.email || "").trim().toLowerCase();
+      const pass = String(form.password || "");
+      const valid = await verifyAdminCredentials(env, settings, email, pass);
+      if (!valid) {
         return redirectRes(`/admin?error=${encodeURIComponent("بيانات دخول الأدمن غير صحيحة")}`);
       }
-      const tok = makeToken({ role: "admin", email, sid: Date.now() }, secret);
+      const tok = makeToken({ email, role: "admin" }, secret);
       return redirectRes("/admin?section=students", {
-        "Set-Cookie": setCookieHeader("nb_adm", tok)
+        "Set-Cookie": `${setCookieHeader("nb_adm", tok)}, ${clearCookieHeader("nb_ast")}`
       });
     }
 
-    if (!isAdmin) {
-      return redirectRes("/admin");
+    if (path === "/assistant/login" && method === "POST") {
+      const form = await parseFormBody(req);
+      const assistantName = String(form.assistant_name || "").trim();
+      const assistantCode = String(form.assistant_code || "").trim();
+      if (!assistantName || !assistantCode) {
+        return redirectRes(`/admin?error=${encodeURIComponent("اكتب اسم الأسيستانت والكود الخاص به")}`);
+      }
+      const allAssistants = await fsList(env, "assistants");
+      const matched = allAssistants.find(a => String(a.code || "").trim() === assistantCode);
+      if (!matched) {
+        return redirectRes(`/admin?error=${encodeURIComponent("كود الأسيستانت غير صحيح")}`);
+      }
+      const tok = makeToken({
+        role: "assistant",
+        assistant_name: assistantName,
+        assistant_code: assistantCode
+      }, secret);
+      return redirectRes("/admin?section=tickets", {
+        "Set-Cookie": `${setCookieHeader("nb_ast", tok)}, ${clearCookieHeader("nb_adm")}`
+      });
     }
 
-    if (path === "/admin/support-reply" && method === "POST") {
+    if (path === "/admin/create-assistant" && method === "POST") {
+      if (!isAdmin) return redirectRes("/admin");
       const form = await parseFormBody(req);
-      const sid = String(form.session_id || "").trim();
-      const replyText = String(form.reply_text || "").trim();
-      if (sid && replyText) {
-        const doc = await fsGet(env, "support_chats", sid);
-        if (doc) {
-          const msgs = Array.isArray(doc.messages) ? [...doc.messages] : [];
-          const newMsgId = "adm_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6);
-          msgs.push({
-            id: newMsgId,
-            sender: "admin",
-            text: replyText,
-            image_url: "",
-            at: new Date().toISOString()
-          });
-          await fsSet(env, "support_chats", sid, {
-            ...doc,
-            messages: msgs,
-            updated_at: new Date().toISOString()
-          });
-        }
+      const assistantName = String(form.assistant_name || "").trim();
+      if (!assistantName) {
+        return redirectRes(`/admin?section=codes&error=${encodeURIComponent("اكتب اسم الأسيستانت")}`);
       }
-      return redirectRes(`/admin?section=support&notice=${encodeURIComponent("تم إرسال رد الدعم الفني")}`);
+      const code = "AST-" + Math.random().toString(36).slice(2, 8).toUpperCase();
+      await fsSet(env, "assistants", code, {
+        name: assistantName,
+        code,
+        created_at: new Date().toISOString()
+      });
+      return redirectRes(`/admin?section=codes&notice=${encodeURIComponent(`تم إنشاء كود للأسيستانت (${assistantName}): ${code}`)}`);
+    }
+
+    if (path === "/admin/delete-assistant" && method === "POST") {
+      if (!isAdmin) return redirectRes("/admin");
+      const form = await parseFormBody(req);
+      const id = String(form.assistant_id || "").trim();
+      if (id) await fsDelete(env, "assistants", id);
+      return redirectRes(`/admin?section=codes&notice=${encodeURIComponent("تم حذف كود الأسيستانت")}`);
     }
 
     if (path === "/admin/generate-codes" && method === "POST") {
+      if (!isAdmin) return redirectRes("/admin");
       const form = await parseFormBody(req);
       const codeType = String(form.code_type || "center");
       const branch = String(form.branch || BRANCHES[0]);
       const count = Math.min(50, Math.max(1, Number(form.count || 1)));
-      const prefix = codeType === "center" ? "CTR-" : "BR-";
+      const prefix = codeType === "center" ? "CTR" : "BR";
       for (let i = 0; i < count; i++) {
-        const code = prefix + Math.random().toString(36).substring(2, 8).toUpperCase();
+        const code = `${prefix}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
         await fsSet(env, "codes", code, {
           code,
           type: codeType,
-          branch: codeType === "branch" ? branch : "",
+          branch: codeType === "center" ? "" : branch,
           used: false,
           used_by: ""
         });
@@ -4507,17 +4826,21 @@ export default {
     }
 
     if (path === "/admin/delete-code" && method === "POST") {
+      if (!isAdmin) return redirectRes("/admin");
       const form = await parseFormBody(req);
-      const codeId = String(form.code_id || "");
+      const codeId = String(form.code_id || "").trim();
       if (codeId) await fsDelete(env, "codes", codeId);
       return redirectRes(`/admin?section=codes&notice=${encodeURIComponent("تم حذف الكود")}`);
     }
 
     if (path === "/admin/create-discount" && method === "POST") {
+      if (!isAdmin) return redirectRes("/admin");
       const form = await parseFormBody(req);
-      const rawCode = String(form.discount_code || "").trim().toUpperCase();
-      const code = rawCode || ("DISC-" + Math.random().toString(36).substring(2, 7).toUpperCase());
-      const amount = Math.min(COURSE_PRICE_EGP, Math.max(1, Number(form.discount_amount || 100)));
+      let code = String(form.discount_code || "").trim().toUpperCase();
+      if (!code) {
+        code = "DISC-" + Math.random().toString(36).slice(2, 7).toUpperCase();
+      }
+      const amount = Math.min(COURSE_PRICE_EGP, Math.max(1, Number(form.discount_amount || 0)));
       await fsSet(env, "discount_codes", code, {
         code,
         amount,
@@ -4525,143 +4848,208 @@ export default {
         used_by: "",
         created_at: new Date().toISOString()
       });
-      return redirectRes(`/admin?section=codes&notice=${encodeURIComponent(`تم إنشاء كود الخصم (${code}) بقيمة ${amount} ج لمرة واحدة`)}`);
+      return redirectRes(`/admin?section=codes&notice=${encodeURIComponent(`تم إنشاء كود الخصم (${code}) بقيمة ${amount} ج`)}`);
     }
 
     if (path === "/admin/delete-discount" && method === "POST") {
+      if (!isAdmin) return redirectRes("/admin");
       const form = await parseFormBody(req);
       const discountId = String(form.discount_id || "").trim();
       if (discountId) await fsDelete(env, "discount_codes", discountId);
       return redirectRes(`/admin?section=codes&notice=${encodeURIComponent("تم حذف كود الخصم")}`);
     }
 
+    if (path === "/admin/grant-branches" && method === "POST") {
+      if (!isAdmin) return redirectRes("/admin");
+      const form = await parseFormBody(req);
+      const phone = String(form.phone || "").trim();
+      const rawBranches = form.branches;
+      const chosen = Array.isArray(rawBranches) ? rawBranches : (rawBranches ? [rawBranches] : []);
+      const st = await fsGet(env, "students", phone);
+      if (st) {
+        const merged = Array.from(new Set([...(st.branches || []), ...chosen]));
+        await fsSet(env, "students", phone, { ...st, branches: merged });
+      }
+      return redirectRes(`/admin?section=students&notice=${encodeURIComponent("تم تفعيل اشتراك الفروع المحددة للطالب")}`);
+    }
+
+    if (path === "/admin/revoke-branch" && method === "POST") {
+      if (!isAdmin) return redirectRes("/admin");
+      const form = await parseFormBody(req);
+      const phone = String(form.phone || "").trim();
+      const branchToRemove = String(form.branch || "").trim();
+      const st = await fsGet(env, "students", phone);
+      if (st) {
+        const nextBranches = (st.branches || []).filter(b => String(b) !== branchToRemove);
+        await fsSet(env, "students", phone, { ...st, branches: nextBranches });
+      }
+      return redirectRes(`/admin?section=students&notice=${encodeURIComponent("تم إلغاء تفعيل الفرع عن الطالب")}`);
+    }
+
+    if (path === "/admin/delete-student" && method === "POST") {
+      if (!isAdmin) return redirectRes("/admin");
+      const form = await parseFormBody(req);
+      const phone = String(form.phone || "").trim();
+      if (phone) await fsDelete(env, "students", phone);
+      return redirectRes(`/admin?section=students&notice=${encodeURIComponent("تم حذف الطالب")}`);
+    }
+
     if (path === "/admin/add-lecture" && method === "POST") {
+      if (!isAdmin) return redirectRes("/admin");
       const form = await parseFormBody(req);
       const title = String(form.title || "").trim();
       const branch = String(form.branch || BRANCHES[0]);
       const grade = String(form.grade || GRADES[0]);
       const track = String(form.track || TRACKS[0]);
-      const orderNum = Number(form.order_num || 1);
+      const orderNum = Math.max(1, Number(form.order_num || 1));
       const videoUrl = String(form.video_url || "").trim();
       let customItems = [];
       try {
-        customItems = JSON.parse(String(form.custom_items_json || "[]"));
+        const parsed = JSON.parse(String(form.custom_items_json || "[]"));
+        if (Array.isArray(parsed)) customItems = parsed;
       } catch {
         customItems = [];
       }
-      const id = "lec_" + Date.now();
-      await fsSet(env, "lectures", id, {
-        title,
-        branch,
-        grade,
-        track,
-        order_num: orderNum,
-        video_url: videoUrl,
-        custom_items: Array.isArray(customItems) ? customItems : []
-      });
-      return redirectRes(`/admin?section=exams&lecture_id=${encodeURIComponent(id)}&notice=${encodeURIComponent("تمت إضافة المحاضرة والعناصر التي بداخلها — أضف الآن أسئلة الواجب الخاصة بها")}`);
+      if (title) {
+        const id = "lec_" + Date.now();
+        await fsSet(env, "lectures", id, {
+          title,
+          branch,
+          grade,
+          track,
+          order_num: orderNum,
+          video_url: videoUrl,
+          custom_items: customItems
+        });
+      }
+      return redirectRes(`/admin?section=lectures&notice=${encodeURIComponent("تمت إضافة المحاضرة وعناصرها بنجاح")}`);
     }
 
     if (path === "/admin/delete-lecture" && method === "POST") {
+      if (!isAdmin) return redirectRes("/admin");
       const form = await parseFormBody(req);
-      const lectureId = String(form.lecture_id || "");
-      if (lectureId) await fsDelete(env, "lectures", lectureId);
+      const lecId = String(form.lecture_id || "").trim();
+      if (lecId) await fsDelete(env, "lectures", lecId);
       return redirectRes(`/admin?section=lectures&notice=${encodeURIComponent("تم حذف المحاضرة")}`);
     }
 
     if (path === "/admin/add-exam" && method === "POST") {
+      if (!isAdmin) return redirectRes("/admin");
       const form = await parseFormBody(req);
       const title = String(form.title || "").trim();
       const branch = String(form.branch || BRANCHES[0]);
       const lectureId = String(form.lecture_id || "").trim();
       let questions = [];
       try {
-        questions = JSON.parse(String(form.questions_json || "[]"));
+        const parsed = JSON.parse(String(form.questions_json || "[]"));
+        if (Array.isArray(parsed)) questions = parsed;
       } catch {
         questions = [];
       }
-      if (!title || !Array.isArray(questions) || questions.length === 0) {
-        return redirectRes(`/admin?section=exams&error=${encodeURIComponent("يرجى كتابة العنوان وإضافة سؤال واحد على الأقل")}`);
+      if (title && questions.length) {
+        const id = "ex_" + Date.now();
+        await fsSet(env, "exams", id, { title, branch, lecture_id: lectureId, questions });
       }
-      const id = "ex_" + Date.now();
-      await fsSet(env, "exams", id, {
-        title,
-        branch,
-        lecture_id: lectureId,
-        questions
-      });
-      return redirectRes(`/admin?section=exams&notice=${encodeURIComponent("تم نشر الواجب / الاختبار بنجاح")}`);
+      return redirectRes(`/admin?section=exams&notice=${encodeURIComponent("تم حفظ ونشر الواجب / الاختبار بنجاح")}`);
     }
 
     if (path === "/admin/delete-exam" && method === "POST") {
+      if (!isAdmin) return redirectRes("/admin");
       const form = await parseFormBody(req);
-      const examId = String(form.exam_id || "");
+      const examId = String(form.exam_id || "").trim();
       if (examId) await fsDelete(env, "exams", examId);
-      return redirectRes(`/admin?section=exams&notice=${encodeURIComponent("تم حذف الاختبار")}`);
-    }
-
-    if (path === "/admin/grant-branches" && method === "POST") {
-      const form = await parseFormBody(req);
-      const phone = String(form.phone || "").trim();
-      const selected = Array.isArray(form.branches) ? form.branches : (form.branches ? [form.branches] : []);
-      const st = await fsGet(env, "students", phone);
-      if (!st) return redirectRes(`/admin?section=students&error=${encodeURIComponent("الطالب غير موجود")}`);
-      await fsSet(env, "students", phone, { ...st, branches: Array.from(new Set(selected)) });
-      return redirectRes(`/admin?section=students&notice=${encodeURIComponent("تم تحديث اشتراك الفروع للطالب")}`);
-    }
-
-    if (path === "/admin/revoke-branch" && method === "POST") {
-      const form = await parseFormBody(req);
-      const phone = String(form.phone || "").trim();
-      const branchToRemove = String(form.branch || "").trim();
-      const st = await fsGet(env, "students", phone);
-      if (!st) return redirectRes(`/admin?section=students&error=${encodeURIComponent("الطالب غير موجود")}`);
-      const nextBranches = (Array.isArray(st.branches) ? st.branches : []).filter(b => String(b) !== branchToRemove);
-      await fsSet(env, "students", phone, {
-        ...st,
-        branches: nextBranches,
-        is_center_student: nextBranches.length === BRANCHES.length ? Boolean(st.is_center_student) : false
-      });
-      return redirectRes(`/admin?section=students&notice=${encodeURIComponent(`تم إلغاء تفعيل فرع (${branchToRemove}) للطالب`)}`);
-    }
-
-    if (path === "/admin/delete-student" && method === "POST") {
-      const form = await parseFormBody(req);
-      const phone = String(form.phone || "").trim();
-      if (phone) await fsDelete(env, "students", phone);
-      return redirectRes(`/admin?section=students&notice=${encodeURIComponent("تم حذف الطالب بنجاح")}`);
+      return redirectRes(`/admin?section=exams&notice=${encodeURIComponent("تم حذف الواجب / الاختبار")}`);
     }
 
     if (path === "/admin/reply-ticket" && method === "POST") {
+      if (!hasStaffAccess) return redirectRes("/admin");
       const form = await parseFormBody(req);
-      const ticketId = String(form.ticket_id || "");
+      const ticketId = String(form.ticket_id || "").trim();
       const reply = String(form.reply || "").trim();
       const t = await fsGet(env, "tickets", ticketId);
-      if (t) await fsSet(env, "tickets", ticketId, { ...t, reply });
-      return redirectRes(`/admin?section=tickets&notice=${encodeURIComponent("تم حفظ الرد على السؤال")}`);
+      if (t) {
+        await fsSet(env, "tickets", ticketId, {
+          ...t,
+          reply,
+          replied_by: currentActorName
+        });
+      }
+      return redirectRes(`/admin?section=tickets&notice=${encodeURIComponent(`تم حفظ الرد باسم (${currentActorName})`)}`);
+    }
+
+    if (path === "/admin/reply-forum" && method === "POST") {
+      if (!hasStaffAccess) return redirectRes("/admin");
+      const form = await parseFormBody(req);
+      const postId = String(form.post_id || "").trim();
+      const reply = String(form.reply || "").trim();
+      const fp = await fsGet(env, "forum_posts", postId);
+      if (fp) {
+        await fsSet(env, "forum_posts", postId, {
+          ...fp,
+          reply,
+          replied_by: currentActorName
+        });
+      }
+      return redirectRes(`/admin?section=forum&notice=${encodeURIComponent(`تم نشر الرد في المنتدى باسم (${currentActorName})`)}`);
+    }
+
+    if (path === "/admin/support-reply" && method === "POST") {
+      if (!hasStaffAccess) return redirectRes("/admin");
+      const form = await parseFormBody(req);
+      const sid = String(form.session_id || "").trim();
+      const replyText = String(form.reply_text || "").trim();
+      const existing = await fsGet(env, "support_chats", sid);
+      if (existing && replyText) {
+        const msgs = Array.isArray(existing.messages) ? [...existing.messages] : [];
+        msgs.push({
+          id: "adm_" + Date.now(),
+          sender: "admin",
+          sender_name: currentActorName,
+          text: replyText,
+          at: new Date().toISOString()
+        });
+        await fsSet(env, "support_chats", sid, {
+          ...existing,
+          messages: msgs,
+          updated_at: new Date().toISOString()
+        });
+      }
+      return redirectRes(`/admin?section=support&notice=${encodeURIComponent(`تم إرسال الرد باسم (${currentActorName})`)}`);
     }
 
     if (path === "/admin/settings" && method === "POST") {
+      if (!isAdmin) return redirectRes("/admin");
       const form = await parseFormBody(req);
-      const nextAdminEmail = String(form.admin_email || settings.admin_email).trim();
-      const newAdminPass = String(form.new_admin_password || "").trim();
-      const nextPassHash = newAdminPass ? await sha256(newAdminPass) : settings.admin_password_hash;
-      await fsSet(env, "settings", "main", {
-        ...settings,
+      const nextAdminEmail = String(form.admin_email || settings.admin_email || DEFAULT_ADMIN_EMAIL).trim();
+      const newPass = String(form.new_admin_password || "").trim();
+      const nextVodafone = String(form.vodafone_number || "").trim();
+      const nextWhatsapp = String(form.admin_whatsapp || "").trim();
+      const nextTeacherImg = String(form.teacher_image || "").trim() || TEACHER_MAIN_PHOTO;
+      const nextNotice = String(form.global_notice || "").trim();
+      const nextFb = String(form.facebook_url || "").trim();
+      const nextTt = String(form.tiktok_url || "").trim();
+      const nextYt = String(form.youtube_url || "").trim();
+
+      const updatedPayload = {
         admin_email: nextAdminEmail,
-        admin_password: newAdminPass || settings.admin_password,
-        admin_password_hash: nextPassHash,
-        vodafone_number: String(form.vodafone_number || settings.vodafone_number),
-        admin_whatsapp: String(form.admin_whatsapp || settings.admin_whatsapp),
-        youtube_url: String(form.youtube_url || ""),
-        tiktok_url: String(form.tiktok_url || ""),
-        facebook_url: String(form.facebook_url || ""),
-        teacher_image: String(form.teacher_image || settings.teacher_image),
-        global_notice: String(form.global_notice || "")
-      });
-      return redirectRes(`/admin?section=settings&notice=${encodeURIComponent("تم حفظ إعدادات المنصة في Firebase")}`);
+        vodafone_number: nextVodafone,
+        admin_whatsapp: nextWhatsapp,
+        teacher_image: nextTeacherImg,
+        global_notice: nextNotice,
+        facebook_url: nextFb,
+        tiktok_url: nextTt,
+        youtube_url: nextYt
+      };
+
+      if (newPass) {
+        updatedPayload.admin_password = newPass;
+        updatedPayload.admin_password_hash = await sha256(newPass);
+      }
+
+      await fsSet(env, "settings", "main", updatedPayload);
+      return redirectRes(`/admin?section=settings&notice=${encodeURIComponent("تم حفظ الإعدادات بنجاح في Firebase")}`);
     }
 
-    return htmlRes("<h1>404 — الصفحة غير موجودة</h1>", 404);
+    return redirectRes("/");
   }
 };
