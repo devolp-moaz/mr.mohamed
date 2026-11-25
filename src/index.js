@@ -524,20 +524,20 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
       --shadow-lg: 0 22px 48px rgba(13, 71, 161, 0.18);
     }
     body.dark {
-      --bg: #07142b;
-      --surface: #0d2247;
-      --surface-soft: #133163;
-      --txt: #eef4fc;
-      --muted: #b4c8e8;
-      --accent: #64b5f6;
-      --accent-dark: #1976d2;
-      --accent-2: #42a5f5;
+      --bg: #060b16;
+      --surface: #0c1424;
+      --surface-soft: #111d33;
+      --txt: #edf6ff;
+      --muted: #9eb0c9;
+      --accent: #38bdf8;
+      --accent-dark: #0284c7;
+      --accent-2: #818cf8;
       --err: #f87171;
-      --bdr: rgba(100, 181, 246, 0.25);
-      --thuluth-color: rgba(100, 181, 246, 0.09);
-      --shadow-sm: 0 4px 14px rgba(3, 10, 24, 0.5);
-      --shadow-md: 0 16px 36px rgba(3, 10, 24, 0.65);
-      --shadow-lg: 0 24px 52px rgba(3, 10, 24, 0.85);
+      --bdr: rgba(125, 211, 252, 0.16);
+      --thuluth-color: rgba(56, 189, 248, 0.055);
+      --shadow-sm: 0 6px 18px rgba(0, 0, 0, 0.28);
+      --shadow-md: 0 18px 44px rgba(0, 0, 0, 0.38);
+      --shadow-lg: 0 28px 65px rgba(0, 0, 0, 0.52);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; }
     body {
@@ -548,6 +548,106 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
       position: relative;
       overflow-x: hidden;
       transition: background-color 0.28s ease, color 0.22s ease;
+    }
+    body.dark {
+      background:
+        radial-gradient(circle at 82% 8%, rgba(129, 140, 248, 0.09), transparent 22rem),
+        radial-gradient(circle at 12% 55%, rgba(56, 189, 248, 0.07), transparent 26rem),
+        var(--bg);
+    }
+    body.dark .topbar {
+      background: rgba(12, 20, 36, 0.86);
+      border-bottom-color: rgba(125, 211, 252, 0.12);
+    }
+    body.dark .card,
+    body.dark .right-drawer,
+    body.dark .landing-hero-card,
+    body.dark .course-card,
+    body.dark .student-detail-box,
+    body.dark .q-builder-card,
+    body.dark .landing-feature,
+    body.dark .admin-table-wrap,
+    body.dark .support-chat-window {
+      background:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.018), transparent 55%),
+        var(--surface);
+      border-color: var(--bdr);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+    body.dark input,
+    body.dark select,
+    body.dark textarea {
+      background: #09111f;
+      color: var(--txt);
+      border-color: rgba(125, 211, 252, 0.15);
+    }
+    body.dark input:focus,
+    body.dark select:focus,
+    body.dark textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.10);
+    }
+    body.dark .btn-blue,
+    body.dark .btn-teal,
+    body.dark .btn-gold {
+      background: linear-gradient(135deg, #0284c7, #6366f1);
+      box-shadow: 0 8px 24px rgba(56, 189, 248, 0.16);
+    }
+    body.dark .btn-out {
+      background: rgba(255, 255, 255, 0.035);
+    }
+    body.dark ::selection {
+      background: rgba(56, 189, 248, 0.28);
+      color: #ffffff;
+    }
+    body.dark ::-webkit-scrollbar { width: 10px; height: 10px; }
+    body.dark ::-webkit-scrollbar-track { background: #060b16; }
+    body.dark ::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, #0284c7, #6366f1);
+      border: 2px solid #060b16;
+      border-radius: 999px;
+    }
+    body.dark .topbar {
+      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.24);
+    }
+    body.dark .landing-hero-card {
+      background:
+        radial-gradient(circle at 88% 12%, rgba(129, 140, 248, 0.14), transparent 30%),
+        radial-gradient(circle at 8% 90%, rgba(56, 189, 248, 0.10), transparent 28%),
+        linear-gradient(145deg, #0c1424 0%, #111d33 100%);
+    }
+    body.dark .hero-teacher-frame {
+      box-shadow:
+        0 22px 54px rgba(2, 132, 199, 0.16),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+    body.dark .hero-eyebrow {
+      background: rgba(56, 189, 248, 0.08);
+      box-shadow: 0 0 25px rgba(56, 189, 248, 0.06);
+    }
+    body.dark .landing-feature {
+      position: relative;
+      isolation: isolate;
+      overflow: hidden;
+    }
+    body.dark .landing-feature::before {
+      content: "";
+      position: absolute;
+      inset: auto -40% -80% 20%;
+      height: 130%;
+      background: radial-gradient(circle, rgba(56, 189, 248, 0.10), transparent 55%);
+      z-index: -1;
+      transition: transform 0.45s ease;
+    }
+    body.dark .landing-feature:hover::before {
+      transform: translateY(-18%) scale(1.12);
+    }
+    body.dark .table-wrap,
+    body.dark .admin-table-wrap,
+    body.dark .student-detail-box {
+      border-radius: 18px;
+      overflow: hidden;
     }
 
     #screenBlackoutGuard {
@@ -776,6 +876,21 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
     }
     .btn-out:hover { border-color: var(--accent); background: var(--surface-soft); }
     .btn-sm { padding: 7px 14px; font-size: 0.82rem; border-radius: 11px; }
+    .btn {
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.18s ease, filter 0.18s ease, box-shadow 0.18s ease;
+    }
+    .btn::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(110deg, transparent 25%, rgba(255,255,255,0.18) 48%, transparent 70%);
+      transform: translateX(130%);
+      transition: transform 0.55s ease;
+    }
+    .btn:hover { transform: translateY(-2px); filter: brightness(1.06); }
+    .btn:hover::after { transform: translateX(-130%); }
 
     .card, .right-drawer, .landing-hero-card, .course-card, .student-detail-box, .q-builder-card {
       background: var(--surface);
@@ -785,6 +900,31 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
       transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
     }
     .card { padding: 24px; margin-bottom: 18px; position: relative; }
+    body.dark .card,
+    body.dark .landing-hero-card {
+      animation: panelEnter 0.55s cubic-bezier(.2,.75,.25,1) both;
+    }
+    @keyframes panelEnter {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes softFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-7px); }
+    }
+    body.dark .hero-teacher-frame,
+    body.dark .support-fab-btn,
+    body.dark .floating-admin-avatar {
+      animation: softFloat 5.5s ease-in-out infinite;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
     .course-card:hover, .landing-hero-card:hover {
       transform: translateY(-4px);
       box-shadow: var(--shadow-lg);
@@ -1357,18 +1497,112 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
     .course-title { font-weight: 900; font-size: 1rem; margin-bottom: 6px; }
 
     .landing-hero-box { max-width: 1480px; margin: 24px auto 0; padding: 0 16px; }
-    .landing-hero-card { padding: 34px; display: grid; grid-template-columns: 380px 1fr; gap: 34px; align-items: center; min-height: 420px; }
-    @media (max-width: 860px) { .landing-hero-card { grid-template-columns: 1fr; min-height: auto; } }
+    .landing-hero-card {
+      position: relative; overflow: hidden; padding: 38px;
+      display: grid; grid-template-columns: 370px 1fr; gap: 42px; align-items: center;
+      min-height: 470px;
+      background:
+        radial-gradient(circle at 85% 15%, rgba(66, 165, 245, 0.18), transparent 28%),
+        linear-gradient(135deg, var(--surface) 0%, var(--surface-soft) 100%);
+    }
+    .landing-hero-card::before {
+      content: ""; position: absolute; width: 260px; height: 260px; border-radius: 50%;
+      left: -150px; bottom: -170px; border: 36px solid rgba(30, 136, 229, 0.08);
+    }
+    @media (max-width: 860px) {
+      .landing-hero-card { grid-template-columns: 1fr; min-height: auto; padding: 22px; gap: 20px; }
+      .hero-teacher-frame { max-width: 380px; width: 100%; margin: 0 auto; }
+    }
     .hero-teacher-frame {
-      background: linear-gradient(155deg, rgba(21, 101, 192, 0.12), rgba(33, 150, 243, 0.14));
-      border-radius: 20px; padding: 12px; display: flex; justify-content: center; align-items: center;
-      min-height: 420px; border: 1.5px solid var(--bdr);
+      position: relative; z-index: 1;
+      background: linear-gradient(155deg, rgba(21, 101, 192, 0.14), rgba(33, 150, 243, 0.22));
+      border-radius: 28px; padding: 10px; display: flex; justify-content: center; align-items: center;
+      min-height: 390px; border: 1.5px solid var(--bdr);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.7), var(--shadow-sm);
     }
     .hero-teacher-frame img {
-      width: 100%; max-height: 420px; object-fit: contain; object-position: center top;
-      border-radius: 14px; display: block;
+      width: 100%; max-height: 390px; object-fit: contain; object-position: center bottom;
+      border-radius: 20px; display: block;
+    }
+    .hero-copy { position: relative; z-index: 1; }
+    .hero-eyebrow {
+      display: inline-flex; align-items: center; gap: 8px; border-radius: 999px;
+      padding: 7px 13px; background: rgba(21, 101, 192, 0.1); color: var(--accent);
+      border: 1px solid var(--bdr); font-weight: 900; font-size: 0.84rem;
+    }
+    .hero-title { font-size: clamp(2rem, 4vw, 3.25rem); line-height: 1.25; font-weight: 900; margin-top: 14px; color: var(--txt); }
+    .hero-title span { color: var(--accent); }
+    .hero-subtitle { margin-top: 10px; font-size: clamp(1.05rem, 2vw, 1.28rem); color: var(--accent-2); font-weight: 900; }
+    .hero-description { max-width: 760px; margin-top: 14px; color: var(--muted); line-height: 1.95; font-size: 0.98rem; }
+    .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 22px; }
+    .hero-actions .btn { min-width: 190px; padding: 12px 18px; justify-content: center; }
+    .hero-trust-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 18px; margin-top: 18px; }
+    .hero-trust-item { display: inline-flex; align-items: center; gap: 7px; color: var(--muted); font-size: 0.82rem; font-weight: 800; }
+    .hero-trust-icon {
+      width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center;
+      background: var(--surface); border: 1px solid var(--bdr); color: var(--accent); font-size: 0.75rem;
     }
     .landing-start-section { max-width: 1480px; margin: 22px auto 36px; padding: 0 16px; }
+    .landing-feature-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 16px;
+    }
+    @media (max-width: 760px) { .landing-feature-grid { grid-template-columns: 1fr; } }
+    .landing-feature {
+      display: flex; align-items: flex-start; gap: 12px; min-height: 118px;
+      padding: 18px; border: 1.5px solid var(--bdr); border-radius: 18px;
+      background: var(--surface); box-shadow: var(--shadow-sm); text-decoration: none; color: var(--txt);
+      transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+    }
+    .landing-feature:hover { transform: translateY(-3px); border-color: var(--accent); box-shadow: var(--shadow-md); }
+    .landing-feature-icon {
+      flex: 0 0 44px; width: 44px; height: 44px; border-radius: 14px;
+      display: grid; place-items: center; background: var(--surface-soft); font-size: 1.25rem;
+    }
+    .landing-feature strong { display: block; color: var(--accent); font-size: 0.98rem; }
+    .landing-feature p { margin-top: 3px; color: var(--muted); font-size: 0.82rem; line-height: 1.75; }
+    .landing-stats {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+      max-width: 1480px; margin: 18px auto 0; padding: 0 16px;
+    }
+    @media (max-width: 760px) { .landing-stats { grid-template-columns: repeat(2, 1fr); } }
+    .landing-stat {
+      text-align: center; padding: 20px 12px; border-radius: 18px;
+      background: var(--surface); border: 1.5px solid var(--bdr); box-shadow: var(--shadow-sm);
+    }
+    .landing-stat strong {
+      display: block; color: var(--accent); font-size: 1.55rem; line-height: 1.2;
+      font-weight: 900;
+    }
+    .landing-stat span { display: block; margin-top: 5px; color: var(--muted); font-size: 0.82rem; font-weight: 800; }
+    .landing-journey {
+      max-width: 1480px; margin: 22px auto 0; padding: 0 16px;
+    }
+    .journey-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+    }
+    @media (max-width: 760px) { .journey-grid { grid-template-columns: 1fr; } }
+    .journey-step {
+      min-height: 145px; padding: 20px; border-radius: 20px;
+      border: 1.5px solid var(--bdr); background: var(--surface); box-shadow: var(--shadow-sm);
+      position: relative; overflow: hidden;
+    }
+    .journey-number {
+      width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center;
+      background: linear-gradient(135deg, var(--accent-dark), var(--accent-2));
+      color: #fff; font-weight: 900; box-shadow: var(--shadow-sm);
+    }
+    .journey-step h3 { margin-top: 12px; color: var(--accent); font-size: 1rem; }
+    .journey-step p { margin-top: 4px; color: var(--muted); font-size: 0.84rem; line-height: 1.75; }
+    .landing-cta {
+      max-width: 1480px; margin: 22px auto 36px; padding: 0 16px;
+    }
+    .landing-cta-box {
+      border-radius: 24px; padding: 30px;
+      background: linear-gradient(135deg, var(--accent-dark), var(--accent-2));
+      color: #fff; text-align: center; box-shadow: var(--shadow-md);
+    }
+    .landing-cta-box h2 { font-size: clamp(1.35rem, 3vw, 2rem); font-weight: 900; }
+    .landing-cta-box p { margin: 7px auto 18px; max-width: 650px; opacity: 0.92; font-size: 0.92rem; }
 
     .split-auth {
       max-width: 1060px; margin: 22px auto; padding: 0 16px;
@@ -1665,8 +1899,9 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
     (function () {
       const toggleEl = document.getElementById("themeToggle");
       const labelEl = document.getElementById("themeLabelText");
-      const isSavedDark = localStorage.getItem("nb_py_theme") === "dark";
-      if (isSavedDark) {
+      const savedTheme = localStorage.getItem("nb_py_theme");
+      const isDark = savedTheme === null || savedTheme === "dark";
+      if (isDark) {
         document.body.classList.add("dark");
         if (toggleEl) toggleEl.checked = true;
         if (labelEl) labelEl.textContent = "ليلي";
@@ -2123,26 +2358,89 @@ function renderLanding(settings) {
     <div class="hero-teacher-frame">
       <img src="${esc(settings.teacher_image)}" alt="الأستاذ محمد يوسف" onerror="this.style.display='none';" />
     </div>
-    <div>
-      <span class="pill pill-ok">معلم أول لغة عربية</span>
-      <h1 style="font-size:1.85rem; font-weight:900; margin-top:10px; color:var(--accent);">${PLATFORM_NAME} مع محمد يوسف</h1>
-      <div style="font-size:1.08rem; font-weight:800; color:var(--accent-2); margin-top:6px;">
-        30 سنة خبرة تدريس في اللغة العربية للثانوية الأزهرية
-      </div>
-      <p class="muted" style="margin-top:12px; font-size:0.96rem; line-height:1.8;">
+    <div class="hero-copy">
+      <span class="hero-eyebrow"><span>★</span> معلم أول لغة عربية</span>
+      <h1 class="hero-title">تعلم العربية بثقة مع <span>محمد يوسف</span></h1>
+      <div class="hero-subtitle">مسيرة عطاء تمتد لأكثر من 30 عاماً</div>
+      <p class="hero-description">
         معلم أول لغة عربية بمسيرة تمتد إلى 30 عاماً من العطاء والتميز والتأسيس الدقيق في فروع اللغة العربية السبعة للمرحلة الثانوية الأزهرية (الأول، الثاني، والثالث الثانوي — علمي وأدبي)، مما يجعله جديراً تماماً بقيادة طلابه نحو التفوق والدرجة النهائية بمنهج واضح ومنظم.
       </p>
+      <div class="hero-actions">
+        <a class="btn btn-blue" href="/student?tab=register&step=1">ابدأ رحلتك الآن <span>←</span></a>
+        <a class="btn btn-out" href="/student?tab=login">دخول إلى حسابي</a>
+      </div>
+      <div class="hero-trust-row">
+        <div class="hero-trust-item"><span class="hero-trust-icon">✓</span>شرح منظم ومتبسط</div>
+        <div class="hero-trust-item"><span class="hero-trust-icon">✓</span>امتحانات وتقييم مستمر</div>
+        <div class="hero-trust-item"><span class="hero-trust-icon">✓</span>متابعة دقيقة للطلاب</div>
+      </div>
     </div>
   </div>
 </div>
 
+<div class="landing-stats">
+  <div class="landing-stat"><strong>30+</strong><span>عاما من الخبرة</span></div>
+  <div class="landing-stat"><strong>7</strong><span>فروع للغة العربية</span></div>
+  <div class="landing-stat"><strong>3</strong><span>صفوف ثانوية أزهرية</span></div>
+  <div class="landing-stat"><strong>1</strong><span>منهج واضح ومتكامل</span></div>
+</div>
+
 <div class="landing-start-section">
-  <div class="card" style="margin-bottom:0; text-align:center; padding:28px 22px;">
-    <h2 style="font-size:1.45rem; font-weight:900; margin-bottom:8px;">أهلاً بك في ${PLATFORM_NAME} ✦ ۝ جخ ۝ ✦</h2>
-    <p class="muted" style="margin-bottom:20px;">ابدأ رحلتك الآن مع الأستاذ محمد يوسف في فروع اللغة العربية والواجبات والامتحانات.</p>
-    <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap; max-width:500px; margin:0 auto;">
-      <a class="btn btn-teal" style="flex:1; min-width:170px;" href="/student?tab=login">ابدأ معنا</a>
-      <a class="btn btn-blue" style="flex:1; min-width:170px;" href="/student?tab=register&step=1">إنشاء حساب جديد</a>
+  <div class="card" style="margin-bottom:0; padding:24px;">
+    <div style="text-align:center;">
+      <h2 style="font-size:1.45rem; font-weight:900;">كل ما تحتاجه في مكان واحد</h2>
+      <p class="muted" style="margin-top:5px; font-size:0.88rem;">تابع دروسك وواجباتك ونتائجك من حساب واحد</p>
+    </div>
+    <div class="landing-feature-grid">
+      <a class="landing-feature" href="/student?tab=login">
+        <span class="landing-feature-icon">📚</span>
+        <span><strong>دروس ومراجعات</strong><p>شروحات مرتبة تغطي الفروع السبعة للمناهج الأزهرية.</p></span>
+      </a>
+      <a class="landing-feature" href="/student?tab=login">
+        <span class="landing-feature-icon">📝</span>
+        <span><strong>واجبات وامتحانات</strong><p>تدريبات تقيس مستواك وتساعدك على الاستعداد بقوة.</p></span>
+      </a>
+      <a class="landing-feature" href="/student?tab=login">
+        <span class="landing-feature-icon">📊</span>
+        <span><strong>متابعة تقدمك</strong><p>راجع نتيجتك وأداءك خطوة بخطوة مع فريق المنصة.</p></span>
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="landing-journey">
+  <div class="card" style="margin-bottom:0; padding:24px;">
+    <div style="text-align:center; margin-bottom:16px;">
+      <h2 style="font-size:1.42rem; font-weight:900;">رحلتك في المنصة من البداية للنهاية</h2>
+      <p class="muted" style="margin-top:5px; font-size:0.88rem;">خطوات بسيطة تعينك على المذاكرة والتفوق باستمرار</p>
+    </div>
+    <div class="journey-grid">
+      <div class="journey-step">
+        <div class="journey-number">1</div>
+        <h3>أنشئ حسابك</h3>
+        <p>سجّل بياناتك الدراسية وابدأ رحلتك على المنصة بسهولة وأمان.</p>
+      </div>
+      <div class="journey-step">
+        <div class="journey-number">2</div>
+        <h3>تابع الدروس والواجبات</h3>
+        <p>ادخل إلى الدروس والتمارين والمراجعات المصنّفة حسب الصف والشعبة.</p>
+      </div>
+      <div class="journey-step">
+        <div class="journey-number">3</div>
+        <h3>حل الامتحانات وراقب تقدمك</h3>
+        <p>اختبر نفسك، اعرف نتيجتك، وتابع مستواك للتطوير قبل الامتحان الرسمي.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="landing-cta">
+  <div class="landing-cta-box">
+    <h2>جاهز تبدأ أقوى؟</h2>
+    <p>انضم الآن للمنصة، ونظّم مذاكرتك مع شرح واضح وواجبات ومتابعة مستمرة في اللغة العربية.</p>
+    <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+      <a class="btn" style="background:#fff; color:#0d47a1; min-width:190px;" href="/student?tab=register&step=1">إنشاء حساب جديد</a>
+      <a class="btn" style="background:rgba(255,255,255,0.12); color:#fff; border:1px solid rgba(255,255,255,0.55); min-width:170px;" href="/student?tab=login">تسجيل الدخول</a>
     </div>
   </div>
 </div>`;
