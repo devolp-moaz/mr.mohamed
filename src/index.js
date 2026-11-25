@@ -508,33 +508,33 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Aref+Ruqaa:wght@700&display=swap" />
   <style>
     :root {
-      --bg: #eef4fc;
+      --bg: #f3f6fb;
       --surface: #ffffff;
-      --surface-soft: #e3eefa;
-      --txt: #0c1f3d;
-      --muted: #47628a;
-      --accent: #1565c0;
-      --accent-dark: #0d47a1;
-      --accent-2: #1e88e5;
+      --surface-soft: #edf3f9;
+      --txt: #132238;
+      --muted: #667894;
+      --accent: #246bfd;
+      --accent-dark: #1647c6;
+      --accent-2: #6d4aff;
       --err: #dc2626;
-      --bdr: rgba(21, 101, 192, 0.22);
-      --thuluth-color: rgba(21, 101, 192, 0.085);
-      --shadow-sm: 0 4px 14px rgba(13, 71, 161, 0.08);
-      --shadow-md: 0 14px 32px rgba(13, 71, 161, 0.12);
-      --shadow-lg: 0 22px 48px rgba(13, 71, 161, 0.18);
+      --bdr: rgba(36, 107, 253, 0.15);
+      --thuluth-color: rgba(36, 107, 253, 0.035);
+      --shadow-sm: 0 8px 22px rgba(30, 55, 90, 0.07);
+      --shadow-md: 0 18px 46px rgba(30, 55, 90, 0.10);
+      --shadow-lg: 0 28px 70px rgba(30, 55, 90, 0.16);
     }
     body.dark {
-      --bg: #060b16;
-      --surface: #0c1424;
-      --surface-soft: #111d33;
-      --txt: #edf6ff;
-      --muted: #9eb0c9;
-      --accent: #38bdf8;
-      --accent-dark: #0284c7;
-      --accent-2: #818cf8;
+      --bg: #070a12;
+      --surface: #0d1320;
+      --surface-soft: #121a2a;
+      --txt: #f7f9ff;
+      --muted: #a1abc0;
+      --accent: #7c8cff;
+      --accent-dark: #5d6fe8;
+      --accent-2: #b267ff;
       --err: #f87171;
-      --bdr: rgba(125, 211, 252, 0.16);
-      --thuluth-color: rgba(56, 189, 248, 0.055);
+      --bdr: rgba(154, 163, 255, 0.14);
+      --thuluth-color: rgba(124, 140, 255, 0.035);
       --shadow-sm: 0 6px 18px rgba(0, 0, 0, 0.28);
       --shadow-md: 0 18px 44px rgba(0, 0, 0, 0.38);
       --shadow-lg: 0 28px 65px rgba(0, 0, 0, 0.52);
@@ -551,8 +551,8 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
     }
     body.dark {
       background:
-        radial-gradient(circle at 82% 8%, rgba(129, 140, 248, 0.09), transparent 22rem),
-        radial-gradient(circle at 12% 55%, rgba(56, 189, 248, 0.07), transparent 26rem),
+        radial-gradient(circle at 82% 8%, rgba(178, 103, 255, 0.10), transparent 24rem),
+        radial-gradient(circle at 12% 55%, rgba(93, 111, 232, 0.10), transparent 26rem),
         var(--bg);
     }
     body.dark .topbar {
@@ -591,8 +591,8 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
     body.dark .btn-blue,
     body.dark .btn-teal,
     body.dark .btn-gold {
-      background: linear-gradient(135deg, #0284c7, #6366f1);
-      box-shadow: 0 8px 24px rgba(56, 189, 248, 0.16);
+      background: linear-gradient(135deg, #5d6fe8, #9c5cf1);
+      box-shadow: 0 10px 28px rgba(124, 140, 255, 0.18);
     }
     body.dark .btn-out {
       background: rgba(255, 255, 255, 0.035);
@@ -604,7 +604,7 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
     body.dark ::-webkit-scrollbar { width: 10px; height: 10px; }
     body.dark ::-webkit-scrollbar-track { background: #060b16; }
     body.dark ::-webkit-scrollbar-thumb {
-      background: linear-gradient(180deg, #0284c7, #6366f1);
+      background: linear-gradient(180deg, #5d6fe8, #9c5cf1);
       border: 2px solid #060b16;
       border-radius: 999px;
     }
@@ -613,13 +613,13 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
     }
     body.dark .landing-hero-card {
       background:
-        radial-gradient(circle at 88% 12%, rgba(129, 140, 248, 0.14), transparent 30%),
-        radial-gradient(circle at 8% 90%, rgba(56, 189, 248, 0.10), transparent 28%),
-        linear-gradient(145deg, #0c1424 0%, #111d33 100%);
+        radial-gradient(circle at 88% 12%, rgba(178, 103, 255, 0.16), transparent 30%),
+        radial-gradient(circle at 8% 90%, rgba(93, 111, 232, 0.12), transparent 28%),
+        linear-gradient(145deg, #0d1320 0%, #121a2a 100%);
     }
     body.dark .hero-teacher-frame {
       box-shadow:
-        0 22px 54px rgba(2, 132, 199, 0.16),
+        0 22px 54px rgba(124, 140, 255, 0.16),
         inset 0 1px 0 rgba(255, 255, 255, 0.08);
     }
     body.dark .hero-eyebrow {
@@ -693,11 +693,11 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
     .page-layer { position: relative; z-index: 1; }
 
     .topbar {
-      background: color-mix(in srgb, var(--surface) 92%, transparent);
-      backdrop-filter: blur(18px);
-      -webkit-backdrop-filter: blur(18px);
-      border-bottom: 2px solid var(--bdr);
-      padding: 13px 26px;
+      background: color-mix(in srgb, var(--surface) 88%, transparent);
+      backdrop-filter: blur(24px) saturate(140%);
+      -webkit-backdrop-filter: blur(24px) saturate(140%);
+      border-bottom: 1px solid var(--bdr);
+      padding: 12px clamp(16px, 3vw, 38px);
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -710,10 +710,11 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
     }
     .brand-box { display: flex; align-items: center; gap: 13px; }
     .brand-logo-badge {
-      width: 48px; height: 48px; border-radius: 16px;
-      background: linear-gradient(135deg, var(--accent-dark), var(--accent-2));
-      color: #fff; font-weight: 900; display: grid; place-items: center; font-size: 1.02rem;
-      box-shadow: 0 8px 20px rgba(21, 101, 192, 0.28);
+      width: 50px; height: 50px; border-radius: 15px;
+      background: linear-gradient(135deg, #5d6fe8 0%, #9c5cf1 100%);
+      color: #fff; font-weight: 900; display: grid; place-items: center; font-size: 0.88rem;
+      box-shadow: 0 12px 28px rgba(93, 111, 232, 0.30);
+      letter-spacing: -0.5px;
     }
 
     .notif-bell-wrap {
@@ -845,14 +846,14 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
     .btn:active { transform: translateY(0) scale(0.985); }
 
     .btn-blue {
-      background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%);
+      background: linear-gradient(135deg, #5d6fe8 0%, #8c62f1 100%);
       color: #fff;
-      box-shadow: 0 7px 20px rgba(21, 101, 192, 0.28);
+      box-shadow: 0 9px 24px rgba(93, 111, 232, 0.30);
     }
-    .btn-blue:hover { box-shadow: 0 11px 26px rgba(21, 101, 192, 0.4); }
+    .btn-blue:hover { box-shadow: 0 13px 32px rgba(93, 111, 232, 0.42); }
 
     .btn-teal {
-      background: linear-gradient(135deg, #1565c0 0%, #2196f3 100%);
+      background: linear-gradient(135deg, #16a085 0%, #37c6a4 100%);
       color: #fff;
       box-shadow: 0 7px 20px rgba(25, 118, 210, 0.28);
     }
@@ -894,8 +895,8 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
 
     .card, .right-drawer, .landing-hero-card, .course-card, .student-detail-box, .q-builder-card {
       background: var(--surface);
-      border: 1.5px solid var(--bdr);
-      border-radius: 22px;
+      border: 1px solid var(--bdr);
+      border-radius: 24px;
       box-shadow: var(--shadow-md);
       transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
     }
@@ -1095,9 +1096,9 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
 
     input, select, textarea {
       width: 100%;
-      padding: 11px 15px;
-      border-radius: 13px;
-      border: 1.5px solid var(--bdr);
+      padding: 12px 15px;
+      border-radius: 14px;
+      border: 1px solid var(--bdr);
       background: var(--surface-soft);
       color: var(--txt);
       font-size: 0.94rem;
@@ -1108,7 +1109,7 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
     input:focus, select:focus, textarea:focus {
       background: var(--surface);
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(21, 101, 192, 0.16);
+      box-shadow: 0 0 0 4px rgba(93, 111, 232, 0.13);
     }
     textarea { min-height: 96px; resize: vertical; }
     input[type="radio"], input[type="checkbox"] { width: auto; box-shadow: none; }
@@ -1159,7 +1160,7 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
       padding: 0 22px;
       border-radius: 999px;
       border: none;
-      background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%);
+      background: linear-gradient(135deg, #5d6fe8 0%, #9c5cf1 100%);
       color: #ffffff;
       font-weight: 900;
       font-size: 0.95rem;
@@ -1167,7 +1168,7 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
       align-items: center;
       gap: 10px;
       cursor: pointer;
-      box-shadow: 0 14px 32px rgba(13, 71, 161, 0.4);
+      box-shadow: 0 14px 32px rgba(93, 111, 232, 0.38);
       z-index: 80;
       transition: transform 0.18s ease, box-shadow 0.2s ease;
     }
@@ -1430,8 +1431,9 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
     }
     .nav-item-link:hover { background: var(--surface-soft); }
     .nav-item-link.active {
-      background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%);
+      background: linear-gradient(135deg, #5d6fe8 0%, #9c5cf1 100%);
       color: #fff;
+      box-shadow: 0 8px 22px rgba(93, 111, 232, 0.22);
     }
     .sub-nav { padding-right: 14px; margin-bottom: 8px; }
     .sub-link {
@@ -1500,9 +1502,9 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
     .landing-hero-card {
       position: relative; overflow: hidden; padding: 38px;
       display: grid; grid-template-columns: 370px 1fr; gap: 42px; align-items: center;
-      min-height: 470px;
+      min-height: 510px;
       background:
-        radial-gradient(circle at 85% 15%, rgba(66, 165, 245, 0.18), transparent 28%),
+        radial-gradient(circle at 85% 15%, rgba(156, 92, 241, 0.16), transparent 28%),
         linear-gradient(135deg, var(--surface) 0%, var(--surface-soft) 100%);
     }
     .landing-hero-card::before {
@@ -1515,7 +1517,7 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
     }
     .hero-teacher-frame {
       position: relative; z-index: 1;
-      background: linear-gradient(155deg, rgba(21, 101, 192, 0.14), rgba(33, 150, 243, 0.22));
+      background: linear-gradient(155deg, rgba(93, 111, 232, 0.16), rgba(178, 103, 255, 0.20));
       border-radius: 28px; padding: 10px; display: flex; justify-content: center; align-items: center;
       min-height: 390px; border: 1.5px solid var(--bdr);
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.7), var(--shadow-sm);
@@ -1662,9 +1664,11 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
     .site-footer {
       width: 100%;
       margin-top: 40px;
-      background: #071327;
+      background:
+        radial-gradient(circle at 82% 0%, rgba(178, 103, 255, 0.12), transparent 18rem),
+        linear-gradient(135deg, #090d18, #0d1320);
       color: #ffffff;
-      border-top: 1px solid rgba(100, 181, 246, 0.22);
+      border-top: 1px solid rgba(154, 163, 255, 0.16);
       padding: 36px 24px 26px;
     }
     .footer-inner { max-width: 1180px; margin: 0 auto; }
