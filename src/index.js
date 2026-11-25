@@ -1518,10 +1518,33 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
     .landing-hero-card {
       position: relative; overflow: hidden; padding: 38px;
       display: grid; grid-template-columns: 370px 1fr; gap: 42px; align-items: center;
-      min-height: 510px;
+      min-height: 620px;
       background:
         radial-gradient(circle at 85% 15%, rgba(156, 92, 241, 0.16), transparent 28%),
         linear-gradient(135deg, var(--surface) 0%, var(--surface-soft) 100%);
+    }
+    body.dark .landing-hero-card {
+      background:
+        radial-gradient(circle at 82% 18%, rgba(212, 167, 44, 0.18), transparent 7rem),
+        radial-gradient(circle at 68% 64%, rgba(95, 99, 8, 0.24), transparent 18rem),
+        linear-gradient(145deg, #17160e 0%, #252414 52%, #12120d 100%);
+    }
+    body.dark .landing-hero-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        radial-gradient(circle, rgba(255, 239, 166, 0.95) 0 1.5px, transparent 2px),
+        radial-gradient(circle, rgba(255, 255, 255, 0.75) 0 1px, transparent 1.5px);
+      background-size: 84px 84px, 117px 117px;
+      background-position: 12px 18px, 46px 62px;
+      opacity: 0.48;
+      animation: nightStarsDrift 18s linear infinite;
+    }
+    @keyframes nightStarsDrift {
+      from { background-position: 12px 18px, 46px 62px; }
+      to { background-position: 96px 102px, 163px 179px; }
     }
     .landing-hero-card::before {
       content: ""; position: absolute; width: 260px; height: 260px; border-radius: 50%;
@@ -1554,6 +1577,13 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
     .hero-description { max-width: 760px; margin-top: 14px; color: var(--muted); line-height: 1.95; font-size: 0.98rem; }
     .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 22px; }
     .hero-actions .btn { min-width: 190px; padding: 12px 18px; justify-content: center; }
+    #startJourneyBtn {
+      animation: startCtaPulse 2.4s ease-in-out infinite;
+    }
+    @keyframes startCtaPulse {
+      0%, 100% { transform: translateY(0); box-shadow: 0 10px 24px rgba(95, 99, 8, 0.16); }
+      50% { transform: translateY(-4px); box-shadow: 0 16px 34px rgba(212, 167, 44, 0.34); }
+    }
     .hero-trust-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 18px; margin-top: 18px; }
     .hero-trust-item { display: inline-flex; align-items: center; gap: 7px; color: var(--muted); font-size: 0.82rem; font-weight: 800; }
     .hero-trust-icon {
@@ -1647,6 +1677,29 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
       border: 1.5px solid var(--bdr); user-select: none; box-shadow: var(--shadow-md);
     }
     .secure-player-box video, .secure-player-box iframe { width: 100%; height: 100%; min-height: 100%; display: block; border: none; }
+    .secure-player-box:fullscreen {
+      width: 100vw;
+      height: 100vh;
+      max-width: none;
+      border-radius: 0;
+      aspect-ratio: auto;
+    }
+    .player-size-btn {
+      position: absolute;
+      left: 12px;
+      bottom: 12px;
+      z-index: 12;
+      width: 42px;
+      height: 42px;
+      border: 1px solid rgba(255,255,255,0.52);
+      border-radius: 12px;
+      background: rgba(34, 34, 20, 0.82);
+      color: #fff;
+      cursor: pointer;
+      font-size: 1.15rem;
+      font-weight: 900;
+      backdrop-filter: blur(8px);
+    }
     .watermark-layer { position: absolute; inset: 0; pointer-events: none; z-index: 5; overflow: hidden; }
     .watermark-tag {
       position: absolute; color: rgba(255, 255, 255, 0.34); font-size: 0.84rem;
@@ -1811,7 +1864,7 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
       <div class="brand-box">
         <div class="brand-logo-badge">${PLATFORM_NAME}</div>
         <div>
-          <div style="font-weight:900; font-size:1.08rem; color:var(--accent);">${PLATFORM_NAME} — مع محمد يوسف</div>
+          <div style="font-weight:900; font-size:1.08rem; color:var(--accent);">${PLATFORM_NAME}</div>
           <div class="muted" style="font-size:0.78rem; font-weight:700;">اللغة العربية للثانوية الأزهرية (خبرة 30 عاماً)</div>
         </div>
       </div>
@@ -1931,6 +1984,57 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
         const dark = document.body.classList.toggle("dark", toggleEl.checked);
         localStorage.setItem("nb_py_theme", dark ? "dark" : "light");
         if (labelEl) labelEl.textContent = dark ? "ليلي" : "نهار";
+      });
+    })();
+
+    (function protectPlatformVideos() {
+      document.querySelectorAll(".secure-player-box").forEach(function (player) {
+        const sizeBtn = player.querySelector(".player-size-btn");
+        sizeBtn?.addEventListener("click", async function () {
+          try {
+            if (!document.fullscreenElement) {
+              await player.requestFullscreen();
+              sizeBtn.textContent = "×";
+            } else {
+              await document.exitFullscreen();
+              sizeBtn.textContent = "⛶";
+            }
+          } catch {}
+        });
+        document.addEventListener("fullscreenchange", function () {
+          if (sizeBtn) sizeBtn.textContent = document.fullscreenElement ? "×" : "⛶";
+        });
+        player.addEventListener("contextmenu", function (event) { event.preventDefault(); });
+        player.querySelectorAll("video, iframe").forEach(function (media) {
+          media.addEventListener("dragstart", function (event) { event.preventDefault(); });
+        });
+      });
+
+      document.addEventListener("contextmenu", function (event) {
+        if (event.target.closest(".secure-player-box, video, iframe")) event.preventDefault();
+      });
+      document.addEventListener("dragstart", function (event) {
+        if (event.target.closest(".secure-player-box, video, iframe")) event.preventDefault();
+      });
+      document.addEventListener("keydown", function (event) {
+        const key = event.key.toLowerCase();
+        if (
+          event.key === "PrintScreen" ||
+          (event.ctrlKey && ["s", "p", "u"].includes(key)) ||
+          (event.metaKey && ["s", "p", "u"].includes(key)) ||
+          (event.ctrlKey && event.shiftKey && ["i", "j", "c"].includes(key))
+        ) {
+          event.preventDefault();
+          document.body.classList.add("screen-blackout");
+          setTimeout(function () { document.body.classList.remove("screen-blackout"); }, 900);
+        }
+      });
+      window.addEventListener("blur", function () {
+        document.body.classList.add("screen-blackout");
+        setTimeout(function () { document.body.classList.remove("screen-blackout"); }, 900);
+      });
+      document.addEventListener("visibilitychange", function () {
+        document.body.classList.toggle("screen-blackout", document.hidden);
       });
     })();
 
@@ -2428,13 +2532,13 @@ function renderLanding(settings) {
     </div>
     <div class="hero-copy">
       <span class="hero-eyebrow"><span>★</span> معلم أول لغة عربية</span>
-      <h1 class="hero-title">تعلم العربية بثقة مع <span>محمد يوسف</span></h1>
+      <h1 class="hero-title">أهلاً بك في رحلتك مع <span>محمد يوسف</span></h1>
       <div class="hero-subtitle">مسيرة عطاء تمتد لأكثر من 30 عاماً</div>
       <p class="hero-description">
-        معلم أول لغة عربية بمسيرة تمتد إلى 30 عاماً من العطاء والتميز والتأسيس الدقيق في فروع اللغة العربية السبعة للمرحلة الثانوية الأزهرية (الأول، الثاني، والثالث الثانوي — علمي وأدبي)، مما يجعله جديراً تماماً بقيادة طلابه نحو التفوق والدرجة النهائية بمنهج واضح ومنظم.
+        تعلّم اللغة العربية بخطوات واضحة ومنهجية متكاملة صُممت خصيصاً لطلاب المرحلة الثانوية الأزهرية. داخل منصة محمد يوسف ستجد شرحاً مرتباً لكل فروع اللغة العربية السبعة، ومراجعات مركزة، وواجبات تتابع تقدمك بها، ونظاماً يراقب مستواك ويقودك تدريجياً نحو الإتقان والاستعداد للامتحانات بثقة. كل درس في مكانه، وكل مستوى له بدايته وتحديه، ومع خبرة تمتد لأكثر من 30 عاماً ستجد بين الشرح والتطبيق والمتابعة طريقاً أهدأ وأسرع نحو التفوق والدرجة النهائية.
       </p>
       <div class="hero-actions">
-        <a class="btn btn-blue" href="/student?tab=register&step=1">ابدأ رحلتك الآن <span>←</span></a>
+        <a class="btn btn-blue" href="/student?tab=register&step=1" id="startJourneyBtn">ابدأ معنا الآن <span>←</span></a>
         <a class="btn btn-out" href="/student?tab=login">دخول إلى حسابي</a>
       </div>
       <div class="hero-trust-row">
@@ -2711,13 +2815,13 @@ function renderStudentDash(settings, student, state) {
   function buildPlayerFromUrl(videoUrl) {
     const ytId = extractYoutubeId(videoUrl);
     if (ytId) {
-      return `<iframe src="https://www.youtube.com/embed/${esc(ytId)}?rel=0" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>`;
+      return `<iframe src="https://www.youtube.com/embed/${esc(ytId)}?rel=0&modestbranding=1&disablekb=1" allow="autoplay; encrypted-media; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
     }
     if (videoUrl && /^https?:\/\//i.test(videoUrl)) {
-      return `<iframe src="${esc(videoUrl)}" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>`;
+      return `<iframe src="${esc(videoUrl)}" allow="autoplay; encrypted-media; fullscreen" allowfullscreen sandbox="allow-scripts allow-same-origin allow-presentation"></iframe>`;
     }
     if (videoUrl) {
-      return `<video controls controlsList="nodownload"><source src="${esc(videoUrl)}" /></video>`;
+      return `<video controls controlsList="nodownload noremoteplayback" disablePictureInPicture oncontextmenu="return false" ondragstart="return false"><source src="${esc(videoUrl)}" /></video>`;
     }
     return "";
   }
@@ -2881,13 +2985,10 @@ function renderStudentDash(settings, student, state) {
                                     <span class="watermark-tag" style="top:54%; right:35%; animation-delay:-4s;">${esc(wmText)}</span>
                                   </div>
                                   ${playerHtml}
+                                  <button type="button" class="player-size-btn" title="تكبير أو تصغير الفيديو" aria-label="تكبير أو تصغير الفيديو">⛶</button>
                                 </div>
                               ` : ""}
                               <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;">
-                                ${itemUrl && /^https?:\/\//i.test(itemUrl) && !extractYoutubeId(itemUrl)
-                                  ? `<a class="jakh-action-btn" href="${esc(itemUrl)}" target="_blank" rel="noopener">فتح الرابط / الملف</a>`
-                                  : ""
-                                }
                                 ${hw
                                   ? (hwSub
                                     ? `<a class="btn btn-teal btn-sm" href="/student?section=results">نتيجة الواجب (${hwSub.pct}%)</a>`
