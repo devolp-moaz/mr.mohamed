@@ -3814,7 +3814,10 @@ function renderStudentAuth(settings, authTab, step, draft, error, notice) {
 
 function renderStudentDash(settings, student, state) {
   const isCenterStudent = Boolean(student.is_center_student || student.center_code);
-  const unlocked = isCenterStudent ? new Set(BRANCHES) : new Set(student.branches || []);
+  const subscribedBranches = isCenterStudent
+    ? [...BRANCHES]
+    : (Array.isArray(student.branches) ? student.branches.map(String).filter(Boolean) : []);
+  const unlocked = new Set(subscribedBranches);
   const unlockedCount = unlocked.size;
   const totalBranches = BRANCHES.length;
   const progressPct = Math.round((unlockedCount / totalBranches) * 100);
@@ -3822,7 +3825,9 @@ function renderStudentDash(settings, student, state) {
 
   const section = state.section || "dashboard";
   const branchParam = state.branch || "";
-  const forumBranchParam = state.forumBranch || BRANCHES[0];
+  const forumBranchParam = subscribedBranches.includes(state.forumBranch)
+    ? String(state.forumBranch)
+    : (subscribedBranches[0] || "");
   const lectureId = state.lectureId || "";
   const examIdParam = state.examId || "";
   const error = state.error || "";
@@ -4350,7 +4355,7 @@ function renderStudentDash(settings, student, state) {
           </div>
           <div style="display:flex; gap:8px; flex-wrap:wrap;">
             <a class="btn btn-teal btn-sm" href="/student?section=codes">تفعيل / طلب كود (${COURSE_PRICE_EGP} ج)</a>
-            <a class="btn btn-blue btn-sm" href="/student?section=forum&forum_branch=${encodeURIComponent(BRANCHES[0])}">منتدى الفروع</a>
+            <a class="btn btn-blue btn-sm" href="/student?section=forum&forum_branch=${encodeURIComponent(forumBranchParam)}">منتدى الفروع</a>
             <a class="btn btn-out btn-sm" href="/student?section=results">عرض نتائجي</a>
           </div>
         </div>
@@ -4362,13 +4367,21 @@ function renderStudentDash(settings, student, state) {
   } else if (section === "branch") {
     mainContentHtml = branchDetailHtml;
   } else if (section === "forum") {
+    if (!forumBranchParam) {
+      mainContentHtml = `
+        <div class="card">
+          <h2 style="font-weight:900; margin-bottom:6px;">منتدى فروع اللغة العربية</h2>
+          <div class="msg-err">لا يمكنك دخول المنتديات قبل تفعيل فرع واحد على الأقل من صفحة الأكواد.</div>
+        </div>
+      `;
+    } else {
     mainContentHtml = `
       <div class="card">
         <h2 style="font-weight:900; margin-bottom:6px;">منتدى فروع اللغة العربية</h2>
-        <p class="muted" style="font-size:0.88rem; margin-bottom:14px;">اختر فرع اللغة العربية، ثم اكتب مشاركتك أو أرفق صورة ليقوم تيم الأدمن بالرد عليها (الردود مخصصة لتيم الأدمن فقط).</p>
+        <p class="muted" style="font-size:0.88rem; margin-bottom:14px;">يمكنك فتح المنتديات الخاصة بفروع اشتراكك فقط، ثم كتابة مشاركتك أو إرفاق صورة لترد عليها الإدارة.</p>
 
         <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;">
-          ${BRANCHES.map(br => `
+          ${subscribedBranches.map(br => `
             <a class="btn ${br === forumBranchParam ? "btn-blue" : "btn-out"} btn-sm" href="/student?section=forum&forum_branch=${encodeURIComponent(br)}">منتدى ${esc(br)}</a>
           `).join("")}
         </div>
@@ -4417,6 +4430,7 @@ function renderStudentDash(settings, student, state) {
         })();
       </script>
     `;
+    }
   } else if (section === "codes") {
     mainContentHtml = `
       <div class="card">
@@ -5826,12 +5840,18 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
     sectionHtml = `
       <div class="card">
         <h3 style="font-weight:900; margin-bottom:10px;">طلاب المنصة</h3>
-        <div class="field" style="max-width:420px;">
-          <label>اختر الصف</label>
-          <select id="studentGradeFilter">
-            <option value="">كل الصفوف</option>
-            ${GRADES.map(g => `<option value="${esc(g)}">${esc(g)}</option>`).join("")}
-          </select>
+        <div class="grid2">
+          <div class="field">
+            <label>اختر الصف</label>
+            <select id="studentGradeFilter">
+              <option value="">كل الصفوف</option>
+              ${GRADES.map(g => `<option value="${esc(g)}">${esc(g)}</option>`).join("")}
+            </select>
+          </div>
+          <div class="field">
+            <label>ابحث بالاسم أو الكود أو رقم الهاتف</label>
+            <input type="search" id="studentSearchFilter" placeholder="اكتب الاسم أو الكود أو رقم الهاتف..." autocomplete="off" />
+          </div>
         </div>
 
         <div id="studentsListContainer"></div>
@@ -5844,6 +5864,7 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
           const allItems = ${safeJsonForScript(studentItemsPayload)};
           const allBranches = ${safeJsonForScript(BRANCHES)};
           const gradeEl = document.getElementById("studentGradeFilter");
+          const searchEl = document.getElementById("studentSearchFilter");
           const listContainer = document.getElementById("studentsListContainer");
           const profileBox = document.getElementById("selectedStudentProfile");
 
@@ -5938,7 +5959,20 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
 
           function renderByGrade() {
             const g = (gradeEl?.value || "").trim();
-            const filtered = allItems.filter(item => !g || String(item.grade) === g);
+            const q = String(searchEl?.value || "").trim().toLowerCase()
+              .replace(/[^\p{L}\p{N}@]/gu, "");
+            const filtered = allItems.filter(item => {
+              if (g && String(item.grade) !== g) return false;
+              if (!q) return true;
+              const haystack = [
+                item.full_name,
+                item.phone,
+                item.center_code,
+                item.is_center_student ? "MO" : ""
+              ].join(" ").toLowerCase()
+                .replace(/[^\p{L}\p{N}@]/gu, "");
+              return haystack.includes(q);
+            });
 
             if (!filtered.length) {
               listContainer.innerHTML = '<p class="muted">لا يوجد طلاب في هذا الصف حالياً.</p>';
@@ -5963,6 +5997,7 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
           }
 
           gradeEl?.addEventListener("change", renderByGrade);
+          searchEl?.addEventListener("input", renderByGrade);
           renderByGrade();
         })();
       </script>
@@ -6895,6 +6930,13 @@ async function handleRequest(req, env) {
     let fd;
     try { fd = await req.formData(); } catch { return redirectRes("/student?section=forum&error=" + encodeURIComponent("تعذر قراءة المشاركة.")); }
     const branch = String(fd.get("branch") || BRANCHES[0]).trim();
+    const isCenterSubscriber = Boolean(student.is_center_student || student.center_code);
+    const subscribedBranches = isCenterSubscriber
+      ? [...BRANCHES]
+      : (Array.isArray(student.branches) ? student.branches.map(String).filter(Boolean) : []);
+    if (!subscribedBranches.includes(branch)) {
+      return redirectRes(`/student?section=forum&error=${encodeURIComponent("لا يمكنك النشر في فرع غير مشترك به.")}`);
+    }
     const message = String(fd.get("message") || "").trim();
     const imageUrl = String(fd.get("image_url") || "").trim();
     if (!message && !imageUrl) {
