@@ -3858,18 +3858,24 @@ function renderStudentDash(settings, student, state) {
     return solvedExamIds.has(String(prevHw.id));
   }
 
+  function isVdoCipherUrl(videoUrl) {
+    if (!/^https?:\/\//i.test(String(videoUrl || "").trim())) return false;
+    try {
+      const hostname = new URL(videoUrl).hostname.toLowerCase();
+      return hostname === "vdocipher.com" || hostname.endsWith(".vdocipher.com");
+    } catch {
+      return false;
+    }
+  }
+
   function buildPlayerFromUrl(videoUrl) {
     const ytId = extractYoutubeId(videoUrl);
     if (ytId) {
       return `<iframe src="https://www.youtube.com/embed/${esc(ytId)}?rel=0&modestbranding=1&disablekb=1" allow="autoplay; encrypted-media; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
     }
     if (videoUrl && /^https?:\/\//i.test(videoUrl)) {
-      let isVdoCipher = false;
-      try {
-        isVdoCipher = /(^|\.)vdocipher\.com$/i.test(new URL(videoUrl).hostname);
-      } catch {}
-      if (isVdoCipher) {
-        return `<iframe src="${esc(videoUrl)}" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
+      if (isVdoCipherUrl(videoUrl)) {
+        return `<iframe title="مشغل VdoCipher" src="${esc(videoUrl)}" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
       }
       return `<iframe src="${esc(videoUrl)}" allow="autoplay; encrypted-media; fullscreen" allowfullscreen sandbox="allow-scripts allow-same-origin allow-presentation"></iframe>`;
     }
@@ -5499,7 +5505,7 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
             <div class="field"><label>الصف الدراسي</label><select name="grade">${GRADES.map(g => `<option value="${esc(g)}">${esc(g)}</option>`).join("")}</select></div>
             <div class="field"><label>الشعبة</label><select name="track">${TRACKS.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join("")}</select></div>
             <div class="field"><label>رقم ترتيب الدرس في الفرع</label><input name="order_num" type="number" min="1" value="${allLectures.length + 1}" /></div>
-            <div class="field"><label>رابط الفيديو الرئيسي (YouTube أو VdoCipher، اختياري إذا أضفت عناصر بالأسفل)</label><input name="video_url" type="text" placeholder="رابط فيديو YouTube أو VdoCipher" /></div>
+            <div class="field"><label>رابط الفيديو الرئيسي (YouTube أو VdoCipher، اختياري إذا أضفت عناصر بالأسفل)</label><input name="video_url" type="url" placeholder="https://player.vdocipher.com/v2/..." /></div>
           </div>
 
           <div style="margin-top:10px; margin-bottom:8px;">
@@ -5535,7 +5541,7 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
                   '<input type="text" class="c-item-title" value="' + defaultTitle.replace(/"/g, "&quot;") + '" placeholder="اكتب اسم العنصر..." required />' +
                 '</div>' +
                 '<div class="field"><label>رابط فيديو YouTube أو VdoCipher (اختياري)</label>' +
-                  '<input type="text" class="c-item-url" placeholder="رابط الفيديو..." />' +
+                  '<input type="url" class="c-item-url" placeholder="https://player.vdocipher.com/v2/..." />' +
                 '</div>' +
               '</div>' +
               '<div class="field"><label>شرح / ملاحظات تظهر للطالب عند الضغط على عرض</label>' +
