@@ -3868,22 +3868,54 @@ function renderStudentDash(settings, student, state) {
     }
   }
 
-  function buildPlayerFromUrl(videoUrl) {
-    const ytId = extractYoutubeId(videoUrl);
-    if (ytId) {
-      return `<iframe src="https://www.youtube.com/embed/${esc(ytId)}?rel=0&modestbranding=1&disablekb=1" allow="autoplay; encrypted-media; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
-    }
-    if (videoUrl && /^https?:\/\//i.test(videoUrl)) {
-      if (isVdoCipherUrl(videoUrl)) {
-        return `<iframe title="مشغل VdoCipher" src="${esc(videoUrl)}" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
-      }
-      return `<iframe src="${esc(videoUrl)}" allow="autoplay; encrypted-media; fullscreen" allowfullscreen sandbox="allow-scripts allow-same-origin allow-presentation"></iframe>`;
-    }
-    if (videoUrl) {
-      return `<video controls controlsList="nodownload noremoteplayback" disablePictureInPicture oncontextmenu="return false" ondragstart="return false"><source src="${esc(videoUrl)}" /></video>`;
-    }
-    return "";
+function extractYoutubeId(url) {
+  if (!url) return "";
+  const m = String(url).trim().match(/(?:v=|\/embed\/|\/shorts\/|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+  return m ? m[1] : "";
+}
+
+function isVdoCipherUrl(videoUrl) {
+  if (!/^https?:\/\//i.test(String(videoUrl || "").trim())) return false;
+  try {
+    const hostname = new URL(videoUrl).hostname.toLowerCase();
+    return hostname === "vdocipher.com" || hostname.endsWith(".vdocipher.com");
+  } catch {
+    return false;
   }
+}
+
+function buildPlayerFromUrl(videoUrl) {
+  let cleanUrl = String(videoUrl || "").trim();
+  if (!cleanUrl) return "";
+
+  if (cleanUrl.includes("<")) {
+    const srcMatch = cleanUrl.match(/src=["']([^"']+)["']/i);
+    if (srcMatch && srcMatch[1]) {
+      cleanUrl = srcMatch[1].trim();
+    } else {
+      return "";
+    }
+  }
+
+  if (cleanUrl.startsWith("//")) {
+    cleanUrl = "https:" + cleanUrl;
+  }
+
+  const ytId = extractYoutubeId(cleanUrl);
+  if (ytId) {
+    return `<iframe src="https://www.youtube.com/embed/${esc(ytId)}?rel=0&modestbranding=1" allow="autoplay; encrypted-media; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
+  }
+
+  if (/^https?:\/\//i.test(cleanUrl)) {
+    if (isVdoCipherUrl(cleanUrl)) {
+      return `<iframe title="مشغل VdoCipher" src="${esc(cleanUrl)}" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
+    }
+    return `<iframe src="${esc(cleanUrl)}" allow="autoplay; encrypted-media; fullscreen" allowfullscreen sandbox="allow-scripts allow-same-origin allow-presentation"></iframe>`;
+  }
+
+  return `<video controls controlsList="nodownload noremoteplayback" disablePictureInPicture oncontextmenu="return false" ondragstart="return false"><source src="${esc(cleanUrl)}" /></video>`;
+}
+
 
   function buildPlayerEmbed(lec) {
     const html = buildPlayerFromUrl(lec.video_url);
