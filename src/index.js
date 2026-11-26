@@ -37,6 +37,7 @@ const TEACHER_MAIN_PHOTO = "https://www.mohammedyoussef2027.com/public/heroPhoto
 const DEFAULT_ADMIN_EMAIL = "mohmed@mr.com";
 const DEFAULT_ADMIN_PASS = "admin123456";
 const PLATFORM_NAME = "منصة محمد يوسف";
+const SITE_ORIGIN = "https://mr-mohamed-yossif-arabic.manasa-moaz.workers.dev";
 const COURSE_PRICE_EGP = 500;
 const ABSENCE_LESSON_PRICE_EGP = 70;
 
@@ -227,7 +228,8 @@ async function getSettings(env) {
     teacher_image: saved.teacher_image || TEACHER_MAIN_PHOTO,
     youtube_url: saved.youtube_url || "",
     tiktok_url: saved.tiktok_url || "",
-    facebook_url: saved.facebook_url || ""
+    facebook_url: saved.facebook_url || "",
+    google_site_verification: saved.google_site_verification || ""
   };
 }
 
@@ -603,6 +605,7 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  ${settings.google_site_verification ? `<meta name="google-site-verification" content="${esc(settings.google_site_verification)}" />` : ""}
   <title>${esc(title)} | ${PLATFORM_NAME}</title>
   <link rel="icon" type="image/png" href="${esc(settings.teacher_image)}" />
   <link rel="shortcut icon" href="${esc(settings.teacher_image)}" />
@@ -2330,16 +2333,13 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
       font-weight: 900;
       backdrop-filter: blur(8px);
     }
-    .watermark-layer { position: absolute; inset: 0; pointer-events: none; z-index: 5; overflow: hidden; }
+    .watermark-layer { position: absolute; inset: 0; pointer-events: none; z-index: 20; overflow: hidden; }
     .watermark-tag {
-      position: absolute; color: rgba(255, 255, 255, 0.34); font-size: 0.84rem;
-      font-weight: 800; transform: rotate(-15deg); white-space: nowrap;
-      animation: wmDrift 12s infinite alternate ease-in-out;
-    }
-    @keyframes wmDrift {
-      0% { top: 14%; right: 8%; }
-      50% { top: 46%; right: 32%; }
-      100% { top: 72%; right: 12%; }
+      position: absolute; right: 8px; bottom: 8px; max-width: calc(100% - 16px);
+      padding: 3px 6px; border-radius: 4px; background: rgba(0, 0, 0, 0.42);
+      color: rgba(255, 255, 255, 0.68); font-size: clamp(9px, 1.1vw, 12px);
+      line-height: 1.35; font-weight: 600; white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis;
     }
     .ticket-img-thumb { max-width: 260px; max-height: 220px; object-fit: contain; border-radius: 12px; border: 1px solid var(--bdr); margin-top: 8px; display: block; }
     .branch-toggle-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin: 10px 0; }
@@ -3864,6 +3864,13 @@ function renderStudentDash(settings, student, state) {
       return `<iframe src="https://www.youtube.com/embed/${esc(ytId)}?rel=0&modestbranding=1&disablekb=1" allow="autoplay; encrypted-media; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
     }
     if (videoUrl && /^https?:\/\//i.test(videoUrl)) {
+      let isVdoCipher = false;
+      try {
+        isVdoCipher = /(^|\.)vdocipher\.com$/i.test(new URL(videoUrl).hostname);
+      } catch {}
+      if (isVdoCipher) {
+        return `<iframe src="${esc(videoUrl)}" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
+      }
       return `<iframe src="${esc(videoUrl)}" allow="autoplay; encrypted-media; fullscreen" allowfullscreen sandbox="allow-scripts allow-same-origin allow-presentation"></iframe>`;
     }
     if (videoUrl) {
@@ -3916,7 +3923,7 @@ function renderStudentDash(settings, student, state) {
   const branchDetailHtml = branchParam ? (() => {
     const canEnter = unlocked.has(branchParam);
     const list = allLectures.filter(l => l.branch === branchParam);
-    const wmText = `${student.full_name} • ${student.phone} • ${PLATFORM_NAME}`;
+    const wmText = `${student.full_name} • ${student.phone}`;
     const denominator = Math.max(list.length, 99);
     const branchPaymentUrl = buildStudentPaymentWaUrl(
       settings,
@@ -4081,8 +4088,7 @@ function renderStudentDash(settings, student, state) {
                               ${playerHtml ? `
                                 <div class="secure-player-box">
                                   <div class="watermark-layer">
-                                    <span class="watermark-tag" style="top:18%; right:10%;">${esc(wmText)}</span>
-                                    <span class="watermark-tag" style="top:54%; right:35%; animation-delay:-4s;">${esc(wmText)}</span>
+                                    <span class="watermark-tag">${esc(wmText)}</span>
                                   </div>
                                   ${playerHtml}
                                   <button type="button" class="player-size-btn" title="تكبير أو تصغير الفيديو" aria-label="تكبير أو تصغير الفيديو">⛶</button>
@@ -5493,7 +5499,7 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
             <div class="field"><label>الصف الدراسي</label><select name="grade">${GRADES.map(g => `<option value="${esc(g)}">${esc(g)}</option>`).join("")}</select></div>
             <div class="field"><label>الشعبة</label><select name="track">${TRACKS.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join("")}</select></div>
             <div class="field"><label>رقم ترتيب الدرس في الفرع</label><input name="order_num" type="number" min="1" value="${allLectures.length + 1}" /></div>
-            <div class="field"><label>رابط الفيديو الرئيسي (اختياري إذا أضفت عناصر بالأسفل)</label><input name="video_url" type="text" placeholder="https://..." /></div>
+            <div class="field"><label>رابط الفيديو الرئيسي (YouTube أو VdoCipher، اختياري إذا أضفت عناصر بالأسفل)</label><input name="video_url" type="text" placeholder="رابط فيديو YouTube أو VdoCipher" /></div>
           </div>
 
           <div style="margin-top:10px; margin-bottom:8px;">
@@ -5528,8 +5534,8 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
                 '<div class="field"><label>اسم العنصر (مثلاً: الكتاب، الشرح، المذاكرة، حل المقالي، حل الكتب)</label>' +
                   '<input type="text" class="c-item-title" value="' + defaultTitle.replace(/"/g, "&quot;") + '" placeholder="اكتب اسم العنصر..." required />' +
                 '</div>' +
-                '<div class="field"><label>رابط فيديو أو ملف (اختياري)</label>' +
-                  '<input type="text" class="c-item-url" placeholder="https://..." />' +
+                '<div class="field"><label>رابط فيديو YouTube أو VdoCipher (اختياري)</label>' +
+                  '<input type="text" class="c-item-url" placeholder="رابط الفيديو..." />' +
                 '</div>' +
               '</div>' +
               '<div class="field"><label>شرح / ملاحظات تظهر للطالب عند الضغط على عرض</label>' +
@@ -6125,6 +6131,7 @@ function renderAdminPage(settings, isAuthed, data, section, error, notice) {
             <div class="field"><label>رابط تيك توك</label><input name="tiktok_url" type="text" value="${esc(settings.tiktok_url)}" placeholder="https://tiktok.com/@..." /></div>
             <div class="field"><label>رابط يوتيوب</label><input name="youtube_url" type="text" value="${esc(settings.youtube_url)}" placeholder="https://youtube.com/@..." /></div>
           </div>
+          <div class="field"><label>رمز إثبات Google Search Console (القيمة داخل content فقط)</label><input name="google_site_verification" type="text" value="${esc(settings.google_site_verification)}" placeholder="مثال: abc123..." /></div>
           <div class="field"><label>رابط صورة الأستاذ (اختياري)</label><input name="teacher_image" type="text" value="${esc(settings.teacher_image)}" /></div>
           <div class="field"><label>رسالة إشعار التنبيه الشفاف المتوهج (اتركه فارغاً لعدم ظهوره)</label><input name="global_notice" type="text" value="${esc(settings.global_notice)}" placeholder="اكتب رسالة التنبيه هنا..." /></div>
           <button type="submit" class="btn btn-blue">حفظ الإعدادات في Firebase</button>
@@ -6176,6 +6183,22 @@ async function handleRequest(req, env) {
   const safeEnv = env || {};
   const url = new URL(req.url);
   const path = url.pathname;
+  if (path === "/robots.txt") {
+    return new Response(
+      `User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /team\nDisallow: /student\nDisallow: /api/\nSitemap: ${SITE_ORIGIN}/sitemap.xml\n`,
+      { headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "public, max-age=3600" } }
+    );
+  }
+  if (path === "/sitemap.xml") {
+    const lastmod = new Date().toISOString().slice(0, 10);
+    const urls = ["", "/about", "/privacy"].map(page =>
+      `<url><loc>${SITE_ORIGIN}${page}</loc><lastmod>${lastmod}</lastmod></url>`
+    ).join("");
+    return new Response(
+      `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}</urlset>`,
+      { headers: { "Content-Type": "application/xml; charset=utf-8", "Cache-Control": "public, max-age=3600" } }
+    );
+  }
   const secret = safeEnv.SESSION_SECRET || "jakh-secret-2026";
   const settings = await getSettings(safeEnv);
 
@@ -7476,6 +7499,7 @@ async function handleRequest(req, env) {
       facebook_url: String(fd.get("facebook_url") || "").trim(),
       tiktok_url: String(fd.get("tiktok_url") || "").trim(),
       youtube_url: String(fd.get("youtube_url") || "").trim(),
+      google_site_verification: String(fd.get("google_site_verification") || "").trim(),
       teacher_image: String(fd.get("teacher_image") || TEACHER_MAIN_PHOTO).trim(),
       global_notice: String(fd.get("global_notice") || "").trim()
     };
