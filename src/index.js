@@ -314,6 +314,101 @@ function checkCenterStudentLectureAccess(student, lecture) {
   return { allowed: true, reason: "" };
 }
 
+function buildLocalArabicTutorAnswer(question, subscribedBranches = []) {
+  const q = String(question || "").trim();
+  const lower = q.toLowerCase();
+  if (subscribedBranches.length === 0) {
+    return "لا يمكنك استخدام المساعد حتى تفعّل فرعاً واحداً على الأقل.";
+  }
+  const requestedBranch = BRANCHES.find(branch => q.includes(branch));
+  if (requestedBranch && !subscribedBranches.includes(requestedBranch)) {
+    return `لا أستطيع الإجابة في فرع ${requestedBranch} لأنك غير مشترك فيه. فعّل الفرع أولاً من صفحة الأكواد.`;
+  }
+  if (!q) return "اكتب السؤال أو الجملة أولاً.";
+  if (/حل\s*(السؤال|المسألة)|اختيار من متعدد|اختر/.test(lower)) {
+    return "لحل الاختيار من متعدد: اكتب نص السؤال وخياراته كاملة. سأستخرج المطلوب، أنفي الإجابات الخطأ بذكر قاعدة واضحة، ثم أختار الإجابة وأشرح سببها.";
+  }
+  if (/عرب|اعراب|إعراب/.test(lower)) {
+    return "أرسل الجملة كاملة ووضع المطلوب منها. سأقسمها إلى: الجملة اسمية/فعلية، المحكوم عليه، المبتدأ والخبر أو الفعل والفاعل، والحالة وعلامة الإعراب.";
+  }
+  if (/مبتدأ|خبر|كان|إن/.test(lower)) {
+    return "الجملة الاسمية تبدأ بمبتدأ مرفوع يحدد المسند إليه، ويتبعها خبر يبين حكمه. مثال «الطالب مجتهد»: الطالب مبتدأ مرفوع، مجتهد خبر مرفوع. وبعد كان: «كان الطالب مجتهداً» يصير الطالب اسماً لكان مرفوعاً، مجتهداً خبر كان منصوباً.";
+  }
+  if (/فاع|مفعول|نائب/.test(lower)) {
+    return "حدد الفعل أولاً، ثم اسأل: من قام بالفعل؟ الإجابة هي الفاعل مرفوعاً. ثم اسأل: على ماذا وقع الفعل؟ الإجابة المفعول به منصوباً. إن حذف الفاعل واكتمل معنى الكلام دخل النائب مكانه، فيرفع ويحمل عمل الفعل.";
+  }
+  if (/تشبيه|استعارة|كناية|بديع|بلاغ/.test(lower)) {
+    return "ابدأ بتحديد أركان الصورة: التشبيه: المشبه والمشبه به والأداة والوجه؛ الاستعارة: الركن المستعار منه والمستعار له ودليل الانتقال؛ الكناية: اللازم المقصود. أرسل العبارة وسأنفذ التحليل.";
+  }
+  if (/وزن|ماضي|مضارع|أمر|صرف|وزن/.test(lower)) {
+    return "في الصرف: أخرج الفعل من الزمن، حدد المادة الأصلية الثلاثية أو غيرها، النوع المجرد والمزيد، وبناؤه للمعلوم أو للمجهول، ثم اشتق الصيغة المطلوبة. أرسل الكلمة أو الفقرة.";
+  }
+  if (/نص|شعر|بيت|قصة|قرآن|مطلع|فكرة/.test(lower)) {
+    return "حل سؤال النص يكون هكذا: اذكر المعنى المباشر، استخرج المعنى البلاغي، ربط الشاهد بالفكرة، وأثبت دليلًا من النص. أرسل النص والسؤال كاملين.";
+  }
+  if (/مذاكرة|امتحان|تراكم|تنسي/.test(lower)) {
+    return "لتقليل تراكم المحاضرات: راجع المحاضرة السابقة 10 دقائق، حل واجبها بدون جواب، صحح أخطاءك، ثم انتقل للدرس التالي. إذا بقيت لديك محاضرات غير مشاهدة، ابدأ بالأقدم.";
+  }
+  return "أستطيع مساعدتك في النحو والصرف والبلاغة والأدب والنصوص والمطالعة والإنشاء. اكتب السؤال كاملًا مع الاختيارات إن وجدت، وسأحله شرحاً خطوة بخطوة.";
+}
+
+async function callArabicTutor(env, question, student) {
+  const isCenter = Boolean(student?.is_center_student || student?.center_code);
+  const subscribedBranches = isCenter
+    ? [...BRANCHES]
+    : (Array.isArray(student?.branches) ? student.branches.map(String).filter(Boolean) : []);
+  const branchContext = subscribedBranches.join("، ");
+  const prompt =
+    "أنت معلم عربي أزهري خبير في النحو والصرف والبلاغة والأدب والنصوص والمطالعة والإنشاء للثانوية الأزهرية. " +
+    "افهم العربية المصرية والعربية الفصحى. الحل أولاً: وضح المطلوب، حله خطوة بخطوة، اذكر القاعدة والدليل، ثم الخلاصة. " +
+    "لا تخترع إجابة إذا كان السؤال غير مكتمل؛ اطلب البيانات الناقصة. " +
+    `يمنع الإجابة أو شرح أي فرع خارج فروع اشتراك الطالب فقط: ${branchContext || "لا توجد فروع مشترك بها"}. ` +
+    "إذا طلب الطالب فرعاً غير مشترك فيه، قل له بلطف إنه غير مشترك في هذا الفرع ويحتاج تفعيل الكود. " +
+    `اسم الطالب: ${student?.full_name || "طالب"}؛ الصف: ${student?.grade || ""}؛ الشعبة: ${student?.track || ""}.` +
+    `السؤال: ${question}`;
+
+  if (env && env.AI && typeof env.AI.run === "function") {
+    try {
+      const result = await env.AI.run("@cf/qwen/qwen2.5-coder-32b-instruct", {
+        messages: [
+          { role: "system", content: "معلم لغة عربية أزهري، اشرح بالإيجاز مع الدليل." },
+          { role: "user", content: prompt }
+        ],
+        max_tokens: 700
+      });
+      return String(result?.response || result?.result || "").trim() || buildLocalArabicTutorAnswer(question, subscribedBranches);
+    } catch {}
+  }
+
+  if (env && env.TUTOR_API_URL) {
+    try {
+      const res = await fetch(env.TUTOR_API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(env.TUTOR_API_KEY ? { Authorization: `Bearer ${env.TUTOR_API_KEY}` } : {})
+        },
+        body: JSON.stringify({
+          model: env.TUTOR_API_MODEL || "gpt-4o-mini",
+          messages: [
+            { role: "system", content: "معلم لغة عربية أزهري خبير في النحو والصرف والبلاغة والأدب والنصوص والمطالعة والإنشاء." },
+            { role: "user", content: prompt }
+          ],
+          max_tokens: 700,
+          temperature: 0.2
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const answer = data?.response || data?.choices?.[0]?.message?.content || data?.answer;
+        if (answer) return String(answer).trim();
+      }
+    } catch {}
+  }
+
+  return buildLocalArabicTutorAnswer(question, subscribedBranches);
+}
+
 function buildStudentPaymentWaUrl(settings, student, itemLabel, priceEgp, extraLines = []) {
   const waPhone = normalizeWaPhone(settings.admin_whatsapp || settings.vodafone_number || "01066329782");
   const isCenter = Boolean(student && (student.is_center_student || student.center_code));
@@ -492,6 +587,12 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
   const defaultChatPhone = student ? String(student.phone || "") : "";
   const academicUnreadCount = Number(options.academicUnreadCount || 0);
   const academicUnreadItems = Array.isArray(options.academicUnreadItems) ? options.academicUnreadItems : [];
+  const aiExamReminder = options.aiExamReminder || null;
+  const isCenterSubscriber = Boolean(student && (student.is_center_student || student.center_code));
+  const studentSubscribedBranches = isCenterSubscriber
+    ? [...BRANCHES]
+    : (student && Array.isArray(student.branches) ? student.branches.map(String).filter(Boolean) : []);
+  const canUseArabicTutor = studentSubscribedBranches.length > 0;
 
   const ytHref = safeExternalUrl(settings.youtube_url);
   const ttHref = safeExternalUrl(settings.tiktok_url);
@@ -508,33 +609,33 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Aref+Ruqaa:wght@700&display=swap" />
   <style>
     :root {
-      --bg: #f5efdf;
-      --surface: #fffaf0;
-      --surface-soft: #eee3c5;
-      --txt: #2f2a1f;
-      --muted: #766b56;
-      --accent: #5f6308;
-      --accent-dark: #3f4305;
-      --accent-2: #d4a72c;
+      --bg: #edf7f4;
+      --surface: #fffdf8;
+      --surface-soft: #e4f1ec;
+      --txt: #18343a;
+      --muted: #60777a;
+      --accent: #087d78;
+      --accent-dark: #075b58;
+      --accent-2: #e6a84f;
       --err: #dc2626;
-      --bdr: rgba(36, 107, 253, 0.15);
-      --thuluth-color: rgba(36, 107, 253, 0.035);
-      --shadow-sm: 0 8px 22px rgba(30, 55, 90, 0.07);
-      --shadow-md: 0 18px 46px rgba(30, 55, 90, 0.10);
-      --shadow-lg: 0 28px 70px rgba(30, 55, 90, 0.16);
+      --bdr: rgba(8, 125, 120, 0.16);
+      --thuluth-color: rgba(8, 125, 120, 0.045);
+      --shadow-sm: 0 8px 22px rgba(45, 93, 91, 0.08);
+      --shadow-md: 0 18px 46px rgba(45, 93, 91, 0.12);
+      --shadow-lg: 0 28px 70px rgba(45, 93, 91, 0.16);
     }
     body.dark {
-      --bg: #070a12;
-      --surface: #0d1320;
-      --surface-soft: #121a2a;
-      --txt: #f7f9ff;
-      --muted: #a1abc0;
-      --accent: #7c8cff;
-      --accent-dark: #5d6fe8;
-      --accent-2: #b267ff;
+      --bg: #101a24;
+      --surface: #17232d;
+      --surface-soft: #1d3038;
+      --txt: #eef6f4;
+      --muted: #abb9b7;
+      --accent: #65bfb1;
+      --accent-dark: #4da698;
+      --accent-2: #e7be72;
       --err: #f87171;
-      --bdr: rgba(154, 163, 255, 0.14);
-      --thuluth-color: rgba(124, 140, 255, 0.035);
+      --bdr: rgba(101, 191, 177, 0.14);
+      --thuluth-color: rgba(101, 191, 177, 0.09);
       --shadow-sm: 0 6px 18px rgba(0, 0, 0, 0.28);
       --shadow-md: 0 18px 44px rgba(0, 0, 0, 0.38);
       --shadow-lg: 0 28px 65px rgba(0, 0, 0, 0.52);
@@ -549,10 +650,23 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
       overflow-x: hidden;
       transition: background-color 0.28s ease, color 0.22s ease;
     }
+    body:not(.dark) {
+      background:
+        radial-gradient(ellipse at 12% 18%, rgba(255, 255, 255, 0.96) 0 5%, transparent 16%),
+        radial-gradient(ellipse at 82% 12%, rgba(255, 248, 208, 0.78) 0 7%, transparent 20%),
+        radial-gradient(circle at 72% 78%, rgba(78, 190, 178, 0.14), transparent 22rem),
+        linear-gradient(135deg, #edf8f5 0%, #f8fbf5 48%, #eaf4ef 100%);
+      background-size: 140% 140%, 130% 130%, 100% 100%, 100% 100%;
+      animation: daylightDrift 24s ease-in-out infinite alternate;
+    }
+    @keyframes daylightDrift {
+      0% { background-position: 0% 20%, 100% 0%, 70% 80%, 0% 0%; }
+      100% { background-position: 100% 42%, 20% 28%, 82% 64%, 100% 100%; }
+    }
     body.dark {
       background:
-        radial-gradient(circle at 82% 8%, rgba(178, 103, 255, 0.10), transparent 24rem),
-        radial-gradient(circle at 12% 55%, rgba(93, 111, 232, 0.10), transparent 26rem),
+        radial-gradient(circle at 82% 8%, rgba(101, 191, 177, 0.07), transparent 24rem),
+        radial-gradient(circle at 12% 55%, rgba(231, 190, 114, 0.04), transparent 26rem),
         var(--bg);
     }
     body.dark .topbar {
@@ -591,7 +705,7 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
     body.dark .btn-blue,
     body.dark .btn-teal,
     body.dark .btn-gold {
-      background: linear-gradient(135deg, #5d6fe8, #9c5cf1);
+      background: linear-gradient(135deg, #087d78, #64d6c5);
       box-shadow: 0 10px 28px rgba(124, 140, 255, 0.18);
     }
     body.dark .btn-out {
@@ -604,7 +718,7 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
     body.dark ::-webkit-scrollbar { width: 10px; height: 10px; }
     body.dark ::-webkit-scrollbar-track { background: #060b16; }
     body.dark ::-webkit-scrollbar-thumb {
-      background: linear-gradient(180deg, #5d6fe8, #9c5cf1);
+      background: linear-gradient(180deg, #087d78, #64d6c5);
       border: 2px solid #060b16;
       border-radius: 999px;
     }
@@ -667,27 +781,213 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
       position: fixed;
       inset: 0;
       pointer-events: none;
-      z-index: 0;
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      align-items: center;
-      justify-items: center;
-      padding: 36px 20px;
-      gap: 48px;
+      z-index: 70;
+      display: block;
       overflow: hidden;
+    }
+    .thuluth-word-wrap {
+      position: absolute;
+      left: -90px;
+      top: 18%;
+      pointer-events: auto;
+      animation: movingJakhWord 38s linear infinite;
     }
     .thuluth-phrase {
       font-family: 'Aref Ruqaa', 'Cairo', serif;
-      font-size: clamp(2.1rem, 4.4vw, 3.6rem);
-      font-weight: 700;
-      color: var(--thuluth-color);
-      transform: rotate(-14deg);
+      position: relative;
+      padding: 5px 10px;
+      border: 1px solid rgba(101, 191, 177, 0.32);
+      border-radius: 999px;
+      background: rgba(16, 35, 45, 0.82);
+      backdrop-filter: blur(8px);
+      font-size: 0.82rem;
+      font-weight: 900;
+      color: #dff9f3;
+      transform: rotate(-8deg);
       user-select: none;
       white-space: nowrap;
       line-height: 1.3;
+      box-shadow: 0 8px 24px rgba(8, 60, 58, 0.16);
+      cursor: pointer;
+      pointer-events: auto;
+      outline: 1px solid rgba(101, 191, 177, 0.18);
+      box-shadow:
+        0 0 8px rgba(101, 255, 215, 0.42),
+        0 0 18px rgba(52, 255, 185, 0.22),
+        0 8px 24px rgba(8, 60, 58, 0.16);
+      filter: drop-shadow(0 0 7px rgba(101, 255, 215, 0.34));
+      animation: jakhWordGlow 2.2s ease-in-out infinite alternate;
     }
-    @media (max-width: 760px) {
-      #thuluthBg { grid-template-columns: repeat(2, 1fr); gap: 36px; }
+    .thuluth-close-btn {
+      position: absolute;
+      left: -10px;
+      top: -10px;
+      z-index: 71;
+      width: 24px;
+      height: 24px;
+      border: 1.5px solid rgba(207, 255, 241, 0.86);
+      border-radius: 50%;
+      background: #075b58;
+      color: #ffffff;
+      display: grid;
+      place-items: center;
+      font-size: 0.82rem;
+      line-height: 1;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 0 10px rgba(101, 255, 215, 0.72);
+      pointer-events: auto;
+    }
+    @keyframes jakhWordGlow {
+      0% { filter: drop-shadow(0 0 4px rgba(101, 255, 215, 0.20)) brightness(0.92); }
+      100% { filter: drop-shadow(0 0 12px rgba(101, 255, 215, 0.72)) brightness(1.18); }
+    }
+    .thuluth-phrase:active {
+      animation-play-state: paused;
+      transform: scale(1.12) rotate(-2deg);
+    }
+    @keyframes movingJakhWord {
+      0% { left: -90px; top: 18%; transform: rotate(-8deg) scale(0.92); }
+      25% { left: 28%; top: 76%; transform: rotate(5deg) scale(1); }
+      50% { left: 72%; top: 38%; transform: rotate(-5deg) scale(0.96); }
+      75% { left: 42%; top: 8%; transform: rotate(7deg) scale(1); }
+      100% { left: calc(100% + 30px); top: 62%; transform: rotate(-7deg) scale(0.92); }
+    }
+
+    .jakh-booking-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 120;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(7, 20, 25, 0.68);
+      backdrop-filter: blur(10px);
+    }
+    .jakh-booking-modal.open { display: flex; }
+    .jakh-booking-card {
+      width: min(520px, 100%);
+      position: relative;
+      text-align: center;
+      padding: 30px 24px 24px;
+      border-radius: 24px;
+      border: 1px solid rgba(101, 191, 177, 0.38);
+      background: var(--surface);
+      box-shadow: 0 28px 80px rgba(0, 0, 0, 0.28);
+      animation: bookingPop 0.32s ease-out;
+    }
+    @keyframes bookingPop {
+      from { opacity: 0; transform: scale(0.86) translateY(18px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .jakh-booking-close {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      width: 36px;
+      height: 36px;
+      border: 1px solid var(--bdr);
+      border-radius: 50%;
+      background: var(--surface-soft);
+      color: var(--txt);
+      cursor: pointer;
+      font-weight: 900;
+    }
+    .jakh-booking-icon {
+      width: 70px;
+      height: 70px;
+      margin: 0 auto 12px;
+      display: grid;
+      place-items: center;
+      border-radius: 22px;
+      background: linear-gradient(135deg, #087d78, #64d6c5);
+      color: #fff;
+      font-size: 2rem;
+      box-shadow: 0 16px 34px rgba(8, 125, 120, 0.22);
+    }
+    .jakh-booking-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .jakh-prayer-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 125;
+      align-items: center;
+      justify-content: center;
+      padding: 22px;
+      background: rgba(7, 20, 25, 0.74);
+      backdrop-filter: blur(12px);
+    }
+    .jakh-prayer-modal.open { display: flex; }
+    .jakh-prayer-arch {
+      position: relative;
+      width: min(470px, 92vw);
+      min-height: 410px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 70px 38px 38px;
+      border: 4px solid #d4b56a;
+      border-bottom-width: 10px;
+      border-radius: 230px 230px 28px 28px;
+      background:
+        radial-gradient(circle at 50% 24%, rgba(231, 190, 114, 0.18), transparent 8rem),
+        linear-gradient(145deg, #fffdf7 0%, #edf7f4 100%);
+      box-shadow:
+        0 0 0 8px rgba(8, 125, 120, 0.28),
+        0 28px 70px rgba(0, 0, 0, 0.32),
+        inset 0 0 38px rgba(212, 181, 106, 0.16);
+      animation: prayerOpen 0.38s ease-out;
+      overflow: hidden;
+    }
+    .jakh-prayer-arch::before,
+    .jakh-prayer-arch::after {
+      content: "◆";
+      position: absolute;
+      top: 34px;
+      color: #087d78;
+      font-size: 1.2rem;
+      text-shadow: 0 0 14px rgba(8, 125, 120, 0.24);
+    }
+    .jakh-prayer-arch::before { right: 42px; }
+    .jakh-prayer-arch::after { left: 42px; }
+    @keyframes prayerOpen {
+      from { opacity: 0; transform: translateY(28px) scale(0.88); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .jakh-prayer-text {
+      font-family: "DecoType Thuluth", "Thuluth", "Aref Ruqaa", "Traditional Arabic", serif;
+      color: #075b58;
+      font-size: clamp(1.35rem, 4vw, 2.05rem);
+      line-height: 1.75;
+      font-weight: 900;
+    }
+    .jakh-prayer-close,
+    .jakh-prayer-hide {
+      border: 1px solid var(--bdr);
+      border-radius: 12px;
+      background: var(--surface-soft);
+      color: var(--txt);
+      cursor: pointer;
+      font-weight: 900;
+      padding: 9px 14px;
+    }
+    .jakh-prayer-actions {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 18px;
+      flex-wrap: wrap;
+    }
+    @media (max-width: 520px) {
+      .jakh-booking-actions { grid-template-columns: 1fr; }
     }
 
     .page-layer { position: relative; z-index: 1; }
@@ -712,10 +1012,21 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
     .brand-box { display: flex; align-items: center; gap: 13px; }
     .brand-logo-badge {
       width: 64px; height: 64px; border-radius: 18px;
-      background: linear-gradient(135deg, #5f6308 0%, #d4a72c 100%);
+      background: linear-gradient(135deg, #087d78 0%, #e6a84f 100%);
       color: #fff; font-weight: 900; display: grid; place-items: center; font-size: 0.88rem;
       box-shadow: 0 12px 28px rgba(93, 111, 232, 0.30);
       letter-spacing: -0.5px;
+      font-family: "Diwani", "Diwani Letter", "DecoType Thuluth", "Traditional Arabic", "Aref Ruqaa", "Cairo", serif;
+      font-size: 0.78rem;
+      line-height: 1.15;
+      text-align: center;
+      padding: 5px;
+    }
+    .brand-thuluth-name {
+      font-family: "DecoType Thuluth", "Thuluth", "Aref Ruqaa", "Traditional Arabic", serif;
+      font-size: 1.28rem;
+      line-height: 1.45;
+      letter-spacing: 0.2px;
     }
 
     .notif-bell-wrap {
@@ -825,7 +1136,7 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
       box-shadow: 0 2px 6px rgba(13, 71, 161, 0.25);
       transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
     }
-    .mode-switch input:checked + .mode-track { background: #1565c0; }
+    .mode-switch input:checked + .mode-track { background: #087d78; }
     .mode-switch input:checked + .mode-track::after { transform: translateX(22px); }
     .mode-text { font-size: 0.82rem; font-weight: 800; color: var(--txt); }
 
@@ -847,7 +1158,7 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
     .btn:active { transform: translateY(0) scale(0.985); }
 
     .btn-blue {
-      background: linear-gradient(135deg, #5d6fe8 0%, #8c62f1 100%);
+      background: linear-gradient(135deg, #087d78 0%, #64d6c5 100%);
       color: #fff;
       box-shadow: 0 9px 24px rgba(93, 111, 232, 0.30);
     }
@@ -861,7 +1172,7 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
     .btn-teal:hover { box-shadow: 0 11px 26px rgba(25, 118, 210, 0.4); }
 
     .btn-gold {
-      background: linear-gradient(135deg, #1e88e5, #0d47a1);
+      background: linear-gradient(135deg, #087d78, #075b58);
       color: #ffffff;
       box-shadow: 0 6px 18px rgba(30, 136, 229, 0.28);
     }
@@ -934,7 +1245,7 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
     }
 
     .jakh-week-banner {
-      background: linear-gradient(125deg, #0d47a1 0%, #1976d2 100%);
+      background: linear-gradient(125deg, #075b58 0%, #087d78 100%);
       color: #fff;
       padding: 22px 26px;
       border-radius: 22px;
@@ -981,7 +1292,7 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
       transition: background-color 0.22s ease, color 0.22s ease;
     }
     .lec-accordion-item.is-open .lec-accordion-header {
-      background: linear-gradient(125deg, #0d47a1 0%, #1976d2 100%);
+      background: linear-gradient(125deg, #075b58 0%, #087d78 100%);
       color: #ffffff;
     }
     .lec-header-left {
@@ -1065,7 +1376,7 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
     .jakh-action-btn {
       display: inline-flex; align-items: center; justify-content: center; gap: 6px;
       padding: 9px 17px; border-radius: 12px;
-      background: linear-gradient(135deg, #0d47a1, #1976d2);
+      background: linear-gradient(135deg, #075b58, #087d78);
       color: #ffffff; font-weight: 800; font-size: 0.85rem;
       text-decoration: none; border: none; cursor: pointer;
       box-shadow: 0 5px 14px rgba(13, 71, 161, 0.28);
@@ -1161,7 +1472,7 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
       padding: 0 22px;
       border-radius: 999px;
       border: none;
-      background: linear-gradient(135deg, #5d6fe8 0%, #9c5cf1 100%);
+      background: linear-gradient(135deg, #087d78 0%, #64d6c5 100%);
       color: #ffffff;
       font-weight: 900;
       font-size: 0.95rem;
@@ -1222,7 +1533,7 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
       margin: 12px 16px 0;
       padding: 12px 14px;
       border-radius: 14px;
-      background: linear-gradient(135deg, #5f6308, #777b16);
+      background: linear-gradient(135deg, #087d78, #39aaa0);
       color: #fff;
       font-size: 0.86rem;
       font-weight: 900;
@@ -1233,8 +1544,33 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
       background: linear-gradient(135deg, #74633a, #9d8a57);
       box-shadow: 0 7px 0 #574a2c, 0 12px 22px rgba(87, 74, 44, 0.18);
     }
+    .outside-hours-flyer {
+      position: fixed;
+      z-index: 140;
+      top: 18%;
+      right: -420px;
+      max-width: calc(100vw - 30px);
+      padding: 14px 18px;
+      border: 1px solid rgba(231, 190, 114, 0.62);
+      border-radius: 999px;
+      background: linear-gradient(135deg, #17232d, #075b58);
+      color: #fff8dc;
+      font-family: "DecoType Thuluth", "Thuluth", "Aref Ruqaa", "Traditional Arabic", serif;
+      font-size: clamp(1rem, 2.4vw, 1.35rem);
+      font-weight: 900;
+      line-height: 1.5;
+      box-shadow: 0 16px 38px rgba(7, 91, 88, 0.28);
+      pointer-events: none;
+      animation: outsideHoursFly 7s cubic-bezier(.22,.72,.28,1) forwards;
+    }
+    @keyframes outsideHoursFly {
+      0% { right: -420px; transform: translateY(0) rotate(-3deg); }
+      18% { right: 18px; transform: translateY(-8px) rotate(2deg); }
+      72% { right: 18px; transform: translateY(38px) rotate(-1deg); }
+      100% { right: calc(100% + 420px); transform: translateY(70px) rotate(3deg); }
+    }
     .support-chat-header {
-      background: linear-gradient(125deg, #4d5107, #777b16);
+      background: linear-gradient(125deg, #075b58, #087d78);
       color: #ffffff;
       padding: 15px 18px;
       display: flex;
@@ -1274,7 +1610,7 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
       box-shadow: var(--shadow-sm);
     }
     .chat-bubble-user {
-      background: linear-gradient(135deg, #777b16, #a99b24);
+      background: linear-gradient(135deg, #087d78, #e6a84f);
       color: #ffffff;
       padding: 11px 14px;
       border-radius: 16px 16px 4px 16px;
@@ -1331,6 +1667,77 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
     }
     .support-img-chip.has-img { display: flex; }
     .support-composer-row { display: flex; align-items: center; gap: 8px; }
+    .arabic-ai-fab {
+      position: fixed;
+      left: 20px;
+      bottom: 82px;
+      z-index: 82;
+      height: 54px;
+      border: 1.5px solid rgba(101, 191, 177, 0.48);
+      border-radius: 999px;
+      padding: 0 16px;
+      background: linear-gradient(135deg, #075b58, #087d78);
+      color: #fff;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 14px 32px rgba(7, 91, 88, 0.28);
+    }
+    .arabic-ai-window {
+      display: none;
+      position: fixed;
+      left: 20px;
+      bottom: 148px;
+      z-index: 86;
+      width: min(430px, calc(100vw - 24px));
+      height: min(580px, calc(100vh - 178px));
+      border: 1.5px solid var(--bdr);
+      border-radius: 22px;
+      background: var(--surface);
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
+      flex-direction: column;
+    }
+    .arabic-ai-window.open { display: flex; }
+    .arabic-ai-header {
+      padding: 14px 16px;
+      background: linear-gradient(135deg, #075b58, #087d78);
+      color: #fff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .arabic-ai-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px;
+      background: var(--surface-soft);
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+    .arabic-ai-bubble {
+      max-width: 88%;
+      padding: 10px 12px;
+      border-radius: 15px 15px 15px 4px;
+      background: var(--surface);
+      border: 1px solid var(--bdr);
+      font-size: 0.88rem;
+      line-height: 1.85;
+      box-shadow: var(--shadow-sm);
+    }
+    .arabic-ai-bubble.user {
+      align-self: flex-end;
+      border-radius: 15px 15px 4px 15px;
+      background: linear-gradient(135deg, #087d78, #43a99d);
+      color: #fff;
+    }
+    .arabic-ai-form {
+      display: flex;
+      gap: 8px;
+      padding: 11px;
+      border-top: 1px solid var(--bdr);
+      background: var(--surface);
+    }
     .plus-attach-btn {
       width: 42px;
       height: 42px;
@@ -1352,7 +1759,7 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
       margin: 14px auto 0;
       padding: 15px 22px;
       border-radius: 20px;
-      background: linear-gradient(125deg, #0d47a1, #1976d2);
+      background: linear-gradient(125deg, #075b58, #087d78);
       color: #fff;
       box-shadow: var(--shadow-md);
       display: flex;
@@ -1434,6 +1841,21 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
     @media (max-width: 880px) { .dash-shell, .dash-shell.collapsed { grid-template-columns: 1fr; } }
 
     .right-drawer { padding: 17px 13px; position: sticky; top: 78px; }
+    #dashShell .right-drawer {
+      border-radius: 22px;
+      border: 1.5px solid var(--bdr);
+      background:
+        radial-gradient(circle at 20% 0%, rgba(101, 191, 177, 0.12), transparent 9rem),
+        var(--surface);
+    }
+    #dashShell .nav-item-link {
+      min-height: 48px;
+      border: 1px solid transparent;
+    }
+    #dashShell .nav-item-link:hover {
+      border-color: var(--bdr);
+      transform: translateX(-2px);
+    }
     .drawer-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 0 4px; }
     .collapse-btn {
       width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--bdr);
@@ -1447,7 +1869,7 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
     }
     .nav-item-link:hover { background: var(--surface-soft); }
     .nav-item-link.active {
-      background: linear-gradient(135deg, #5d6fe8 0%, #9c5cf1 100%);
+      background: linear-gradient(135deg, #087d78 0%, #64d6c5 100%);
       color: #fff;
       box-shadow: 0 8px 22px rgba(93, 111, 232, 0.22);
     }
@@ -1460,13 +1882,80 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
     .dash-shell.collapsed .nav-label, .dash-shell.collapsed .sub-nav, .dash-shell.collapsed .drawer-title { display: none; }
 
     .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-bottom: 18px; }
+    .student-welcome-card {
+      position: relative;
+      overflow: hidden;
+      min-height: 190px;
+      border: 1.5px solid rgba(101, 191, 177, 0.32);
+      border-radius: 24px;
+      padding: 24px;
+      background:
+        radial-gradient(circle at 90% 20%, rgba(230, 168, 79, 0.13), transparent 10rem),
+        linear-gradient(135deg, var(--surface) 0%, var(--surface-soft) 100%);
+      box-shadow: var(--shadow-md);
+    }
+    .student-welcome-card::after {
+      content: "محمد يوسف";
+      position: absolute;
+      left: 18px;
+      bottom: -16px;
+      font-family: "DecoType Thuluth", "Thuluth", "Aref Ruqaa", serif;
+      font-size: clamp(3.2rem, 8vw, 6.5rem);
+      color: rgba(101, 191, 177, 0.08);
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    .student-thuluth-title,
+    .student-thuluth-title * {
+      font-family: "DecoType Thuluth", "Thuluth", "Aref Ruqaa", "Traditional Arabic", serif !important;
+    }
+    .student-thuluth-title {
+      font-size: clamp(1.32rem, 3vw, 1.92rem);
+      line-height: 1.35;
+      color: var(--accent);
+      letter-spacing: 0.2px;
+      text-shadow: 0 6px 18px rgba(8, 125, 120, 0.10);
+    }
+    .student-progress-panel {
+      display: grid;
+      grid-template-columns: 170px 1fr;
+      gap: 18px;
+      align-items: center;
+    }
+    @media (max-width: 720px) {
+      .student-progress-panel { grid-template-columns: 1fr; }
+    }
+    .student-progress-ring {
+      width: 150px;
+      height: 150px;
+      margin: auto;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at center, var(--surface) 57%, transparent 58%),
+        conic-gradient(#087d78 var(--student-progress, 0%), rgba(101, 191, 177, 0.16) 0);
+      box-shadow: 0 15px 32px rgba(8, 125, 120, 0.16);
+      position: relative;
+    }
+    .student-progress-ring strong {
+      font-size: 1.55rem;
+      color: var(--accent);
+    }
+    .student-section-heading {
+      font-family: "DecoType Thuluth", "Thuluth", "Aref Ruqaa", serif;
+      font-size: 1.55rem;
+      line-height: 1.45;
+      color: var(--txt);
+      margin-bottom: 12px;
+    }
     .kpi-card {
-      background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%);
+      background: linear-gradient(135deg, #075b58 0%, #087d78 100%);
       color: #fff; border-radius: 20px; padding: 19px;
       display: flex; justify-content: space-between; align-items: center;
       box-shadow: var(--shadow-md);
     }
-    .kpi-card.teal-kpi { background: linear-gradient(135deg, #1565c0 0%, #1e88e5 100%); }
+    .kpi-card.teal-kpi { background: linear-gradient(135deg, #075b58 0%, #087d78 100%); }
     .kpi-card.gold-kpi { background: linear-gradient(135deg, #0b3c8a 0%, #2196f3 100%); }
     .kpi-num { font-size: 1.65rem; font-weight: 900; line-height: 1.1; }
     .kpi-lbl { font-size: 0.86rem; font-weight: 700; opacity: 0.94; margin-top: 4px; }
@@ -1489,10 +1978,86 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
     .teacher-color-meter .bw-layer { filter: grayscale(100%) contrast(1.05); }
     .teacher-color-meter .color-reveal { position: absolute; inset: 0; overflow: hidden; transition: clip-path 0.45s ease; }
     .prog-bar-bg { height: 9px; border-radius: 999px; background: var(--surface-soft); overflow: hidden; margin: 10px 0; }
-    .prog-bar-fill { height: 100%; background: linear-gradient(90deg, #1565c0, #42a5f5); border-radius: 999px; transition: width 0.4s ease; }
+    .prog-bar-fill { height: 100%; background: linear-gradient(90deg, #087d78, #64d6c5); border-radius: 999px; transition: width 0.4s ease; }
 
     .course-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(265px, 1fr)); gap: 16px; }
-    .course-card { overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; }
+    .course-card {
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border-radius: 22px;
+      border: 1.5px solid var(--bdr);
+      box-shadow: var(--shadow-md);
+      transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+    }
+    .course-card:hover {
+      transform: translateY(-5px);
+      border-color: rgba(101, 191, 177, 0.55);
+      box-shadow: 0 20px 44px rgba(8, 125, 120, 0.16);
+    }
+    .course-banner {
+      min-height: 126px;
+      background:
+        radial-gradient(circle at 82% 20%, rgba(230, 168, 79, 0.22), transparent 6rem),
+        linear-gradient(135deg, #087d78 0%, #075b58 58%, #173238 100%);
+    }
+    .branch-card-link {
+      text-decoration: none;
+      color: inherit;
+      cursor: pointer;
+    }
+    .branch-card-link:hover {
+      transform: translateY(-7px) scale(1.012);
+    }
+    .branch-teacher-visual {
+      position: relative;
+      width: 94px;
+      height: 112px;
+      flex-shrink: 0;
+      perspective: 700px;
+    }
+    .branch-teacher-visual img {
+      width: 78px;
+      height: 104px;
+      object-fit: contain;
+      object-position: center bottom;
+      border-radius: 14px;
+      border: 1.5px solid rgba(255, 255, 255, 0.72);
+      background: rgba(255, 255, 255, 0.14);
+      animation: branchTeacherFloat 3.8s ease-in-out infinite;
+    }
+    .branch-held-book {
+      position: absolute;
+      right: -8px;
+      bottom: 4px;
+      width: 58px;
+      height: 42px;
+      padding: 5px 4px;
+      border: 1.5px solid rgba(255, 255, 255, 0.82);
+      border-radius: 7px 12px 12px 7px;
+      background:
+        linear-gradient(90deg, rgba(255,255,255,0.28) 49%, transparent 50%),
+        linear-gradient(135deg, #e4b85d, #fff3b8);
+      color: #075b58;
+      font-family: "DecoType Thuluth", "Thuluth", "Aref Ruqaa", serif;
+      font-size: 0.58rem;
+      line-height: 1.15;
+      text-align: center;
+      font-weight: 900;
+      box-shadow: 0 8px 18px rgba(4, 45, 43, 0.24);
+      transform: rotateY(-10deg) rotateZ(-3deg);
+      transform-origin: right bottom;
+      animation: branchBookMove 3.8s ease-in-out infinite;
+    }
+    @keyframes branchTeacherFloat {
+      0%, 100% { transform: translateY(0) rotateY(-3deg); }
+      50% { transform: translateY(-5px) rotateY(4deg); }
+    }
+    @keyframes branchBookMove {
+      0%, 100% { transform: translateY(0) rotateY(-10deg) rotateZ(-3deg); }
+      50% { transform: translateY(-5px) rotateY(5deg) rotateZ(2deg); }
+    }
     .branch-book-card {
       display: flex; align-items: center; gap: 10px;
       background: rgba(255, 255, 255, 0.16); border: 1px solid rgba(255, 255, 255, 0.35);
@@ -1504,7 +2069,7 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
     }
     .course-banner {
       min-height: 158px; position: relative; overflow: hidden;
-      background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%);
+      background: linear-gradient(135deg, #075b58 0%, #087d78 100%);
       color: #fff; padding: 17px; display: flex; justify-content: space-between; align-items: flex-end; gap: 10px;
     }
     .course-banner img.book-thumb {
@@ -1525,26 +2090,9 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
     }
     body.dark .landing-hero-card {
       background:
-        radial-gradient(circle at 82% 18%, rgba(212, 167, 44, 0.18), transparent 7rem),
-        radial-gradient(circle at 68% 64%, rgba(95, 99, 8, 0.24), transparent 18rem),
-        linear-gradient(145deg, #17160e 0%, #252414 52%, #12120d 100%);
-    }
-    body.dark .landing-hero-card::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      background-image:
-        radial-gradient(circle, rgba(255, 239, 166, 0.95) 0 1.5px, transparent 2px),
-        radial-gradient(circle, rgba(255, 255, 255, 0.75) 0 1px, transparent 1.5px);
-      background-size: 84px 84px, 117px 117px;
-      background-position: 12px 18px, 46px 62px;
-      opacity: 0.48;
-      animation: nightStarsDrift 18s linear infinite;
-    }
-    @keyframes nightStarsDrift {
-      from { background-position: 12px 18px, 46px 62px; }
-      to { background-position: 96px 102px, 163px 179px; }
+        radial-gradient(circle at 82% 18%, rgba(231, 190, 114, 0.10), transparent 7rem),
+        radial-gradient(circle at 68% 64%, rgba(101, 191, 177, 0.08), transparent 18rem),
+        linear-gradient(145deg, #101a24 0%, #172832 52%, #0d171e 100%);
     }
     .landing-hero-card::before {
       content: ""; position: absolute; width: 260px; height: 260px; border-radius: 50%;
@@ -1556,14 +2104,96 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
     }
     .hero-teacher-frame {
       position: relative; z-index: 1;
-      background: linear-gradient(155deg, rgba(93, 111, 232, 0.16), rgba(178, 103, 255, 0.20));
+      background: transparent;
       border-radius: 28px; padding: 10px; display: flex; justify-content: center; align-items: center;
       min-height: 390px; border: 1.5px solid var(--bdr);
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.7), var(--shadow-sm);
+      perspective: 900px;
+      transform-style: preserve-3d;
+      overflow: visible;
+    }
+    .hero-teacher-frame::before {
+      content: "";
+      position: absolute;
+      left: 23%;
+      right: 23%;
+      bottom: 11px;
+      height: 15px;
+      border-radius: 50%;
+      background: linear-gradient(90deg, transparent, #45ffc1 22%, #c9ffe8 50%, #45ffc1 78%, transparent);
+      box-shadow:
+        0 0 8px #45ffc1,
+        0 0 18px rgba(69, 255, 193, 0.9),
+        0 0 34px rgba(69, 255, 193, 0.55);
+      filter: brightness(1.12);
+      animation: chinNeonPulse 2.4s ease-in-out infinite;
+      pointer-events: none;
+    }
+    @keyframes chinNeonPulse {
+      0%, 100% { opacity: 0.72; filter: brightness(0.88); transform: scaleX(0.92); }
+      50% { opacity: 1; filter: brightness(1.35); transform: scaleX(1.06); }
     }
     .hero-teacher-frame img {
       width: 100%; max-height: 390px; object-fit: contain; object-position: center bottom;
-      border-radius: 20px; display: block;
+      border-radius: 20px; display: block; position: relative; z-index: 1;
+      filter: contrast(1.04) saturate(1.08);
+      transform: translateZ(18px) translateY(0) rotateY(var(--teacher-tilt-x, 0deg)) rotateX(var(--teacher-tilt-y, 0deg));
+      transition: transform 0.18s ease-out, filter 0.25s ease;
+      animation: teacherFloat 4.8s ease-in-out infinite;
+    }
+    .hero-teacher-frame::after {
+      content: "";
+      position: absolute;
+      inset: 18% 8% 10%;
+      z-index: 3;
+      border-radius: 50%;
+      pointer-events: none;
+      background: linear-gradient(105deg, transparent 32%, rgba(190,255,230,0.20) 48%, transparent 64%);
+      transform: translateX(-130%);
+      mix-blend-mode: screen;
+      animation: teacherLightSweep 5.2s ease-in-out infinite;
+    }
+    .hero-teacher-frame:hover img {
+      filter: contrast(1.08) saturate(1.16) brightness(1.04);
+      transition-duration: 0.12s;
+    }
+    @keyframes teacherFloat {
+      0%, 100% { translate: 0 0; }
+      50% { translate: 0 -7px; }
+    }
+    @keyframes teacherLightSweep {
+      0%, 30% { transform: translateX(-130%) rotate(-8deg); opacity: 0; }
+      48% { opacity: 0.9; }
+      70%, 100% { transform: translateX(130%) rotate(-8deg); opacity: 0; }
+    }
+    .hero-neon-text {
+      position: absolute;
+      left: 50%;
+      bottom: -29px;
+      z-index: 4;
+      transform: translateX(-50%) perspective(300px) rotateX(8deg);
+      min-width: max-content;
+      padding: 5px 14px;
+      border: 1px solid rgba(171, 255, 218, 0.78);
+      border-radius: 10px;
+      background: rgba(3, 61, 55, 0.92);
+      color: #baffdf;
+      font-family: "DecoType Thuluth", "Thuluth", "Aref Ruqaa", serif;
+      font-size: clamp(0.92rem, 1.7vw, 1.28rem);
+      font-weight: 900;
+      letter-spacing: 0.5px;
+      text-shadow:
+        0 0 5px #7fffc4,
+        0 0 12px #34f5ae,
+        0 0 24px #19c98f;
+      box-shadow:
+        0 0 12px rgba(52, 255, 185, 0.54),
+        inset 0 0 10px rgba(52, 255, 185, 0.24);
+      animation: neonTextPulse 2.4s ease-in-out infinite;
+    }
+    @keyframes neonTextPulse {
+      0%, 100% { opacity: 0.82; filter: brightness(0.95); }
+      50% { opacity: 1; filter: brightness(1.28); }
     }
     .hero-copy { position: relative; z-index: 1; }
     .hero-eyebrow {
@@ -1658,18 +2288,18 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
     }
     @media (max-width: 840px) { .split-auth { grid-template-columns: 1fr; } }
     .promo-pane {
-      background: linear-gradient(155deg, #0d47a1 0%, #1976d2 100%);
+      background: linear-gradient(155deg, #075b58 0%, #087d78 100%);
       color: #fff; border-radius: 22px; padding: 26px; box-shadow: var(--shadow-md);
       display: flex; flex-direction: column; justify-content: space-between; min-height: 440px;
     }
-    .promo-pane.gold-mode { background: linear-gradient(155deg, #1565c0 0%, #2196f3 100%); }
+    .promo-pane.gold-mode { background: linear-gradient(155deg, #087d78 0%, #64d6c5 100%); }
     .promo-img {
       width: 215px; height: 265px; object-fit: contain; object-position: center top;
       background: rgba(255, 255, 255, 0.14);
       border-radius: 16px; border: 1.5px solid rgba(255, 255, 255, 0.65); margin: 14px auto 0; display: block;
     }
     .step-track { height: 7px; background: var(--surface-soft); border-radius: 999px; overflow: hidden; margin-bottom: 14px; }
-    .step-fill { height: 100%; background: linear-gradient(90deg, #1565c0, #42a5f5); }
+    .step-fill { height: 100%; background: linear-gradient(90deg, #087d78, #64d6c5); }
 
     .secure-player-box {
       position: relative; width: 100%; max-width: 920px; aspect-ratio: 16 / 9; margin: 12px auto 0;
@@ -1734,23 +2364,44 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
       width: 100%;
       margin-top: 40px;
       background:
-        radial-gradient(circle at 82% 0%, rgba(178, 103, 255, 0.12), transparent 18rem),
-        linear-gradient(135deg, #090d18, #0d1320);
+        radial-gradient(circle at 82% 0%, rgba(101, 191, 177, 0.16), transparent 18rem),
+        radial-gradient(circle at 12% 100%, rgba(231, 190, 114, 0.10), transparent 14rem),
+        linear-gradient(135deg, #08171b, #10272b 58%, #09151a);
       color: #ffffff;
-      border-top: 1px solid rgba(154, 163, 255, 0.16);
-      padding: 36px 24px 26px;
+      border-top: 1.5px solid rgba(101, 191, 177, 0.28);
+      padding: 44px 24px 28px;
+      position: relative;
+      overflow: hidden;
+    }
+    .site-footer::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, #65bfb1, #e7be72, #65bfb1, transparent);
+      box-shadow: 0 0 16px rgba(101, 191, 177, 0.36);
     }
     .footer-inner { max-width: 1180px; margin: 0 auto; }
     .footer-columns {
       display: grid;
-      grid-template-columns: 1fr 1fr 1.1fr;
-      gap: 28px;
-      align-items: center;
+      grid-template-columns: 1fr 1fr 1.25fr;
+      gap: 30px;
+      align-items: start;
+      position: relative;
+      z-index: 1;
     }
     @media (max-width: 780px) {
       .footer-columns { grid-template-columns: 1fr; text-align: center; }
     }
-    .footer-col-title { font-weight: 900; font-size: 1.04rem; margin-bottom: 12px; color: #ffffff; }
+    .footer-col-title {
+      font-family: "DecoType Thuluth", "Thuluth", "Aref Ruqaa", "Traditional Arabic", serif;
+      font-weight: 900;
+      font-size: 1.28rem;
+      margin-bottom: 12px;
+      color: #baf1e6;
+    }
     .footer-social-list { display: flex; flex-direction: column; gap: 10px; }
     @media (max-width: 780px) { .footer-social-list { align-items: center; } }
     .social-row-link {
@@ -1780,7 +2431,13 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
     .icon-tt { background: #111827; border: 1px solid #374151; }
     .icon-yt { background: #ef4444; }
 
-    .footer-nav-stack { display: flex; flex-direction: column; gap: 14px; }
+    .footer-nav-stack {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+      font-family: "DecoType Thuluth", "Thuluth", "Aref Ruqaa", "Traditional Arabic", serif;
+    }
     .footer-page-link {
       color: #ffffff;
       text-decoration: none;
@@ -1790,22 +2447,92 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
     }
     .footer-page-link:hover { color: #90caf9; }
 
-    .footer-brand-box { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
-    @media (max-width: 780px) { .footer-brand-box { align-items: center; } }
-    .footer-brand-emblem { font-size: 2rem; font-weight: 900; color: #90caf9; letter-spacing: 0.5px; }
-    .footer-copyright-line { font-size: 0.9rem; font-weight: 800; color: #dbeafe; }
-    .footer-dev-line { font-size: 0.86rem; font-weight: 800; color: #64b5f6; direction: ltr; }
+    .footer-brand-box {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 7px;
+      padding: 16px 18px;
+      border-radius: 20px;
+      border: 1px solid rgba(101, 191, 177, 0.22);
+      background: rgba(255, 255, 255, 0.035);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    }
+    @media (max-width: 780px) {
+      .footer-brand-box { align-items: center; }
+      .footer-nav-stack { align-items: center; }
+    }
+    .footer-brand-emblem {
+      font-family: "DecoType Thuluth", "Thuluth", "Aref Ruqaa", "Traditional Arabic", serif;
+      font-size: 2.15rem;
+      line-height: 1.25;
+      font-weight: 900;
+      color: #d8fff4;
+      text-shadow: 0 0 18px rgba(101, 191, 177, 0.24);
+    }
+    .footer-copyright-line {
+      font-family: "DecoType Thuluth", "Thuluth", "Aref Ruqaa", "Traditional Arabic", serif;
+      font-size: 1.03rem;
+      font-weight: 900;
+      color: #e7be72;
+    }
+    .footer-dev-line {
+      font-family: "Cairo", sans-serif;
+      font-size: 0.86rem;
+      font-weight: 800;
+      color: #64b5f6;
+      direction: ltr;
+      opacity: 0.9;
+    }
   </style>
 </head>
 <body>
   <div id="screenBlackoutGuard" aria-hidden="true"></div>
-  <div id="thuluthBg" aria-hidden="true">
-    <div class="thuluth-phrase">أنت جخ</div>
-    <div class="thuluth-phrase">أنت جخ</div>
-    <div class="thuluth-phrase">أنت جخ</div>
-    <div class="thuluth-phrase">أنت جخ</div>
-    <div class="thuluth-phrase">أنت جخ</div>
-    <div class="thuluth-phrase">أنت جخ</div>
+  <div id="thuluthBg" aria-label="العناصر المتحركة">
+    <div class="thuluth-word-wrap" id="thuluthWordWrap">
+      <button type="button" class="thuluth-phrase" id="thuluthScreamer" aria-label="أنت جخ">أنت جخ</button>
+      <button type="button" class="thuluth-close-btn" id="thuluthCloseBtn" aria-label="إخفاء كلمة أنت جخ">×</button>
+    </div>
+  </div>
+  <div class="jakh-booking-modal" id="jakhBookingModal" role="dialog" aria-modal="true" aria-labelledby="jakhBookingTitle">
+    <div class="jakh-booking-card">
+      <button type="button" class="jakh-booking-close" id="jakhBookingClose" aria-label="إغلاق">×</button>
+      <div class="jakh-booking-icon">🎓</div>
+      <h2 id="jakhBookingTitle" style="font-size:1.35rem;font-weight:900;color:var(--accent);">جاهز تبدأ رحلتك معنا؟</h2>
+      <p style="margin-top:8px;color:var(--muted);line-height:1.9;font-size:0.92rem;">
+        احجز مكانك في منصة محمد يوسف وابدأ تعلم اللغة العربية بخطة واضحة، شرح منظم، متابعة مستمرة، ونتائج أقوى.
+      </p>
+      <div class="jakh-booking-actions">
+        <a class="btn btn-blue" href="/student?tab=register&step=1">إنشاء حساب وحجز مكان</a>
+        <a class="btn btn-teal" id="jakhWhatsAppBooking" href="#" target="_blank" rel="noopener">الحجز عبر واتساب</a>
+      </div>
+    </div>
+  </div>
+  <div class="jakh-prayer-modal" id="jakhPrayerModal" role="dialog" aria-modal="true" aria-labelledby="jakhPrayerTitle">
+    <div class="jakh-prayer-arch">
+      <button type="button" class="jakh-prayer-close" id="jakhPrayerClose" aria-label="إغلاق الدعاء" style="position:absolute;top:24px;left:28px;">×</button>
+      <span class="pill pill-ok" style="margin-bottom:10px;">دعاء المذاكرة والتوفيق</span>
+      <h2 id="jakhPrayerTitle" class="jakh-prayer-text">
+        اللهم فهمني كما فهمت داود وسليمان، واعني في المذاكرة
+      </h2>
+      <div class="jakh-prayer-actions">
+        <button type="button" class="jakh-prayer-hide" id="jakhPrayerHide">اخفاء الدعاء الآن</button>
+      </div>
+    </div>
+    ${aiExamReminder ? `
+      <div class="jakh-prayer-modal" id="examReminderModal" role="dialog" aria-modal="true" aria-labelledby="examReminderTitle">
+        <div class="jakh-prayer-arch" style="min-height:290px;">
+          <button type="button" class="jakh-prayer-close" id="examReminderClose" aria-label="إغلاق" style="position:absolute;top:24px;left:28px;">×</button>
+          <div class="thuluth-phrase" style="position:relative;left:auto;top:auto;animation:jakhWordGlow 2.2s ease-in-out infinite alternate;margin-bottom:10px;">أنت جخ</div>
+          <h2 id="examReminderTitle" class="jakh-prayer-text" style="font-size:1.42rem;">روح حل الامتحان ياجخ</h2>
+          <p class="muted" style="margin-top:8px;line-height:1.9;">${esc(aiExamReminder.title)}</p>
+          <div class="jakh-prayer-actions">
+            <a class="btn btn-blue" id="examReminderGo" href="${esc(aiExamReminder.href)}">نعم، روح الامتحان</a>
+            <button type="button" class="jakh-prayer-hide" id="examReminderLater">لاحقاً</button>
+          </div>
+        </div>
+      </div>
+    ` : ""}
   </div>
 
   ${showLandingAdminAvatar ? `
@@ -1859,12 +2586,32 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
     </div>
   ` : ""}
 
+  ${canUseArabicTutor ? `
+    <button type="button" class="arabic-ai-fab" id="arabicAiFab" aria-label="مساعد اللغة العربية">📘 المساعد العربي</button>
+    <div class="arabic-ai-window" id="arabicAiWindow" role="dialog" aria-label="مساعد اللغة العربية">
+      <div class="arabic-ai-header">
+        <div>
+          <strong>مساعد العربية الذكي</strong>
+          <div style="font-size:0.74rem;opacity:0.88;">فروع اشتراكك: ${esc(studentSubscribedBranches.join(" • "))}</div>
+        </div>
+        <button type="button" class="support-chat-close" id="arabicAiClose" aria-label="إغلاق">×</button>
+      </div>
+      <div class="arabic-ai-body" id="arabicAiBody">
+        <div class="arabic-ai-bubble">أهلاً يا ${esc(defaultChatName || "بطل")}، اكتب السؤال أو الجملة، وسأساعدك في التفسير والإعراب وخطوات الحل.</div>
+      </div>
+      <form class="arabic-ai-form" id="arabicAiForm">
+        <input type="text" id="arabicAiInput" placeholder="اكتب مسألة عربية أو جملة للإعراب..." autocomplete="off" style="flex:1;" />
+        <button type="submit" class="btn btn-blue btn-sm">إرسال</button>
+      </form>
+    </div>
+  ` : ""}
+
   <div class="page-layer">
     <header class="topbar">
       <div class="brand-box">
         <div class="brand-logo-badge">${PLATFORM_NAME}</div>
         <div>
-          <div style="font-weight:900; font-size:1.08rem; color:var(--accent);">${PLATFORM_NAME}</div>
+          <div class="brand-thuluth-name" style="font-weight:900; color:var(--accent);">${PLATFORM_NAME}</div>
           <div class="muted" style="font-size:0.78rem; font-weight:700;">اللغة العربية للثانوية الأزهرية (خبرة 30 عاماً)</div>
         </div>
       </div>
@@ -1941,6 +2688,7 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
           </div>
 
           <div class="footer-nav-stack">
+            <div class="footer-col-title">روابط مهمة</div>
             <a class="footer-page-link" href="/about">من نحن</a>
             <a class="footer-page-link" href="/privacy" target="_blank" rel="noopener">سياسة الخصوصية</a>
           </div>
@@ -1956,6 +2704,227 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
   </div>
 
   <script>
+    (function setupTeacherMotion() {
+      const frame = document.querySelector(".hero-teacher-frame");
+      const image = frame?.querySelector("img");
+      if (!frame || !image) return;
+
+      frame.addEventListener("mousemove", function (event) {
+        const rect = frame.getBoundingRect?.() || frame.getBoundingClientRect();
+        const x = (event.clientX - rect.left) / rect.width - 0.5;
+        const y = (event.clientY - rect.top) / rect.height - 0.5;
+        image.style.setProperty("--teacher-tilt-x", (x * 8).toFixed(2) + "deg");
+        image.style.setProperty("--teacher-tilt-y", (-y * 6).toFixed(2) + "deg");
+      });
+      frame.addEventListener("mouseleave", function () {
+        image.style.setProperty("--teacher-tilt-x", "0deg");
+        image.style.setProperty("--teacher-tilt-y", "0deg");
+      });
+    })();
+
+    (function setupArabicAiAssistant() {
+      const fab = document.getElementById("arabicAiFab");
+      const win = document.getElementById("arabicAiWindow");
+      const close = document.getElementById("arabicAiClose");
+      const form = document.getElementById("arabicAiForm");
+      const input = document.getElementById("arabicAiInput");
+      const body = document.getElementById("arabicAiBody");
+      if (!fab || !win || !form || !input || !body) return;
+
+      function addBubble(text, isUser) {
+        const bubble = document.createElement("div");
+        bubble.className = "arabic-ai-bubble" + (isUser ? " user" : "");
+        bubble.textContent = text;
+        body.appendChild(bubble);
+        body.scrollTop = body.scrollHeight;
+      }
+
+      function tutorAnswer(question) {
+        const q = String(question || "").trim();
+        const lower = q.toLowerCase();
+        if (!q) return "اكتب السؤال أو الجملة أولاً.";
+        if (/عرب|اعراب|إعراب/.test(lower)) {
+          if (q.includes(" ")) {
+            return "خطوات الإعراب: 1) حدد نوع الجملة. 2) إذا كانت فعلية فابحث عن الفعل وفاعله ومفعوله إن وجد. 3) إذا كانت اسمية فالاول هو المبتدأ والخبر. 4) حدد علامات الإعراب بالأصل والفرعيات. اكتب الجملة كاملة مثل «الطالب مجتهد» وسأقسمها لك.";
+          }
+          return "أرسل الجملة كاملة التي تريد إعرابها، ثم اكتب اسم الفروع المطلوب مثل النحو أو البلاغة.";
+        }
+        if (/مبتدأ|خبر/.test(lower)) {
+          return "المبتدأ اسم مرفوع يقع في أول الجملة الاسمية، والخبر اسم مرفوع يكمل معنى المبتدأ ويبين حاله. مثال: «العلم نور» — العلم مبتدأ مرفوع، والنور خبر مرفوع.";
+        }
+        if (/نحو/.test(lower)) {
+          return "لنحلها بالتدرج: اقرأ الجملة، حدد الفعل إن وجد، ثم الفاعل والمفعول، ولاحظ الحروف وعلاماتها. أرسل الجملة أو الكلمة التي تحتاج شرحها.";
+        }
+        if (/بلاغة|تشبيه|استعارة|كناية/.test(lower)) {
+          return "نبدأ بتحديد الركن الرئيسي: التشبيه فيه مشبه ومشبه به وأداة وجه؛ الاستعارة تشبه معنى بمعنى وتترك المشبه به؛ الكناية لفظ يدل على لازم معنى. أرسل النص المطلوب.";
+        }
+        if (/صرف|وزن|مضارع|ماضي|أمر/.test(lower)) {
+          return "في الصرف نحدد أولا نوع الكلمة وزنها وحروفها الأصلية، ثم ننتقل للبناء أو التصريف حسب الزمن والصيغة. اكتب الكلمة المطلوبة.";
+        }
+        if (/نص|قرآن|شعر|أدب/.test(lower)) {
+          return "لحل سؤال النص: اقسم السؤال إلى فكرة وبيت أو آية شاهد، اذكر المعنى، ثم استخرج الأسلوب أو الصورة، وأخيراً اربطها بالفكرة العامة. اكتب النص والسؤال كاملاً.";
+        }
+        if (/مذاكرة|تنسى|تراكم|امتحان/.test(lower)) {
+          return "لا تجمع المحاضرات: ابدأ بمراجعة الدرس السابق 10 دقائق، حل واجباً واحداً دون النظر، راجع الأخطاء، ثم افتح درساً ثانياً فقط بعد تثبيت الأول.";
+        }
+        return "لفهم السؤال بدقة، أرسل الجملة أو السؤال كاملاً، مع ذكر المطلوب: إعراب، تفسير، استخراج، وزن، تشبيه، أو حل اختيار من متعدد.";
+      }
+
+      fab.addEventListener("click", function () {
+        win.classList.toggle("open");
+        if (win.classList.contains("open")) input.focus();
+      });
+      close.addEventListener("click", function () { win.classList.remove("open"); });
+      form.addEventListener("submit", function (event) {
+        event.preventDefault();
+        const text = input.value.trim();
+        if (!text) return;
+        addBubble(text, true);
+        input.value = "";
+        addBubble("جارٍ التحليل وكتابة الخطوات...", false);
+        fetch("/api/student/tutor", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question: text })
+        })
+          .then(function (res) { return res.json(); })
+          .then(function (data) {
+            body.querySelector(".arabic-ai-bubble:last-child")?.remove();
+            addBubble(data.answer || tutorAnswer(text), false);
+          })
+          .catch(function () {
+            body.querySelector(".arabic-ai-bubble:last-child")?.remove();
+            addBubble(tutorAnswer(text), false);
+          });
+      });
+    })();
+
+    (function setupMovingWordClose() {
+      const closeBtn = document.getElementById("thuluthCloseBtn");
+      const wordWrap = document.getElementById("thuluthWordWrap");
+      closeBtn?.addEventListener("click", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (wordWrap) wordWrap.style.display = "none";
+      });
+    })();
+
+    (function setupMovingWordSound() {
+      const wordBtn = document.getElementById("thuluthScreamer");
+      const bookingModal = document.getElementById("jakhBookingModal");
+      const bookingClose = document.getElementById("jakhBookingClose");
+      const prayerModal = document.getElementById("jakhPrayerModal");
+      const prayerClose = document.getElementById("jakhPrayerClose");
+      const prayerHide = document.getElementById("jakhPrayerHide");
+      const examReminderModal = document.getElementById("examReminderModal");
+      const examReminderClose = document.getElementById("examReminderClose");
+      const examReminderLater = document.getElementById("examReminderLater");
+      const whatsAppLink = document.getElementById("jakhWhatsAppBooking");
+      const waPhone = ${safeJsonForScript(normalizeWaPhone(settings.admin_whatsapp || settings.vodafone_number || "01066329782"))};
+      const bookingMessage = encodeURIComponent("السلام عليكم، حابب أحجز مكان في منصة محمد يوسف وأعرف خطوات الاشتراك.");
+      if (whatsAppLink) whatsAppLink.href = "https://wa.me/" + waPhone + "?text=" + bookingMessage;
+
+      function openBookingModal() {
+        bookingModal?.classList.add("open");
+        bookingClose?.focus();
+      }
+      function closeBookingModal() {
+        bookingModal?.classList.remove("open");
+        wordBtn?.focus();
+      }
+      function openPrayerModal() {
+        prayerModal?.classList.add("open");
+        prayerClose?.focus();
+      }
+      function closePrayerModal(permanently = false) {
+        prayerModal?.classList.remove("open");
+        if (permanently) localStorage.setItem("jakh_prayer_hidden", "1");
+        wordBtn?.focus();
+      }
+      function openExamReminder() {
+        examReminderModal?.classList.add("open");
+        examReminderClose?.focus();
+      }
+      function closeExamReminder() {
+        examReminderModal?.classList.remove("open");
+        wordBtn?.focus();
+      }
+      if (!wordBtn) return;
+
+      wordBtn.addEventListener("click", function () {
+        try {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (!AudioContextClass) return;
+          const ctx = new AudioContextClass();
+          const now = ctx.currentTime;
+          const master = ctx.createGain();
+          master.gain.setValueAtTime(0.0001, now);
+          master.gain.exponentialRampToValueAtTime(0.22, now + 0.02);
+          master.gain.exponentialRampToValueAtTime(0.0001, now + 0.65);
+          master.connect(ctx.destination);
+
+          [520, 690, 430].forEach(function (frequency, index) {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            const start = now + index * 0.13;
+            osc.type = index === 1 ? "square" : "triangle";
+            osc.frequency.setValueAtTime(frequency, start);
+            osc.frequency.exponentialRampToValueAtTime(frequency * 1.18, start + 0.12);
+            gain.gain.setValueAtTime(0.0001, start);
+            gain.gain.exponentialRampToValueAtTime(0.16, start + 0.025);
+            gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.16);
+            osc.connect(gain);
+            gain.connect(master);
+            osc.start(start);
+            osc.stop(start + 0.18);
+          });
+
+          wordBtn.animate([
+            { transform: "scale(1) rotate(-8deg)" },
+            { transform: "scale(1.28) rotate(8deg)" },
+            { transform: "scale(1) rotate(-8deg)" }
+          ], { duration: 600, easing: "ease-out" });
+
+          setTimeout(function () { ctx.close().catch(function () {}); }, 800);
+        } catch {}
+        if (location.pathname.startsWith("/student")) {
+          if (examReminderModal) openExamReminder();
+          else openPrayerModal();
+        } else {
+          openBookingModal();
+        }
+      });
+      bookingClose?.addEventListener("click", closeBookingModal);
+      prayerClose?.addEventListener("click", function () { closePrayerModal(false); });
+      prayerHide?.addEventListener("click", function () { closePrayerModal(true); });
+      prayerModal?.addEventListener("click", function (event) {
+        if (event.target === prayerModal) closePrayerModal(false);
+      });
+      examReminderClose?.addEventListener("click", closeExamReminder);
+      examReminderLater?.addEventListener("click", closeExamReminder);
+      examReminderModal?.addEventListener("click", function (event) {
+        if (event.target === examReminderModal) closeExamReminder();
+      });
+      bookingModal?.addEventListener("click", function (event) {
+        if (event.target === bookingModal) closeBookingModal();
+      });
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape" && bookingModal?.classList.contains("open")) closeBookingModal();
+        if (event.key === "Escape" && prayerModal?.classList.contains("open")) closePrayerModal(false);
+        if (event.key === "Escape" && examReminderModal?.classList.contains("open")) closeExamReminder();
+      });
+
+      const params = new URLSearchParams(location.search);
+      if (examReminderModal) {
+        setTimeout(openExamReminder, 900);
+      } else if (
+        params.get("welcome") === "1" &&
+        localStorage.getItem("jakh_prayer_hidden") !== "1"
+      ) {
+        setTimeout(openPrayerModal, 350);
+      }
+    })();
+
     (function () {
       const admBtn = document.getElementById("floatingAdminToggleBtn");
       const admMenu = document.getElementById("floatingAdminMenu");
@@ -1974,7 +2943,7 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
       const toggleEl = document.getElementById("themeToggle");
       const labelEl = document.getElementById("themeLabelText");
       const savedTheme = localStorage.getItem("nb_py_theme");
-      const isDark = savedTheme === null || savedTheme === "dark";
+      const isDark = savedTheme === "dark";
       if (isDark) {
         document.body.classList.add("dark");
         if (toggleEl) toggleEl.checked = true;
@@ -2140,6 +3109,17 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
         const minute = Number(nowParts.find(p => p.type === "minute")?.value || 0);
         const totalMinutes = hour * 60 + minute;
         return totalMinutes >= 10 * 60 && totalMinutes < 19 * 60;
+      }
+
+      function showOutsideHoursFlyer() {
+        document.querySelectorAll(".outside-hours-flyer").forEach(function (oldFlyer) {
+          oldFlyer.remove();
+        });
+        const flyer = document.createElement("div");
+        flyer.className = "outside-hours-flyer";
+        flyer.textContent = "احنا خارج اوقات العمل ياجخ";
+        document.body.appendChild(flyer);
+        setTimeout(function () { flyer.remove(); }, 7100);
       }
 
       let visitorName = localStorage.getItem("jakh_sup_name") || ${safeJsonForScript(defaultChatName)} || "";
@@ -2458,6 +3438,7 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
             statusElement.textContent = "خارج أوقات العمل • احنا خارج اوقات العمل، ارجع من 10 صباحاً إلى 7 مساءً";
             statusElement.classList.add("closed");
           }
+          showOutsideHoursFlyer();
           return;
         }
         const textVal = (msgInput?.value || "").trim();
@@ -2502,6 +3483,7 @@ function renderLayout(title, settings, student, isStaff, bodyHtml, options = {})
               statusElement.textContent = "خارج أوقات العمل • احنا خارج اوقات العمل، ارجع من 10 صباحاً إلى 7 مساءً";
               statusElement.classList.add("closed");
             }
+            showOutsideHoursFlyer();
             messages = messages.filter(function (m) { return m.id !== msgId; });
             renderChatMessages();
           } else if (res.ok) {
@@ -2529,13 +3511,16 @@ function renderLanding(settings) {
   <div class="landing-hero-card">
     <div class="hero-teacher-frame">
       <img src="${esc(settings.teacher_image)}" alt="الأستاذ محمد يوسف" onerror="this.style.display='none';" />
+      <div class="hero-neon-text">جاهز تبدأ يا جخ؟</div>
     </div>
     <div class="hero-copy">
       <span class="hero-eyebrow"><span>★</span> معلم أول لغة عربية</span>
       <h1 class="hero-title">أهلاً بك في رحلتك مع <span>محمد يوسف</span></h1>
       <div class="hero-subtitle">مسيرة عطاء تمتد لأكثر من 30 عاماً</div>
       <p class="hero-description">
-        تعلّم اللغة العربية بخطوات واضحة ومنهجية متكاملة صُممت خصيصاً لطلاب المرحلة الثانوية الأزهرية. داخل منصة محمد يوسف ستجد شرحاً مرتباً لكل فروع اللغة العربية السبعة، ومراجعات مركزة، وواجبات تتابع تقدمك بها، ونظاماً يراقب مستواك ويقودك تدريجياً نحو الإتقان والاستعداد للامتحانات بثقة. كل درس في مكانه، وكل مستوى له بدايته وتحديه، ومع خبرة تمتد لأكثر من 30 عاماً ستجد بين الشرح والتطبيق والمتابعة طريقاً أهدأ وأسرع نحو التفوق والدرجة النهائية.
+        تعلّم اللغة العربية بخطوات واضحة ومنهجية متكاملة صُممت خصيصاً لطلاب المرحلة الثانوية الأزهرية. داخل منصة محمد يوسف ستجد شرحاً مرتباً لكل فروع اللغة العربية السبعة، ومراجعات مركزة، وواجبات تتابع تقدمك بها، ونظاماً يراقب مستواك ويقودك تدريجياً نحو الإتقان والاستعداد للامتحانات بثقة.
+        <br />كل درس مصمم ليجمع بين شرح القاعدة وفهم معناها وتطبيقها عملياً في الأسئلة والنصوص والتعبير. أنت لن تشاهد درساً فقط، بل ستفهم الدرس، وتختبر نفسك، وتعرف نقطة ضعفك، ثم تبدأ مرحلة التقوية والمتابعة حتى تصل إلى أعلى درجة ممكنة.
+        <br />مع خبرة تمتد لأكثر من 30 عاماً في تدريس وتأسيس طلاب الصف الأول والثاني والثالث الثانوي الأزهرى، علمي وأدبي، نقدم طريقاً منظماً يجمع العلم والخبرة والمتابعة الشخصية في مكان واحد.
       </p>
       <div class="hero-actions">
         <a class="btn btn-blue" href="/student?tab=register&step=1" id="startJourneyBtn">ابدأ معنا الآن <span>←</span></a>
@@ -2580,6 +3565,33 @@ function renderLanding(settings) {
   </div>
 </div>
 
+<div class="landing-start-section">
+  <div class="card" style="margin-bottom:0;padding:28px;">
+    <div style="text-align:center;max-width:860px;margin:0 auto;">
+      <span class="pill pill-ok">منهج الأستاذ محمد يوسف</span>
+      <h2 style="font-size:1.55rem;font-weight:900;margin-top:10px;color:var(--accent);">من الفهم إلى الإتقان، ومن المراجعة إلى الدرجة النهائية</h2>
+      <p class="muted" style="margin-top:10px;font-size:0.94rem;line-height:2;">
+        المنهج ليس مجموعة دروس منفصلة؛ إنه رحلة تعليمية تبدأ بتوضيح القاعدة بلغة بسيطة، ثم تثبيتها بالأمثلة والتمارين، ثم تدريب الطالب على أسئلة الامتحان، ومتابعة نتايج الواجبات لمعرفة أين يحتاج إلى مزيد من الشرح والتدريب.
+        لهذا صممنا المنصة لتأخذ بيد الطالب خطوة بخطوة، سواء كان في مرحلة التأسيس أو المراجعة النهائية أو السعي لتحقيق التفوق والدرجة الكاملة.
+      </p>
+    </div>
+    <div class="landing-feature-grid" style="margin-top:22px;">
+      <div class="landing-feature">
+        <span class="landing-feature-icon">🎯</span>
+        <span><strong>شرح يركز على المطلوب</strong><p>نربط كل قاعدة بطرق السؤال والخطأ الشائع وطرق الحل السريع في الامتحان.</p></span>
+      </div>
+      <div class="landing-feature">
+        <span class="landing-feature-icon">🧠</span>
+        <span><strong>تطبيق وفهم حقيقي</strong><p>كل درس يتدرج من التوضيح إلى الأمثلة ثم التدريبات حتى تثبت المعلومة.</p></span>
+      </div>
+      <div class="landing-feature">
+        <span class="landing-feature-icon">📈</span>
+        <span><strong>متابعة مستمرة للتقدم</strong><p>نتائج الواجبات ونسب الإنجاز تساعد الطالب والإدارة على بناء خطة مراجعة أدق.</p></span>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="landing-journey">
   <div class="card" style="margin-bottom:0; padding:24px;">
     <div style="text-align:center; margin-bottom:16px;">
@@ -2611,7 +3623,7 @@ function renderLanding(settings) {
     <h2>جاهز تبدأ أقوى؟</h2>
     <p>انضم الآن للمنصة، ونظّم مذاكرتك مع شرح واضح وواجبات ومتابعة مستمرة في اللغة العربية.</p>
     <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
-      <a class="btn" style="background:#fff; color:#0d47a1; min-width:190px;" href="/student?tab=register&step=1">إنشاء حساب جديد</a>
+      <a class="btn" style="background:#fff; color:#075b58; min-width:190px;" href="/student?tab=register&step=1">إنشاء حساب جديد</a>
       <a class="btn" style="background:rgba(255,255,255,0.12); color:#fff; border:1px solid rgba(255,255,255,0.55); min-width:170px;" href="/student?tab=login">تسجيل الدخول</a>
     </div>
   </div>
@@ -2668,19 +3680,48 @@ function renderStudentAuth(settings, authTab, step, draft, error, notice) {
         <p class="muted" style="font-size:0.86rem; margin-bottom:14px;">كلمة السر إجبارية هنا وتُحفظ في ملفك لدى الأدمن.</p>
         ${error ? `<div class="msg-err">${esc(error)}</div>` : ""}
         ${notice ? `<div class="msg-ok">${esc(notice)}</div>` : ""}
-        <form method="post" action="/student/center-login" autocomplete="off">
-          <div class="field"><label>كود السنتر (لمرة واحدة) *</label><input name="center_code" type="text" required autocomplete="off" placeholder="مثال: MO12345678" /></div>
+        <form method="post" action="/student/center-login" id="centerRegistrationForm" autocomplete="off">
+          <div class="field"><label>كود السنتر الخاص به *</label><input name="center_code" id="centerCodeInput" type="text" required autocomplete="off" placeholder="مثال: MO12345678" /></div>
           <div class="field"><label>اسم الطالب رباعي *</label><input name="name" type="text" required autocomplete="off" placeholder="الاسم الرباعي بالكامل" /></div>
           <div class="field"><label>رقم هاتف الطالب *</label><input name="phone" type="tel" required autocomplete="off" placeholder="01xxxxxxxxx" /></div>
           <div class="grid2">
             <div class="field"><label>الصف الدراسي *</label><select name="grade">${gradeOpts}</select></div>
             <div class="field"><label>الشعبة *</label><select name="track">${trackOpts}</select></div>
           </div>
-          <div class="field"><label>رقم هاتف ولي الأمر (يجب أن يختلف عن رقم الطالب) *</label><input name="parent_phone" type="tel" required autocomplete="off" placeholder="01xxxxxxxxx" /></div>
-          <div class="field"><label>المحافظة *</label><select name="governorate" required>${govOpts}</select></div>
+          <div class="field"><label>رقم هاتف ولي الأمر (يجب أن يختلف عن رقم الطالب) *</label><input name="parent_phone" id="centerParentPhone" type="tel" required autocomplete="off" placeholder="01xxxxxxxxx" /></div>
+          <div class="field"><label>اسم السنتر الذي انت فيه *</label><input name="center_name" type="text" required autocomplete="off" placeholder="اكتب اسم السنتر" /></div>
           <div class="field"><label>كلمة السر (إجبارية) *</label><input name="password" type="password" required autocomplete="new-password" minlength="4" placeholder="أدخل كلمة سر لحسابك" /></div>
           <button type="submit" class="btn btn-teal" style="width:100%;">فتح المنصة بكود السنتر</button>
         </form>
+        <script>
+          (function () {
+            const form = document.getElementById("centerRegistrationForm");
+            const codeInput = document.getElementById("centerCodeInput");
+            const phoneInput = form?.querySelector('input[name="phone"]');
+            const parentInput = document.getElementById("centerParentPhone");
+            codeInput?.addEventListener("input", function () {
+              codeInput.value = codeInput.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+              if (codeInput.value && !codeInput.value.startsWith("MO")) {
+                codeInput.value = "MO" + codeInput.value.replace(/^MO/i, "");
+              }
+            });
+            form?.addEventListener("submit", function (event) {
+              const studentPhone = (phoneInput?.value || "").replace(/\s+/g, "").trim();
+              const parentPhone = (parentInput?.value || "").replace(/\s+/g, "").trim();
+              if (studentPhone && parentPhone && studentPhone === parentPhone) {
+                event.preventDefault();
+                alert("رقم ولي الأمر يجب أن يكون مختلفاً عن رقم هاتف الطالب.");
+                parentInput?.focus();
+                return;
+              }
+              if (codeInput?.value && !/^MO[0-9]+$/i.test(codeInput.value)) {
+                event.preventDefault();
+                alert("كود السنتر يبدأ بـ MO ويحتوي على أرقام.");
+                codeInput?.focus();
+              }
+            });
+          })();
+        </script>
         <div style="margin-top:14px; text-align:center; font-size:0.86rem;">
           <a href="/student?tab=login" style="color:var(--accent); font-weight:800;">العودة لتسجيل الدخول العادي</a>
         </div>
@@ -2834,16 +3875,22 @@ function renderStudentDash(settings, student, state) {
   const branchCardsHtml = BRANCHES.map(br => {
     const isUnlocked = unlocked.has(br);
     const brLectures = allLectures.filter(l => l.branch === br);
+    const branchHref = isUnlocked
+      ? `/student?section=branch&branch=${encodeURIComponent(br)}`
+      : `/student?section=branch&branch=${encodeURIComponent(br)}`;
     return `
-      <div class="course-card">
+      <a class="course-card branch-card-link" href="${branchHref}" aria-label="فتح فرع ${esc(br)}">
         <div>
           <div class="course-banner">
             <div>
               <span class="pill" style="background:rgba(255,255,255,0.22); color:#fff;">${isUnlocked ? (isCenterStudent ? "مفعل سنتر ✓" : "مفعل ✓") : "مغلق 🔒"}</span>
               <div style="font-size:1.22rem; font-weight:900; margin-top:6px;">${esc(br)}</div>
-              <div style="font-size:0.8rem; opacity:0.92;">${brLectures.length} محاضرة متاحة • ${COURSE_PRICE_EGP} ج</div>
+              <div style="font-size:0.8rem; opacity:0.92;">${brLectures.length} محاضرة متاحة</div>
             </div>
-            <img class="book-thumb" src="${esc(settings.teacher_image)}" alt="${esc(br)}" onerror="this.style.display='none';" />
+            <div class="branch-teacher-visual" aria-hidden="true">
+              <img src="${esc(settings.teacher_image)}" alt="" onerror="this.style.display='none';" />
+              <div class="branch-held-book">${esc(br)}</div>
+            </div>
           </div>
           <div class="course-body">
             <div class="course-title">منهج ${esc(br)} — ${esc(student.grade)} (${esc(student.track)})</div>
@@ -2853,12 +3900,11 @@ function renderStudentDash(settings, student, state) {
           </div>
         </div>
         <div style="padding:0 16px 16px;">
-          ${isUnlocked
-            ? `<a class="btn btn-blue btn-sm" style="width:100%;" href="/student?section=branch&branch=${encodeURIComponent(br)}">دخول الفرع</a>`
-            : `<a class="btn btn-teal btn-sm" style="width:100%;" href="/student?section=codes">تفعيل / طلب كود (${COURSE_PRICE_EGP} ج)</a>`
-          }
+          <span class="btn ${isUnlocked ? "btn-blue" : "btn-teal"} btn-sm" style="width:100%;justify-content:center;">
+            ${isUnlocked ? "دخول الفرع" : "تفعيل الفرع"}
+          </span>
         </div>
-      </div>
+      </a>
     `;
   }).join("");
 
@@ -2867,6 +3913,13 @@ function renderStudentDash(settings, student, state) {
     const list = allLectures.filter(l => l.branch === branchParam);
     const wmText = `${student.full_name} • ${student.phone} • ${PLATFORM_NAME}`;
     const denominator = Math.max(list.length, 99);
+    const branchPaymentUrl = buildStudentPaymentWaUrl(
+      settings,
+      student,
+      `تفعيل فرع ${branchParam}`,
+      COURSE_PRICE_EGP,
+      ["الطلب: تفعيل فرع كامل"]
+    );
 
     return `
       <div class="jakh-week-banner">
@@ -2888,15 +3941,57 @@ function renderStudentDash(settings, student, state) {
 
       ${!canEnter ? `
         <div class="card">
-          <div class="msg-err">هذا الفرع مغلق على حسابك حالياً. فعّله بكود خاص بفرع (${esc(branchParam)}) أو اطلب الكود عبر واتساب.</div>
-          <form method="post" action="/student/redeem-code" style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
-            <div class="field" style="flex:1; min-width:220px; margin:0;">
-              <label>كود تفعيل الفرع (لمرة واحدة)</label>
-              <input name="code" type="text" required placeholder="مثال: BR-XXXXXX" />
-            </div>
-            <button type="submit" class="jakh-action-btn">تفعيل الفرع الآن</button>
-          </form>
+          <div class="msg-err" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+            <span>فرع ${esc(branchParam)} مغلق على حسابك حالياً.</span>
+            <button type="button" class="btn btn-blue btn-sm" id="branchLockedPaymentBtn">الذهاب للدفع</button>
+          </div>
         </div>
+        <div class="lecture-accordion-list">
+          ${list.length ? list.map((l, idx) => `
+            <div class="lec-accordion-item">
+              <button type="button" class="lec-accordion-header locked-lecture-prompt" data-lecture-title="${esc(l.title)}">
+                <div class="lec-header-left">
+                  <span class="lec-chevron-circle">🔒</span>
+                  <span class="lec-counter-badge">(${Number(l.order_num) > 0 ? esc(l.order_num) : (idx + 1) * 10}/${denominator})</span>
+                </div>
+                <div class="lec-header-right">
+                  <div class="lec-main-title">${esc(l.title)}</div>
+                  <div class="lec-sub-icons"><span>مغلقة — اضغط للدفع والتفعيل</span></div>
+                </div>
+              </button>
+            </div>
+          `).join("") : `<div class="card"><p class="muted">لا توجد محاضرات مضافة لهذا الفرع حتى الآن.</p></div>`}
+        </div>
+        <div class="jakh-prayer-modal" id="branchPaymentModal" role="dialog" aria-modal="true" aria-labelledby="branchPaymentTitle">
+          <div class="jakh-prayer-arch" style="min-height:300px;">
+            <button type="button" class="jakh-prayer-close" id="branchPaymentClose" aria-label="إغلاق" style="position:absolute;top:24px;left:28px;">×</button>
+            <div class="thuluth-phrase" style="position:relative;left:auto;top:auto;animation:jakhWordGlow 2.2s ease-in-out infinite alternate;margin-bottom:12px;">أنت جخ</div>
+            <h2 id="branchPaymentTitle" class="jakh-prayer-text" style="font-size:1.45rem;">الذهاب للدفع وتفعيل فرع ${esc(branchParam)}؟</h2>
+            <div class="jakh-prayer-actions">
+              <a class="btn btn-blue" href="${esc(branchPaymentUrl)}" target="_blank" rel="noopener">نعم، الذهاب للدفع</a>
+              <button type="button" class="jakh-prayer-hide" id="branchPaymentNo">لا، لاحقاً</button>
+            </div>
+          </div>
+        </div>
+        <script>
+          (function () {
+            const modal = document.getElementById("branchPaymentModal");
+            const closeBtn = document.getElementById("branchPaymentClose");
+            const noBtn = document.getElementById("branchPaymentNo");
+            const openModal = function () { modal?.classList.add("open"); closeBtn?.focus(); };
+            const closeModal = function () { modal?.classList.remove("open"); };
+            document.getElementById("branchLockedPaymentBtn")?.addEventListener("click", openModal);
+            document.querySelectorAll(".locked-lecture-prompt").forEach(function (button) {
+              button.addEventListener("click", openModal);
+            });
+            closeBtn?.addEventListener("click", closeModal);
+            noBtn?.addEventListener("click", closeModal);
+            modal?.addEventListener("click", function (event) { if (event.target === modal) closeModal(); });
+            document.addEventListener("keydown", function (event) {
+              if (event.key === "Escape" && modal?.classList.contains("open")) closeModal();
+            });
+          })();
+        </script>
       ` : `
         <div class="lecture-accordion-list" id="lecturesAccordion">
           ${list.length ? list.map((l, idx) => {
@@ -3206,6 +4301,14 @@ function renderStudentDash(settings, student, state) {
   let mainContentHtml = "";
   if (section === "dashboard") {
     mainContentHtml = `
+      <div class="student-welcome-card" style="margin-bottom:18px;">
+        <span class="pill pill-ok">بوابة الطالب الذكية</span>
+        <h2 class="student-thuluth-title" style="margin-top:10px;">أهلاً بك يا ${esc(student.full_name)}</h2>
+        <p class="muted" style="max-width:760px;margin-top:8px;font-size:0.9rem;line-height:1.9;">
+          رحلتك في المنصة منظمة حول الدرس والواجب والمتابعة، من أول قاعدة تتعلمها حتى آخر اختبار تحلّه.
+        </p>
+      </div>
+
       <div class="kpi-grid">
         <div class="kpi-card">
           <div><div class="kpi-num">${unlockedCount} / ${totalBranches}</div><div class="kpi-lbl">الفروع المفعلة</div></div>
@@ -3225,21 +4328,16 @@ function renderStudentDash(settings, student, state) {
         </div>
       </div>
 
-      <div class="progress-layout">
-        <div class="progress-frame">
-          <div style="font-weight:900; font-size:0.95rem;">مؤشر إنجاز الفروع (${progressPct}%)</div>
-          <div class="teacher-color-meter">
-            <img class="bw-layer" src="${esc(settings.teacher_image)}" alt="أ. محمد يوسف" onerror="this.style.display='none';" />
-            <div class="color-reveal" style="clip-path: inset(${clipTop}% 0 0 0);">
-              <img src="${esc(settings.teacher_image)}" alt="أ. محمد يوسف" onerror="this.style.display='none';" />
-            </div>
+      <div class="progress-layout student-progress-panel">
+        <div class="student-progress-ring" style="--student-progress:${progressPct}%;">
+          <div style="text-align:center;">
+            <strong>${progressPct}%</strong>
+            <div class="muted" style="font-size:0.78rem;">إنجاز الفروع</div>
           </div>
-          <div class="prog-bar-bg"><div class="prog-bar-fill" style="width:${progressPct}%;"></div></div>
-          <div class="muted" style="font-size:0.8rem;">كل فرع تفعله يرفع نسبة الإنجاز</div>
         </div>
 
         <div class="card" style="margin-bottom:0;">
-          <h3 style="font-weight:900; margin-bottom:6px;">أهلاً بك يا ${esc(student.full_name)} في ${PLATFORM_NAME}</h3>
+          <h3 class="student-thuluth-title" style="margin-bottom:8px;">ملخص رحلتك التعليمية</h3>
           <p class="muted" style="font-size:0.88rem; margin-bottom:12px;">
             الصف: <strong>${esc(student.grade)}</strong> • الشعبة: <strong>${esc(student.track)}</strong> • رقم الهاتف: <strong>${esc(student.phone)}</strong> • ولي الأمر: <strong>${esc(student.parent_phone || "-")}</strong>
           </p>
@@ -3258,7 +4356,7 @@ function renderStudentDash(settings, student, state) {
         </div>
       </div>
 
-      <h3 style="font-weight:900; margin-bottom:12px;">فروع اللغة العربية السبعة</h3>
+      <h3 class="student-section-heading">فروع اللغة العربية السبعة</h3>
       <div class="course-grid">${branchCardsHtml}</div>
     `;
   } else if (section === "branch") {
@@ -3505,7 +4603,7 @@ function renderStudentDash(settings, student, state) {
         <div class="row"><span>رقم هاتف ولي الأمر</span><strong>${esc(student.parent_phone || "-")}</strong></div>
         <div class="row"><span>الصف الدراسي</span><strong>${esc(student.grade)}</strong></div>
         <div class="row"><span>الشعبة</span><strong>${esc(student.track)}</strong></div>
-        <div class="row"><span>المحافظة</span><strong>${esc(student.governorate || "-")}</strong></div>
+        <div class="row"><span>${student.is_center_student ? "اسم السنتر" : "المحافظة"}</span><strong>${esc(student.is_center_student ? (student.center_name || "-") : (student.governorate || "-"))}</strong></div>
       </div>
     `;
   }
@@ -5141,6 +6239,53 @@ async function handleRequest(req, env) {
     }), { headers: { "Content-Type": "application/json" } });
   }
 
+  if (path === "/api/student/tutor" && req.method === "POST") {
+    if (!student) {
+      return new Response(JSON.stringify({ ok: false, answer: "يجب تسجيل الدخول أولاً لاستخدام المساعد." }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+    const isCenterSubscriber = Boolean(student.is_center_student || student.center_code);
+    const subscribedBranches = isCenterSubscriber
+      ? [...BRANCHES]
+      : (Array.isArray(student.branches) ? student.branches.map(String).filter(Boolean) : []);
+    if (subscribedBranches.length === 0) {
+      return new Response(JSON.stringify({
+        ok: false,
+        answer: "لا يمكنك استخدام المساعد حتى تفعّل فرعاً واحداً على الأقل."
+      }), {
+        status: 403,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+    let body = {};
+    try { body = await req.json(); } catch {}
+    const question = String(body.question || "").trim();
+    if (!question) {
+      return new Response(JSON.stringify({ ok: false, answer: "اكتب السؤال أو المسألة أولاً." }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+    const requestedBranch = BRANCHES.find(branch =>
+      question.includes(branch)
+    );
+    if (requestedBranch && !subscribedBranches.includes(requestedBranch)) {
+      return new Response(JSON.stringify({
+        ok: false,
+        answer: `لا أستطيع الإجابة في فرع ${requestedBranch} لأنك غير مشترك فيه. فعّل الفرع أولاً من صفحة الأكواد.`
+      }), {
+        status: 403,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+    const answer = await callArabicTutor(safeEnv, question, student);
+    return new Response(JSON.stringify({ ok: true, answer }), {
+      headers: { "Content-Type": "application/json" }
+    });
+  }
+
   if (path === "/api/support/thread" && req.method === "GET") {
     const sid = String(url.searchParams.get("session_id") || "").trim();
     if (!sid) {
@@ -5479,6 +6624,7 @@ async function handleRequest(req, env) {
       const forumPosts = await fsList(safeEnv, "forum_posts");
 
       const myPosts = forumPosts.filter(p => String(p.student_phone || "") === String(student.phone || ""));
+      const studentMetrics = computeStudentMetrics(student, lectures, exams, submissions, watched);
       const academicUnreadItems = myPosts
         .filter(p => p.reply && String(p.reply).trim())
         .slice(0, 8)
@@ -5489,6 +6635,27 @@ async function handleRequest(req, env) {
           preview: String(p.reply).slice(0, 75),
           href: `/student?section=forum&forum_branch=${encodeURIComponent(p.branch || BRANCHES[0])}`
         }));
+      if (studentMetrics.pendingLectures > 0) {
+        academicUnreadItems.unshift({
+          key: `pending_lectures_${studentMetrics.pendingLectures}_${lectures.length}`,
+          kind: "تذكير من الفريق",
+          title: `فاتتك ${studentMetrics.pendingLectures} محاضرة`,
+          preview: `راجع المحاضرات المتبقية وشاهدها للمتابعة`,
+          href: `/student?section=dashboard`
+        });
+      }
+
+      const solvedExamIds = new Set(
+        submissions
+          .filter(s => String(s.student_phone || "") === String(student.phone || ""))
+          .map(s => String(s.exam_id || ""))
+      );
+      const pendingExam = exams.find(ex => ex && !solvedExamIds.has(String(ex.id)));
+      const aiExamReminder = pendingExam ? {
+        id: String(pendingExam.id),
+        title: String(pendingExam.title || "امتحان جديد"),
+        href: `/student?section=solve-exam&exam_id=${encodeURIComponent(pendingExam.id)}`
+      } : null;
 
       const myDrafts = drafts.filter(d => String(d.student_phone || "") === String(student.phone || ""));
       const body = renderStudentDash(settings, student, {
@@ -5498,7 +6665,8 @@ async function handleRequest(req, env) {
       return htmlRes(
         renderLayout("بوابة الطالب", settings, student, isStaff, body, {
           academicUnreadCount: academicUnreadItems.length,
-          academicUnreadItems
+          academicUnreadItems,
+          aiExamReminder
         })
       );
     }
@@ -5557,7 +6725,7 @@ async function handleRequest(req, env) {
     };
     await fsSet(safeEnv, "students", phone, studentDoc);
     const token = makeToken({ phone, sid: newSid }, secret);
-    return redirectRes("/student", { "Set-Cookie": setCookieHeader("nb_student", token) });
+    return redirectRes("/student?welcome=1", { "Set-Cookie": setCookieHeader("nb_student", token) });
   }
 
   if (path === "/student/login" && req.method === "POST") {
@@ -5580,7 +6748,7 @@ async function handleRequest(req, env) {
     await fsSet(safeEnv, "students", phone, st);
 
     const token = makeToken({ phone, sid: newSid }, secret);
-    return redirectRes("/student", { "Set-Cookie": setCookieHeader("nb_student", token) });
+    return redirectRes("/student?welcome=1", { "Set-Cookie": setCookieHeader("nb_student", token) });
   }
 
   if (path === "/student/center-login" && req.method === "POST") {
@@ -5592,11 +6760,11 @@ async function handleRequest(req, env) {
     const grade = String(fd.get("grade") || GRADES[0]).trim();
     const track = String(fd.get("track") || TRACKS[0]).trim();
     const parentPhone = normalizePhone(fd.get("parent_phone") || "");
-    const governorate = String(fd.get("governorate") || EGYPT_GOVERNORATES[0]).trim();
+    const centerName = String(fd.get("center_name") || "").trim();
     const password = String(fd.get("password") || "");
 
-    if (!centerCode || !name || !phone || !parentPhone || !password) {
-      return redirectRes("/student?tab=center&error=" + encodeURIComponent("يرجى إدخال كود السنتر والاسم والهاتف وولي الأمر وكلمة السر."));
+    if (!centerCode || !name || !phone || !parentPhone || !centerName || !password) {
+      return redirectRes("/student?tab=center&error=" + encodeURIComponent("يرجى إدخال كود السنتر والاسم والهاتف وولي الأمر واسم السنتر وكلمة السر."));
     }
     if (parentPhone === phone) {
       return redirectRes("/student?tab=center&error=" + encodeURIComponent("رقم ولي الأمر يجب أن يختلف عن رقم الطالب."));
@@ -5624,7 +6792,7 @@ async function handleRequest(req, env) {
       grade,
       track,
       parent_phone: parentPhone,
-      governorate,
+      center_name: centerName,
       password_plain: password,
       password_hash: await sha256(password),
       branches: Array.from(new Set([...(existing.branches || []), ...BRANCHES])),
@@ -5637,7 +6805,7 @@ async function handleRequest(req, env) {
     await fsSet(safeEnv, "students", phone, stDoc);
 
     const token = makeToken({ phone, sid: newSid }, secret);
-    return redirectRes("/student", { "Set-Cookie": setCookieHeader("nb_student", token) });
+    return redirectRes("/student?welcome=1", { "Set-Cookie": setCookieHeader("nb_student", token) });
   }
 
   if (path === "/student/reset-password" && req.method === "POST") {

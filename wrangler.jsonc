@@ -6,5 +6,8 @@
   "vars": {
     "FIREBASE_PROJECT_ID": "mr-mohmed",
     "FIREBASE_API_KEY": "AIzaSyDmCu9lIUv7LDCw4VTwrhpA1PrIN7pa6Po"
+  },
+  "ai": {
+    "binding": "AI"
   }
 }
